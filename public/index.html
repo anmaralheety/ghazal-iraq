@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>غزل عراقي - دردشة حقيقية</title>
+<script src="/socket.io/socket.io.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #f5a623;
+    --gold-light: #ffd166;
+    --gold-dark: #d4860a;
+    --blue-deep: #0a1628;
+    --blue-mid: #0d2444;
+    --blue-accent: #1a3a6e;
+    --white: #ffffff;
+    --light: #e8f4fd;
+    --text-muted: #90b4d4;
+    --online-green: #00e676;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Cairo',sans-serif; background:var(--blue-deep); min-height:100vh; overflow-x:hidden; color:var(--white); }
+
+  /* BG */
+  .bg-scene { position:fixed; inset:0; z-index:0;
+    background: radial-gradient(ellipse at 20% 50%,rgba(21,101,192,.3) 0%,transparent 60%),
+                radial-gradient(ellipse at 80% 20%,rgba(245,166,35,.15) 0%,transparent 50%),
+                radial-gradient(ellipse at 60% 80%,rgba(124,77,255,.2) 0%,transparent 50%),
+                linear-gradient(135deg,#050d1a 0%,#0a1628 40%,#0d2444 100%); }
+  .stars { position:fixed; inset:0; z-index:0; overflow:hidden; }
+  .star { position:absolute; border-radius:50%; background:white; animation:twinkle linear infinite; }
+  @keyframes twinkle { 0%,100%{opacity:0;transform:scale(.5)} 50%{opacity:1;transform:scale(1)} }
+  .floating-orb { position:fixed; border-radius:50%; filter:blur(80px); animation:floatOrb ease-in-out infinite; z-index:0; pointer-events:none; }
+  @keyframes floatOrb { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-40px) scale(1.1)} 66%{transform:translate(-20px,20px) scale(.9)} }
+
+  /* PAGES */
+  #landing-page { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+  #chat-page { display:none; position:relative; z-index:1; height:100vh; flex-direction:column; }
+
+  /* HEADER */
+  .site-header { padding:20px 40px; display:flex; align-items:center; justify-content:space-between;
+    background:rgba(255,255,255,.03); backdrop-filter:blur(20px);
+    border-bottom:1px solid rgba(245,166,35,.15); animation:slideDown .8s ease; }
+  @keyframes slideDown { from{transform:translateY(-100%);opacity:0} to{transform:translateY(0);opacity:1} }
+  .logo { display:flex; align-items:center; gap:14px; cursor:pointer; }
+  .logo-icon { width:52px; height:52px; background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+    border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:24px;
+    box-shadow:0 0 30px rgba(245,166,35,.5); animation:logoPulse 3s ease-in-out infinite; }
+  @keyframes logoPulse { 0%,100%{box-shadow:0 0 30px rgba(245,166,35,.5)} 50%{box-shadow:0 0 60px rgba(245,166,35,.8)} }
+  .logo-title { font-family:'Tajawal',sans-serif; font-size:22px; font-weight:900;
+    background:linear-gradient(135deg,var(--gold-light),var(--gold),#e65100);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .logo-sub { font-size:11px; color:var(--text-muted); letter-spacing:2px; text-transform:uppercase; }
+  .stat-badge { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08); padding:8px 16px; border-radius:50px; font-size:13px; backdrop-filter:blur(10px); }
+  .stat-dot { width:8px; height:8px; border-radius:50%; background:var(--online-green);
+    animation:pulse 2s ease-in-out infinite; box-shadow:0 0 10px var(--online-green); }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.7} }
+
+  /* HERO */
+  .hero { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:60px 20px; text-align:center; }
+  .hero-badge { display:inline-flex; align-items:center; gap:8px;
+    background:linear-gradient(135deg,rgba(245,166,35,.15),rgba(245,166,35,.05));
+    border:1px solid rgba(245,166,35,.3); padding:8px 20px; border-radius:50px;
+    font-size:13px; color:var(--gold-light); margin-bottom:30px; animation:fadeInUp .6s ease both; letter-spacing:1px; }
+  .hero-title { font-family:'Tajawal',sans-serif; font-size:clamp(36px,6vw,72px); font-weight:900;
+    line-height:1.1; margin-bottom:16px; animation:fadeInUp .7s .1s ease both; }
+  .hero-title .line1 { display:block; color:var(--white); }
+  .hero-title .line2 { display:block; background:linear-gradient(135deg,var(--gold-light),var(--gold),#ff8f00);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    filter:drop-shadow(0 0 30px rgba(245,166,35,.4)); }
+  .hero-desc { font-size:17px; color:var(--text-muted); max-width:520px; line-height:1.8;
+    margin-bottom:50px; animation:fadeInUp .7s .2s ease both; }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+  /* BUTTONS */
+  .btn-group { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; animation:fadeInUp .7s .3s ease both; }
+  .btn { padding:16px 36px; border-radius:16px; font-family:'Cairo',sans-serif; font-size:17px;
+    font-weight:700; border:none; cursor:pointer; transition:all .3s cubic-bezier(.34,1.56,.64,1);
+    position:relative; overflow:hidden; display:flex; align-items:center; gap:10px; }
+  .btn:hover { transform:translateY(-4px) scale(1.03); }
+  .btn:active { transform:translateY(-1px) scale(.98); }
+  .btn-primary { background:linear-gradient(135deg,var(--gold),var(--gold-dark),#e65100); color:white;
+    box-shadow:0 8px 30px rgba(245,166,35,.4); }
+  .btn-primary:hover { box-shadow:0 15px 50px rgba(245,166,35,.6); }
+  .btn-secondary { background:rgba(255,255,255,.06); color:var(--white);
+    border:1px solid rgba(255,255,255,.15); backdrop-filter:blur(10px); }
+  .btn-secondary:hover { background:rgba(255,255,255,.1); border-color:rgba(245,166,35,.4); }
+  .btn-ghost { background:transparent; color:var(--gold-light); border:2px solid rgba(245,166,35,.4); }
+  .btn-ghost:hover { background:rgba(245,166,35,.1); border-color:var(--gold); }
+
+  /* FEATURES */
+  .features { display:flex; gap:20px; justify-content:center; flex-wrap:wrap;
+    padding:40px 20px; animation:fadeInUp .7s .4s ease both; }
+  .feature-card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+    border-radius:20px; padding:24px 28px; text-align:center; max-width:180px;
+    backdrop-filter:blur(10px); transition:all .3s ease; }
+  .feature-card:hover { background:rgba(245,166,35,.08); border-color:rgba(245,166,35,.25);
+    transform:translateY(-6px); }
+  .feature-icon { font-size:36px; margin-bottom:12px; display:block; }
+  .feature-title { font-weight:700; font-size:15px; margin-bottom:6px; }
+  .feature-desc { font-size:12px; color:var(--text-muted); line-height:1.6; }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; z-index:100; background:rgba(5,13,26,.85);
+    backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:all .4s ease; }
+  .modal-overlay.active { opacity:1; pointer-events:all; }
+  .modal { background:linear-gradient(145deg,#0d1f3c,#0a1628); border:1px solid rgba(245,166,35,.25);
+    border-radius:28px; padding:40px; width:420px; max-width:95vw;
+    box-shadow:0 40px 80px rgba(0,0,0,.6); transform:scale(.9) translateY(30px);
+    transition:all .4s cubic-bezier(.34,1.56,.64,1); position:relative; overflow:hidden; }
+  .modal::before { content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,transparent,var(--gold),var(--gold-light),var(--gold),transparent); }
+  .modal-overlay.active .modal { transform:scale(1) translateY(0); }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:30px; }
+  .modal-title { font-family:'Tajawal',sans-serif; font-size:22px; font-weight:800;
+    background:linear-gradient(135deg,var(--gold-light),var(--gold));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .modal-close { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1); color:var(--text-muted); font-size:18px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+  .modal-close:hover { background:rgba(255,80,80,.2); color:white; }
+  .form-group { margin-bottom:18px; }
+  .form-label { display:block; font-size:13px; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
+  .form-input, .form-select { width:100%; padding:14px 18px; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.1); border-radius:14px; color:white;
+    font-family:'Cairo',sans-serif; font-size:15px; transition:all .3s ease; outline:none;
+    appearance:none; -webkit-appearance:none; }
+  .form-input:focus, .form-select:focus { border-color:var(--gold); background:rgba(245,166,35,.06);
+    box-shadow:0 0 0 3px rgba(245,166,35,.12); }
+  .form-input::placeholder { color:rgba(255,255,255,.25); }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .select-wrapper { position:relative; }
+  .select-wrapper::after { content:'▼'; position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    font-size:10px; color:var(--gold); pointer-events:none; }
+  .form-select option { background:#0d1f3c; color:white; }
+  .btn-full { width:100%; justify-content:center; padding:16px; font-size:17px; border-radius:14px; margin-top:8px; }
+
+  /* ERROR */
+  .form-error { color:#ef5350; font-size:12px; margin-top:5px; display:none; }
+  .form-input.error { border-color:#ef5350; }
+
+  /* CHAT PAGE */
+  .chat-header { background:rgba(10,22,40,.95); backdrop-filter:blur(20px);
+    border-bottom:1px solid rgba(245,166,35,.2); padding:0 20px; height:64px;
+    display:flex; align-items:center; justify-content:space-between; flex-shrink:0; position:relative; z-index:10; }
+  .chat-header::before { content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(245,166,35,.5),transparent); }
+  .chat-logo { display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .chat-logo-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+    border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px;
+    box-shadow:0 0 20px rgba(245,166,35,.4); }
+  .chat-logo-text { font-family:'Tajawal',sans-serif; font-weight:900; font-size:16px;
+    background:linear-gradient(135deg,var(--gold-light),var(--gold));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .chat-nav { display:flex; gap:4px; }
+  .chat-nav-btn { padding:8px 18px; border-radius:10px; background:transparent; border:none;
+    color:var(--text-muted); font-family:'Cairo',sans-serif; font-size:13px; cursor:pointer; transition:all .2s;
+    display:flex; align-items:center; gap:6px; }
+  .chat-nav-btn:hover, .chat-nav-btn.active { background:rgba(245,166,35,.12); color:var(--gold-light); }
+  .chat-body { flex:1; display:grid; grid-template-columns:260px 1fr 280px; overflow:hidden; }
+
+  /* PANELS */
+  .rooms-panel, .users-panel { background:rgba(8,18,35,.8); display:flex; flex-direction:column; overflow:hidden; }
+  .rooms-panel { border-left:1px solid rgba(255,255,255,.06); }
+  .users-panel { border-right:1px solid rgba(255,255,255,.06); }
+  .panel-header { padding:16px 18px; font-size:12px; font-weight:700; color:var(--gold);
+    letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.05);
+    display:flex; align-items:center; gap:8px; }
+  .rooms-list, .users-list { flex:1; overflow-y:auto; padding:10px; }
+  .rooms-list::-webkit-scrollbar, .users-list::-webkit-scrollbar { width:4px; }
+  .rooms-list::-webkit-scrollbar-thumb, .users-list::-webkit-scrollbar-thumb { background:rgba(245,166,35,.3); border-radius:4px; }
+
+  .room-item { padding:12px 14px; border-radius:12px; cursor:pointer; transition:all .2s;
+    margin-bottom:4px; display:flex; align-items:center; gap:10px; border:1px solid transparent; }
+  .room-item:hover { background:rgba(245,166,35,.08); border-color:rgba(245,166,35,.15); }
+  .room-item.active { background:rgba(245,166,35,.15); border-color:rgba(245,166,35,.3); }
+  .room-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center;
+    justify-content:center; font-size:16px; flex-shrink:0; }
+  .room-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .room-count { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .room-badge { background:var(--gold); color:var(--blue-deep); font-size:10px; font-weight:800;
+    padding:2px 7px; border-radius:50px; min-width:22px; text-align:center; }
+
+  /* MAIN CHAT */
+  .chat-main { display:flex; flex-direction:column; background:rgba(6,14,26,.5); position:relative; }
+  .chat-room-header { padding:14px 20px; background:rgba(255,255,255,.02);
+    border-bottom:1px solid rgba(255,255,255,.06); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .room-title { font-size:16px; font-weight:700; }
+  .room-subtitle { font-size:12px; color:var(--text-muted); }
+  .chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:4px; }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:4px; }
+
+  .welcome-notice { background:linear-gradient(135deg,rgba(245,166,35,.1),rgba(245,166,35,.05));
+    border:1px solid rgba(245,166,35,.2); border-radius:14px; padding:14px 20px;
+    margin-bottom:16px; text-align:center; font-size:13px; color:var(--gold-light); }
+
+  .msg { display:flex; align-items:flex-start; gap:10px; padding:6px 4px;
+    border-radius:10px; transition:background .2s; animation:msgIn .3s ease; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .msg:hover { background:rgba(255,255,255,.03); }
+  .msg-avatar { width:38px; height:38px; border-radius:50%; overflow:hidden; flex-shrink:0; }
+  .msg-avatar-placeholder { width:100%; height:100%; display:flex; align-items:center;
+    justify-content:center; font-size:16px; font-weight:700; }
+  .msg-content { flex:1; min-width:0; }
+  .msg-header { display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap; }
+  .msg-name { font-size:14px; font-weight:700; }
+  .msg-badge { font-size:10px; padding:2px 8px; border-radius:50px; font-weight:700; }
+  .badge-admin { background:rgba(255,193,7,.2); color:#ffd54f; border:1px solid rgba(255,193,7,.3); }
+  .badge-vip { background:rgba(156,39,176,.2); color:#ce93d8; border:1px solid rgba(156,39,176,.3); }
+  .badge-member { background:rgba(66,165,245,.15); color:#90caf9; border:1px solid rgba(66,165,245,.2); }
+  .badge-visitor { background:rgba(255,255,255,.08); color:#ccc; border:1px solid rgba(255,255,255,.15); }
+  .msg-time { font-size:11px; color:var(--text-muted); margin-right:auto; }
+  .msg-text { font-size:14px; color:rgba(255,255,255,.85); line-height:1.7; word-break:break-word; }
+
+  .sys-msg { text-align:center; padding:6px; font-size:12px; color:var(--gold);
+    background:rgba(245,166,35,.06); border-radius:10px; margin:4px 0; animation:msgIn .3s ease; }
+
+  /* INPUT */
+  .chat-input-area { padding:16px 20px; background:rgba(8,18,35,.8);
+    border-top:1px solid rgba(255,255,255,.06); flex-shrink:0; }
+  .chat-input-bar { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:6px 6px 6px 16px; transition:all .3s; }
+  .chat-input-bar:focus-within { border-color:rgba(245,166,35,.4); background:rgba(245,166,35,.04);
+    box-shadow:0 0 0 3px rgba(245,166,35,.08); }
+  .chat-input { flex:1; background:transparent; border:none; outline:none; color:white;
+    font-family:'Cairo',sans-serif; font-size:14px; padding:8px 0; direction:rtl; }
+  .chat-input::placeholder { color:rgba(255,255,255,.25); }
+  .input-btn { width:40px; height:40px; border-radius:12px; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:16px; transition:all .2s; flex-shrink:0; }
+  .input-btn-emoji { background:transparent; color:var(--text-muted); }
+  .input-btn-emoji:hover { color:var(--gold); background:rgba(245,166,35,.1); }
+  .input-btn-send { background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:white;
+    box-shadow:0 4px 15px rgba(245,166,35,.3); }
+  .input-btn-send:hover { transform:scale(1.1); box-shadow:0 6px 25px rgba(245,166,35,.5); }
+
+  /* EMOJI */
+  .emoji-picker { position:absolute; bottom:80px; right:20px;
+    background:linear-gradient(145deg,#0d1f3c,#0a1628); border:1px solid rgba(245,166,35,.2);
+    border-radius:16px; padding:16px; display:none; grid-template-columns:repeat(8,1fr); gap:6px;
+    z-index:50; box-shadow:0 20px 60px rgba(0,0,0,.5); animation:fadeInUp .2s ease; }
+  .emoji-picker.open { display:grid; }
+  .emoji-btn { background:transparent; border:none; font-size:22px; cursor:pointer;
+    padding:4px; border-radius:8px; transition:all .15s; line-height:1; }
+  .emoji-btn:hover { background:rgba(255,255,255,.1); transform:scale(1.3); }
+
+  /* USERS */
+  .users-count-bar { padding:10px 16px; background:linear-gradient(135deg,rgba(245,166,35,.15),rgba(245,166,35,.05));
+    border-bottom:1px solid rgba(245,166,35,.15); display:flex; align-items:center;
+    gap:8px; font-size:13px; font-weight:700; color:var(--gold-light); }
+  .user-section-label { font-size:10px; font-weight:700; color:var(--gold); letter-spacing:2px;
+    text-transform:uppercase; padding:8px 10px 4px; display:flex; align-items:center; gap:6px; }
+  .user-section-label::after { content:''; flex:1; height:1px;
+    background:linear-gradient(90deg,rgba(245,166,35,.3),transparent); }
+  .user-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px;
+    cursor:pointer; transition:all .2s; margin-bottom:2px; }
+  .user-item:hover { background:rgba(255,255,255,.05); }
+  .user-avatar { width:38px; height:38px; border-radius:50%; overflow:hidden; flex-shrink:0; position:relative; }
+  .user-avatar-placeholder { width:100%; height:100%; display:flex; align-items:center;
+    justify-content:center; font-size:14px; font-weight:700; }
+  .user-status-dot { position:absolute; bottom:1px; right:1px; width:10px; height:10px;
+    border-radius:50%; background:var(--online-green); border:2px solid #08122d;
+    box-shadow:0 0 6px var(--online-green); }
+  .user-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .user-meta { font-size:11px; color:var(--text-muted); }
+  .user-role-icon { font-size:14px; flex-shrink:0; }
+
+  /* PM BOX */
+  .pm-box { position:fixed; bottom:20px; left:20px; width:320px; background:linear-gradient(145deg,#0d1f3c,#0a1628);
+    border:1px solid rgba(245,166,35,.3); border-radius:18px; z-index:200;
+    box-shadow:0 20px 60px rgba(0,0,0,.6); display:none; flex-direction:column; }
+  .pm-box.open { display:flex; }
+  .pm-header { padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,.06); }
+  .pm-title { font-size:14px; font-weight:700; color:var(--gold-light); }
+  .pm-close { background:transparent; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; }
+  .pm-messages { height:200px; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .pm-msg { font-size:13px; padding:8px 12px; border-radius:10px; max-width:85%; }
+  .pm-msg.sent { background:rgba(245,166,35,.15); color:var(--gold-light); align-self:flex-start; }
+  .pm-msg.received { background:rgba(255,255,255,.06); color:var(--white); align-self:flex-end; }
+  .pm-input-row { display:flex; gap:8px; padding:10px; border-top:1px solid rgba(255,255,255,.06); }
+  .pm-input { flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+    border-radius:10px; padding:8px 12px; color:white; font-family:'Cairo',sans-serif; font-size:13px;
+    outline:none; direction:rtl; }
+  .pm-send { background:linear-gradient(135deg,var(--gold),var(--gold-dark)); border:none;
+    border-radius:10px; padding:8px 14px; color:white; cursor:pointer; font-size:14px; }
+
+  /* CONNECTING */
+  .connecting-overlay { position:fixed; inset:0; z-index:500; background:rgba(5,13,26,.95);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+  .spinner { width:60px; height:60px; border:3px solid rgba(245,166,35,.2);
+    border-top-color:var(--gold); border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<div class="bg-scene"></div>
+<div class="stars" id="stars"></div>
+<div class="floating-orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(21,101,192,.25),transparent);top:-100px;right:-100px;animation-duration:12s;"></div>
+<div class="floating-orb" style="width:400px;height:400px;background:radial-gradient(circle,rgba(245,166,35,.1),transparent);bottom:-50px;left:-100px;animation-duration:15s;animation-delay:-5s;"></div>
+
+<!-- CONNECTING OVERLAY -->
+<div class="connecting-overlay" id="connecting-overlay" style="display:none;">
+  <div class="spinner"></div>
+  <div style="color:var(--gold-light);font-size:16px;">جاري الاتصال...</div>
+</div>
+
+<!-- ====== LANDING ====== -->
+<div id="landing-page">
+  <header class="site-header">
+    <div class="logo">
+      <div class="logo-icon">💬</div>
+      <div>
+        <div class="logo-title">غزل عراقي</div>
+        <div class="logo-sub">دردشة كتابية</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <div class="stat-badge">
+        <div class="stat-dot"></div>
+        <span><strong id="online-count">0</strong> متصل الآن</span>
+      </div>
+      <div class="stat-badge">🏠 <span>8 غرفة</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-badge">🇮🇶 &nbsp; دردشة عراقية حقيقية &nbsp; 🌙</div>
+    <h1 class="hero-title">
+      <span class="line1">أهلاً وسهلاً في</span>
+      <span class="line2">غزل عراقي</span>
+    </h1>
+    <p class="hero-desc">
+      قابل الآن المزيد من الأشخاص عبر خدمة غزل عراقي الأسرع والأجمل.<br>
+      شاهد أحبائك وأصدقائك — نتمنى لكم أجمل الأوقات معنا 🌹
+    </p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="openModal('visitor')">🚀 &nbsp; دخول الزوار</button>
+      <button class="btn btn-secondary" onclick="openModal('login')">🔑 &nbsp; دخول الأعضاء</button>
+      <button class="btn btn-ghost" onclick="openModal('register')">✨ &nbsp; سجل الآن</button>
+    </div>
+  </section>
+
+  <div class="features">
+    <div class="feature-card"><span class="feature-icon">⚡</span><div class="feature-title">دردشة فورية حقيقية</div><div class="feature-desc">رسائل تصل فوراً لجميع المتصلين</div></div>
+    <div class="feature-card"><span class="feature-icon">🏠</span><div class="feature-title">8 غرف</div><div class="feature-desc">غرف متنوعة لكل اهتمام</div></div>
+    <div class="feature-card"><span class="feature-icon">🎭</span><div class="feature-title">دخول بدون تسجيل</div><div class="feature-desc">ادخل فوراً كزائر</div></div>
+    <div class="feature-card"><span class="feature-icon">💌</span><div class="feature-title">رسائل خاصة</div><div class="feature-desc">تحدث مع أي شخص بخصوصية</div></div>
+    <div class="feature-card"><span class="feature-icon">😊</span><div class="feature-title">إيموجي</div><div class="feature-desc">عبر عن مشاعرك</div></div>
+  </div>
+</div>
+
+<!-- VISITOR MODAL -->
+<div class="modal-overlay" id="visitor-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🚀 دخول الزوار</span>
+      <button class="modal-close" onclick="closeModal('visitor')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الاسم المستعار</label>
+      <input type="text" class="form-input" id="visitor-name" placeholder="اكتب اسمك هنا..." maxlength="20">
+      <div class="form-error" id="visitor-name-error">⚠️ الرجاء إدخال اسم</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">العمر</label>
+        <div class="select-wrapper">
+          <select class="form-select" id="visitor-age">
+            <option>15</option><option>18</option><option>20</option><option selected>22</option>
+            <option>25</option><option>28</option><option>30</option><option>33</option>
+            <option>35</option><option>40</option><option>45</option><option>50</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الجنس</label>
+        <div class="select-wrapper">
+          <select class="form-select" id="visitor-gender">
+            <option>ذكر</option><option>أنثى</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="joinAsVisitor()">دخول &nbsp; →</button>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔑 دخول الأعضاء</span>
+      <button class="modal-close" onclick="closeModal('login')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">اسم المستخدم</label>
+      <input type="text" class="form-input" id="login-name" placeholder="اسم المستخدم...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">كلمة المرور</label>
+      <input type="password" class="form-input" placeholder="كلمة المرور...">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="joinAsMember('login')">دخول &nbsp; →</button>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="modal-overlay" id="register-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✨ تسجيل عضو جديد</span>
+      <button class="modal-close" onclick="closeModal('register')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">اسم المستخدم</label>
+      <input type="text" class="form-input" id="reg-name" placeholder="اختر اسم مستخدم..." maxlength="20">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">كلمة المرور</label>
+        <input type="password" class="form-input" placeholder="••••••">
+      </div>
+      <div class="form-group">
+        <label class="form-label">تأكيد كلمة المرور</label>
+        <input type="password" class="form-input" placeholder="••••••">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">العمر</label>
+        <div class="select-wrapper">
+          <select class="form-select" id="reg-age">
+            <option>18</option><option>20</option><option selected>22</option>
+            <option>25</option><option>28</option><option>30</option><option>35</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الجنس</label>
+        <div class="select-wrapper">
+          <select class="form-select" id="reg-gender">
+            <option>ذكر</option><option>أنثى</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="joinAsMember('register')">سجل الآن &nbsp; →</button>
+  </div>
+</div>
+
+<!-- ====== CHAT PAGE ====== -->
+<div id="chat-page">
+  <div class="chat-header">
+    <div class="chat-logo" onclick="goHome()">
+      <div class="chat-logo-icon">💬</div>
+      <span class="chat-logo-text">غزل عراقي</span>
+    </div>
+    <div class="chat-nav">
+      <button class="chat-nav-btn active">🏠 الغرف</button>
+      <button class="chat-nav-btn">📰 يوميات</button>
+      <button class="chat-nav-btn">🔔 اشعارات</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="stat-badge"><div class="stat-dot"></div><span id="chat-online">0</span> متصل</div>
+      <button class="btn btn-ghost" style="padding:8px 16px;font-size:13px;" onclick="goHome()">خروج</button>
+    </div>
+  </div>
+
+  <div class="chat-body">
+    <!-- Rooms -->
+    <div class="rooms-panel">
+      <div class="panel-header">🏠 &nbsp; الغرف</div>
+      <div class="rooms-list" id="rooms-list"></div>
+    </div>
+
+    <!-- Main -->
+    <div class="chat-main">
+      <div class="chat-room-header">
+        <div id="current-room-icon" style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(135deg,#1565c0,#0d47a1);">🌍</div>
+        <div>
+          <div class="room-title" id="current-room-name">الغرفة العامة</div>
+          <div class="room-subtitle" id="current-room-count">🟢 0 عضو متصل الآن</div>
+        </div>
+      </div>
+      <div class="chat-messages" id="messages">
+        <div class="welcome-notice">🌟 أهلاً وسهلاً بكم في غزل عراقي من جميع الدول العربية 🌟</div>
+      </div>
+
+      <!-- Emoji -->
+      <div class="emoji-picker" id="emoji-picker">
+        <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
+        <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
+        <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
+        <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+        <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
+        <button class="emoji-btn" onclick="addEmoji('🌹')">🌹</button>
+        <button class="emoji-btn" onclick="addEmoji('😍')">😍</button>
+        <button class="emoji-btn" onclick="addEmoji('🤣')">🤣</button>
+        <button class="emoji-btn" onclick="addEmoji('💕')">💕</button>
+        <button class="emoji-btn" onclick="addEmoji('😎')">😎</button>
+        <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
+        <button class="emoji-btn" onclick="addEmoji('💯')">💯</button>
+        <button class="emoji-btn" onclick="addEmoji('🙈')">🙈</button>
+        <button class="emoji-btn" onclick="addEmoji('🌙')">🌙</button>
+        <button class="emoji-btn" onclick="addEmoji('⭐')">⭐</button>
+        <button class="emoji-btn" onclick="addEmoji('🎵')">🎵</button>
+        <button class="emoji-btn" onclick="addEmoji('💎')">💎</button>
+        <button class="emoji-btn" onclick="addEmoji('👸')">👸</button>
+        <button class="emoji-btn" onclick="addEmoji('🤴')">🤴</button>
+        <button class="emoji-btn" onclick="addEmoji('🌺')">🌺</button>
+        <button class="emoji-btn" onclick="addEmoji('😘')">😘</button>
+        <button class="emoji-btn" onclick="addEmoji('🥰')">🥰</button>
+        <button class="emoji-btn" onclick="addEmoji('🤗')">🤗</button>
+        <button class="emoji-btn" onclick="addEmoji('😴')">😴</button>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-bar">
+          <input type="text" class="chat-input" id="msg-input" placeholder="اكتب رسالتك هنا..." onkeypress="handleKey(event)">
+          <button class="input-btn input-btn-emoji" onclick="toggleEmoji()">😊</button>
+          <button class="input-btn input-btn-send" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="users-panel">
+      <div class="panel-header">👥 &nbsp; قائمة المتصلين</div>
+      <div class="users-count-bar">🟢 &nbsp; <span id="users-count">0</span> متصل الآن</div>
+      <div class="users-list" id="users-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PM BOX -->
+<div class="pm-box" id="pm-box">
+  <div class="pm-header">
+    <span class="pm-title">💌 رسالة خاصة: <span id="pm-target-name"></span></span>
+    <button class="pm-close" onclick="closePM()">✕</button>
+  </div>
+  <div class="pm-messages" id="pm-messages"></div>
+  <div class="pm-input-row">
+    <input type="text" class="pm-input" id="pm-input" placeholder="اكتب رسالة..." onkeypress="handlePMKey(event)">
+    <button class="pm-send" onclick="sendPM()">إرسال</button>
+  </div>
+</div>
+
+<script>
+// ===== STARS =====
+const starsC = document.getElementById('stars');
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2.5 + 0.5;
+  s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${Math.random()*4+2}s;animation-delay:${Math.random()*6}s;`;
+  starsC.appendChild(s);
+}
+
+// ===== SOCKET =====
+const socket = io();
+let currentUser = null;
+let currentRoom = 'general';
+let emojiOpen = false;
+let pmTarget = null;
+const avatarColors = ['#1565c0','#c62828','#6a1b9a','#2e7d32','#e65100','#00838f','#ad1457','#4527a0'];
+const roomsData = {};
+
+// ===== SOCKET EVENTS =====
+socket.on('init', (data) => {
+  Object.assign(roomsData, data.rooms);
+  renderRoomsList();
+  updateOnlineCount(data.onlineCount);
+  // Render history
+  data.messages.forEach(m => renderMessage(m));
+  document.getElementById('connecting-overlay').style.display = 'none';
+});
+
+socket.on('message', (msg) => {
+  if (msg.room === currentRoom) renderMessage(msg);
+});
+
+socket.on('room-users', (users) => {
+  renderUsers(users);
+  document.getElementById('current-room-count').textContent = `🟢 ${users.length} عضو متصل الآن`;
+});
+
+socket.on('room-history', (data) => {
+  if (data.roomId === currentRoom) {
+    const container = document.getElementById('messages');
+    container.innerHTML = `<div class="welcome-notice">🌟 أهلاً في ${roomsData[data.roomId]?.name || data.roomId} 🌟</div>`;
+    data.messages.forEach(m => renderMessage(m));
+    renderUsers(data.users);
+    document.getElementById('current-room-count').textContent = `🟢 ${data.users.length} عضو متصل الآن`;
+  }
+});
+
+socket.on('online-count', updateOnlineCount);
+
+socket.on('private-message', (pm) => {
+  if (!document.getElementById('pm-box').classList.contains('open') || pmTarget !== pm.from) {
+    pmTarget = pm.from === currentUser?.name ? pm.to : pm.from;
+    document.getElementById('pm-target-name').textContent = pmTarget;
+    document.getElementById('pm-box').classList.add('open');
+  }
+  const div = document.createElement('div');
+  div.className = `pm-msg ${pm.from === currentUser?.name ? 'sent' : 'received'}`;
+  div.textContent = pm.text;
+  document.getElementById('pm-messages').appendChild(div);
+  document.getElementById('pm-messages').scrollTop = 99999;
+});
+
+// ===== MODAL =====
+function openModal(t) { document.getElementById(t+'-modal').classList.add('active'); }
+function closeModal(t) { document.getElementById(t+'-modal').classList.remove('active'); }
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('active'); });
+});
+
+// ===== JOIN =====
+function joinAsVisitor() {
+  const name = document.getElementById('visitor-name').value.trim();
+  if (!name) {
+    document.getElementById('visitor-name').classList.add('error');
+    document.getElementById('visitor-name-error').style.display = 'block';
+    return;
+  }
+  const age = document.getElementById('visitor-age').value;
+  const gender = document.getElementById('visitor-gender').value;
+  currentUser = { name, age, gender, role: 'visitor', color: avatarColors[name.charCodeAt(0) % avatarColors.length] };
+  closeModal('visitor');
+  enterChat();
+}
+
+function joinAsMember(type) {
+  const nameEl = document.getElementById(type === 'login' ? 'login-name' : 'reg-name');
+  const name = nameEl.value.trim();
+  if (!name) { nameEl.classList.add('error'); return; }
+  const age = type === 'register' ? document.getElementById('reg-age').value : '25';
+  const gender = type === 'register' ? document.getElementById('reg-gender').value : 'ذكر';
+  currentUser = { name, age, gender, role: 'member', color: avatarColors[name.charCodeAt(0) % avatarColors.length] };
+  closeModal(type);
+  enterChat();
+}
+
+function enterChat() {
+  document.getElementById('landing-page').style.display = 'none';
+  document.getElementById('chat-page').style.display = 'flex';
+  document.getElementById('connecting-overlay').style.display = 'flex';
+  currentRoom = 'general';
+  socket.emit('join', currentUser);
+}
+
+function goHome() {
+  location.reload();
+}
+
+// ===== RENDER ROOMS =====
+function renderRoomsList() {
+  const container = document.getElementById('rooms-list');
+  container.innerHTML = '';
+  const roomColors = {
+    general:'linear-gradient(135deg,#1565c0,#0d47a1)',
+    iraq:'linear-gradient(135deg,#c62828,#b71c1c)',
+    youth:'linear-gradient(135deg,#e65100,#bf360c)',
+    feelings:'linear-gradient(135deg,#c2185b,#880e4f)',
+    music:'linear-gradient(135deg,#6a1b9a,#4a148c)',
+    sports:'linear-gradient(135deg,#2e7d32,#1b5e20)',
+    fun:'linear-gradient(135deg,#f57f17,#e65100)',
+    elders:'linear-gradient(135deg,#37474f,#263238)',
+  };
+  Object.entries(roomsData).forEach(([id, room]) => {
+    const div = document.createElement('div');
+    div.className = 'room-item' + (id === currentRoom ? ' active' : '');
+    div.id = 'room-item-' + id;
+    div.innerHTML = `
+      <div class="room-icon" style="background:${roomColors[id]||'#333'}">${room.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="room-name">${room.name}</div>
+        <div class="room-count" id="room-count-${id}">🟢 0 متصل</div>
+      </div>
+    `;
+    div.onclick = () => switchRoom(id, room);
+    container.appendChild(div);
+  });
+}
+
+function switchRoom(roomId, room) {
+  if (roomId === currentRoom) return;
+  currentRoom = roomId;
+  document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+  const item = document.getElementById('room-item-' + roomId);
+  if (item) item.classList.add('active');
+  document.getElementById('current-room-name').textContent = room.name;
+  document.getElementById('current-room-icon').textContent = room.icon;
+  socket.emit('switch-room', roomId);
+}
+
+// ===== RENDER MESSAGES =====
+function renderMessage(msg) {
+  const container = document.getElementById('messages');
+
+  if (msg.type === 'system') {
+    const div = document.createElement('div');
+    div.className = 'sys-msg';
+    div.textContent = msg.text;
+    container.appendChild(div);
+  } else {
+    const user = msg.user;
+    const colorIndex = user.name.charCodeAt(0) % avatarColors.length;
+    const color = avatarColors[colorIndex];
+    const roleMap = { admin:'badge-admin', vip:'badge-vip', member:'badge-member', visitor:'badge-visitor' };
+    const roleLabel = { admin:'⚙️ إداري', vip:'💎 VIP', member:'👤 عضو', visitor:'👁️ زائر' };
+    const nameColor = user.role==='admin'?'#ffd54f':user.role==='vip'?'#ce93d8':'#a5c8f0';
+
+    const div = document.createElement('div');
+    div.className = 'msg';
+    div.innerHTML = `
+      <div class="msg-avatar">
+        <div class="msg-avatar-placeholder" style="background:linear-gradient(135deg,${color},${color}aa)">${user.name.charAt(0)}</div>
+      </div>
+      <div class="msg-content">
+        <div class="msg-header">
+          <span class="msg-name" style="color:${nameColor}">${user.name}</span>
+          <span class="msg-badge ${roleMap[user.role]||'badge-visitor'}">${roleLabel[user.role]||'👁️ زائر'}</span>
+          <span class="msg-time">${msg.time}</span>
+        </div>
+        <div class="msg-text">${escapeHtml(msg.text)}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+// ===== RENDER USERS =====
+function renderUsers(users) {
+  const container = document.getElementById('users-list');
+  container.innerHTML = '';
+  document.getElementById('users-count').textContent = users.length;
+
+  const admins = users.filter(u => u.role === 'admin');
+  const vips = users.filter(u => u.role === 'vip');
+  const members = users.filter(u => u.role === 'member');
+  const visitors = users.filter(u => u.role === 'visitor');
+
+  if (admins.length) addUserSection(container, '⚙️ الإداريون', admins);
+  if (vips.length) addUserSection(container, '💎 VIP', vips);
+  if (members.length) addUserSection(container, '👥 الأعضاء', members);
+  if (visitors.length) addUserSection(container, '👁️ الزوار', visitors);
+}
+
+function addUserSection(container, title, users) {
+  const label = document.createElement('div');
+  label.className = 'user-section-label';
+  label.textContent = title;
+  container.appendChild(label);
+  users.forEach(user => {
+    const color = avatarColors[user.name.charCodeAt(0) % avatarColors.length];
+    const roleIcons = { admin:'⭐', vip:'💎', member:'👤', visitor:'👁️' };
+    const genderIcon = user.gender === 'أنثى' ? '👩' : '👨';
+    const div = document.createElement('div');
+    div.className = 'user-item';
+    div.innerHTML = `
+      <div class="user-avatar">
+        <div class="user-avatar-placeholder" style="background:linear-gradient(135deg,${color},${color}99)">${user.name.charAt(0)}</div>
+        <div class="user-status-dot"></div>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="user-name">${user.name}</div>
+        <div class="user-meta">${genderIcon} ${user.gender} · ${user.age} سنة</div>
+      </div>
+      <div class="user-role-icon">${roleIcons[user.role]||'👁️'}</div>
+    `;
+    div.onclick = () => openPM(user.name);
+    container.appendChild(div);
+  });
+}
+
+// ===== SEND MESSAGE =====
+function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+  socket.emit('chat-message', { text });
+  input.value = '';
+  if (emojiOpen) toggleEmoji();
+}
+function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
+
+// ===== EMOJI =====
+function toggleEmoji() {
+  emojiOpen = !emojiOpen;
+  document.getElementById('emoji-picker').classList.toggle('open', emojiOpen);
+}
+function addEmoji(e) {
+  document.getElementById('msg-input').value += e;
+  document.getElementById('msg-input').focus();
+}
+document.addEventListener('click', e => {
+  if (emojiOpen && !e.target.closest('#emoji-picker') && !e.target.closest('.input-btn-emoji')) {
+    emojiOpen = false;
+    document.getElementById('emoji-picker').classList.remove('open');
+  }
+});
+
+// ===== PRIVATE MSG =====
+function openPM(name) {
+  if (name === currentUser?.name) return;
+  pmTarget = name;
+  document.getElementById('pm-target-name').textContent = name;
+  document.getElementById('pm-messages').innerHTML = '';
+  document.getElementById('pm-box').classList.add('open');
+  document.getElementById('pm-input').focus();
+}
+function closePM() {
+  document.getElementById('pm-box').classList.remove('open');
+  pmTarget = null;
+}
+function sendPM() {
+  const input = document.getElementById('pm-input');
+  const text = input.value.trim();
+  if (!text || !pmTarget) return;
+  socket.emit('private-message', { to: pmTarget, text });
+  input.value = '';
+}
+function handlePMKey(e) { if (e.key === 'Enter') sendPM(); }
+
+// ===== ONLINE COUNT =====
+function updateOnlineCount(n) {
+  document.getElementById('online-count').textContent = n;
+  document.getElementById('chat-online').textContent = n;
+}
+
+// ===== UTILS =====
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Animate counter on landing
+let c = 0;
+const timer = setInterval(() => {
+  c += Math.floor(Math.random() * 5);
+  // will be updated by socket
+  clearInterval(timer);
+}, 100);
+</script>
+</body>
+</html>

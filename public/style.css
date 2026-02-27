@@ -1,0 +1,26 @@
+/* هذا الجزء يضمن أن الحاوية الأم لا تسمح للعناصر بالخروج عن حدودها */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* طول الشاشة بالضبط */
+    overflow: hidden; /* يمنع ظهور أي شريط تمرير خارجي */
+    position: relative;
+}
+
+/* صندوق عرض الرسائل - هنا كان الخلل */
+.chat-messages {
+    flex: 1; /* يجعله مرناً ليأخذ المساحة المتبقية فقط */
+    overflow-y: auto; /* يضيف تمرير داخلي إذا كثرت الرسائل */
+    min-height: 0; /* سطر سحري: يمنع الصندوق من التمدد بناءً على محتواه */
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+/* صندوق الكتابة - نضمن بقاءه في القاع */
+.chat-input-area {
+    flex-shrink: 0; /* يمنعه من الانضغاط أو النزول للأسفل */
+    height: 70px;
+    background: #1c2126;
+    z-index: 10; /* يبقيه فوق أي طبقة أخرى */
+}

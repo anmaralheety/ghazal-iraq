@@ -124,6 +124,71 @@ app.get('/api/rooms', (req,res) => {
   res.json({ ok:true, rooms: ROOMS });
 });
 
+// ===== PROFANITY FILTER =====
+const BAD_WORDS = [
+  // العربية - سب وشتم
+  'كلب','كلبة','حمار','حمارة','غبي','غبية','احمق','احمقة','معتوه',
+  'وقح','وقحة','منافق','منافقة','كذاب','كذابة','لعين','لعينة',
+  'يلعن','العن','شرموطة','عاهرة','زانية','فاجرة','قحبة','متناكة',
+  'زاني','فاجر','منيوك','مخنث','شاذ','لوطي','ابن زنا','بنت زنا',
+  'تبا','ملعون','ملعونة','خنزير','خنزيرة','قرد','قردة','بهيم',
+  'تفو','عليك','خرا','خراء','زبالة','نجس','نجسة','وسخ','وسخة',
+  'ابو زبالة','ابن الكلب','ابن الحرام','بنت الكلب','بنت الحرام',
+  'روح اللعب','روح العب','يمك','يفك','يلعن دينك','يلعن اهلك',
+  'ثور','بقرة','حقير','حقيرة','نذل','نذلة','خسيس','خسيسة',
+
+  // English
+  'fuck','fucker','fucking','fucked','shit','bitch','bastard',
+  'asshole','ass','damn','crap','idiot','stupid','moron','retard',
+  'whore','slut','dick','cock','pussy','cunt','nigger','faggot',
+  'motherfucker','son of a bitch','hell','loser','dumbass',
+  
+  // تركية / فارسية شائعة
+  'lanet','kahpe','orospu','sikim','amk',
+];
+
+// Normalize Arabic text for better matching
+function normalizeAr(text) {
+  return text
+    .replace(/أ|إ|آ/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function containsBadWord(text) {
+  const normalized = normalizeAr(text.toLowerCase());
+  // Remove spaces and special chars for bypass detection
+  const compact = normalized.replace(/[\s\.\-_\*]+/g, '');
+  
+  for (const word of BAD_WORDS) {
+    const normWord = normalizeAr(word.toLowerCase());
+    if (normalized.includes(normWord)) return { found: true, word };
+    if (compact.includes(normWord.replace(/\s/g,''))) return { found: true, word };
+  }
+  return { found: false };
+}
+
+// Censor the message instead of blocking (replace bad word with ***)
+function censorText(text) {
+  let result = text;
+  const normalized = normalizeAr(text.toLowerCase());
+  for (const word of BAD_WORDS) {
+    const normWord = normalizeAr(word.toLowerCase());
+    if (normalized.includes(normWord)) {
+      // Replace in original text (case insensitive)
+      const regex = new RegExp(word.replace(/[-\/\^$*+?.()|[\]{}]/g, '\$&'), 'gi');
+      result = result.replace(regex, '*'.repeat(word.length));
+    }
+  }
+  return result;
+}
+
+// Warn counter per user
+const warnCount = {};
+const MAX_WARNS = 3;
+
 // Rank colors & labels
 const RANK_COLORS = { owner:'#ff6b35', admin:'#ffd54f', vip:'#ce93d8', member:'#90caf9', visitor:'#b0bec5' };
 const RANK_LABELS = { owner:'👑 مالك', admin:'⚙️ إداري', vip:'💎 VIP', member:'👤 عضو', visitor:'👁️ زائر' };
@@ -385,6 +450,29 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // 4. Profanity filter
+    const badCheck = containsBadWord(text);
+    if (badCheck.found) {
+      const uid = user.name;
+      warnCount[uid] = (warnCount[uid] || 0) + 1;
+      const remaining = MAX_WARNS - warnCount[uid];
+      
+      if (warnCount[uid] >= MAX_WARNS) {
+        // Auto-mute after 3 warnings
+        mutedUsers.add(uid);
+        socket.emit('muted', `تم كتمك تلقائياً بسبب استخدام كلمات مسيئة`);
+        io.to(user.room).emit('system-notice', `⚠️ تم كتم ${uid} بسبب الإساءة`);
+        warnCount[uid] = 0;
+        return;
+      }
+      
+      socket.emit('profanity-warning', {
+        msg: `⚠️ تحذير ${warnCount[uid]}/${MAX_WARNS}: رسالتك تحتوي على كلمات غير لائقة`,
+        remaining
+      });
+      return;
+    }
+
     const msg = await saveMessage(user.room, user.name, text);
     io.to(user.room).emit('message', {
       ...msg,
@@ -392,6 +480,16 @@ io.on('connection', (socket) => {
                color: RANK_COLORS[user.rank] || '#b0bec5',
                label: RANK_LABELS[user.rank] || '👁️ زائر' }
     });
+  });
+
+  socket.on('admin-resetwarn', (data) => {
+    const admin = chatUsers[socket.id];
+    if (!admin || !['owner','admin'].includes(admin.rank)) return;
+    delete warnCount[data.username];
+    // Unmute if was auto-muted
+    mutedUsers.delete(data.username);
+    const sid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.username);
+    if (sid) io.to(sid).emit('unmuted', 'تم رفع الكتم وإعادة تعيين تحذيراتك');
   });
 
   socket.on('admin-mute', (data) => {
@@ -433,6 +531,7 @@ io.on('connection', (socket) => {
     if (!user) return;
     const room = user.room;
     delete chatUsers[socket.id];
+    delete warnCount[user.name];
     const msg = await saveMessage(room, null, `👋 ${user.name} غادر الموقع`, 'system');
     io.to(room).emit('message', msg);
     io.to(room).emit('room-users', getRoomUsers(room));

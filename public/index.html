@@ -726,6 +726,21 @@ socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div cl
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
 socket.on('unmuted',m=>{toast('🔊 '+m,'k');const i=document.getElementById('min');i.disabled=false;i.placeholder='اكتب رسالتك هنا...';});
 socket.on('kicked',m=>{toast('🚫 '+m,'e');setTimeout(()=>logout(),2000);});
+socket.on('profanity-warning', data => {
+  // Show warning toast
+  toast(data.msg, 'e');
+  // Flash input red
+  const bar = document.querySelector('.cin-bar');
+  bar.style.borderColor = '#ef5350';
+  bar.style.background = 'rgba(239,83,80,.08)';
+  setTimeout(() => {
+    bar.style.borderColor = '';
+    bar.style.background = '';
+  }, 2000);
+  // Clear the input
+  document.getElementById('min').value = '';
+});
+
 socket.on('spam-warning', msg => {
   // Show warning in input area without toast
   const bar = document.getElementById('min');
@@ -898,6 +913,12 @@ async function refAdmin(){
         ${id!=='general'?`<button class="aab" style="background:rgba(239,83,80,.3);color:#ef9a9a;border:1px solid rgba(239,83,80,.4);" onclick="deleteRoom('${id}','${r.name}')">❌ حذف</button>`:'<span style="font-size:10px;color:var(--mut);">محمية</span>'}
       </td>
     </tr>`).join('')}</tbody></table>`;
+}
+
+// Admin reset warnings
+async function aResetWarn(n) {
+  socket.emit('admin-resetwarn', { username: n });
+  toast('✅ تم إعادة تعيين تحذيرات ' + n, 'k');
 }
 
 async function aBan(n){if(!confirm(`حظر ${n}؟`))return;const r=await fetch('/api/admin/ban',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n})});const d=await r.json();if(d.ok){toast('🚫 تم حظر '+n,'k');refAdmin();}}

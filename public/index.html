@@ -237,6 +237,160 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 .rk-member{background:rgba(66,165,245,.15);color:#90caf9;border-color:rgba(66,165,245,.2);}
 .rk-visitor{background:rgba(255,255,255,.08);color:#ccc;border-color:rgba(255,255,255,.15);}
 
+/* ===== FOOTER ===== */
+.site-footer {
+  background: rgba(5,10,20,.9);
+  border-top: 1px solid rgba(245,166,35,.15);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.footer-links { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.footer-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--mut);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  transition: .2s;
+}
+.footer-btn:hover { border-color: rgba(245,166,35,.4); color: var(--gl); background: rgba(245,166,35,.07); }
+.footer-copy { font-size: 11px; color: rgba(255,255,255,.25); }
+
+/* ===== POLICY MODAL ===== */
+.policy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(5,13,26,.95);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: .3s;
+}
+.policy-overlay.on { opacity: 1; pointer-events: all; }
+.policy-modal {
+  background: linear-gradient(145deg,#0d1f3c,#0a1628);
+  border: 1px solid rgba(245,166,35,.2);
+  border-radius: 20px;
+  width: 720px;
+  max-width: 95vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transform: translateY(30px);
+  transition: .4s cubic-bezier(.34,1.56,.64,1);
+}
+.policy-modal::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--gl),var(--gold),transparent);
+}
+.policy-overlay.on .policy-modal { transform: translateY(0); }
+.policy-hdr {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0;
+}
+.policy-tabs {
+  display: flex;
+  gap: 8px;
+}
+.policy-tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--mut);
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: .2s;
+}
+.policy-tab.active {
+  background: rgba(245,166,35,.15);
+  border-color: rgba(245,166,35,.4);
+  color: var(--gl);
+}
+.policy-close {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--mut);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: .2s;
+}
+.policy-close:hover { background: rgba(239,83,80,.2); color: white; }
+.policy-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  line-height: 1.9;
+  color: rgba(255,255,255,.8);
+  font-size: 13px;
+}
+.policy-body::-webkit-scrollbar { width: 4px; }
+.policy-body::-webkit-scrollbar-thumb { background: rgba(245,166,35,.3); border-radius: 4px; }
+.policy-body h2 {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  background: linear-gradient(135deg,var(--gl),var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+.policy-body h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gl);
+  margin: 20px 0 8px;
+  padding-right: 10px;
+  border-right: 3px solid var(--gold);
+}
+.policy-body p { margin-bottom: 12px; }
+.policy-body .rule {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.policy-body .rule-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.policy-body .rule-text { flex: 1; }
+.policy-footer {
+  padding: 14px 24px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  text-align: center;
+  font-size: 11px;
+  color: var(--mut);
+  flex-shrink: 0;
+}
+
 /* ===== EMOJI PICKER FULL ===== */
 .epicker {
   position:absolute;
@@ -438,6 +592,31 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     <div class="fc"><span class="fi2">💌</span><div class="ft">رسائل خاصة</div><div class="fd">تحدث بخصوصية</div></div>
     <div class="fc"><span class="fi2">🗄️</span><div class="ft">قاعدة بيانات</div><div class="fd">حفظ الرسائل</div></div>
   </div>
+  <!-- SITE FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-links">
+      <button class="footer-btn" onclick="openPolicy('terms')">📋 قوانين الاستخدام</button>
+      <button class="footer-btn" onclick="openPolicy('privacy')">🔒 سياسة الخصوصية</button>
+      <button class="footer-btn" onclick="openPolicy('rules')">⚖️ الشروط والأحكام</button>
+    </div>
+    <div class="footer-copy">© 2026 غزل عراقي — جميع الحقوق محفوظة 🇮🇶</div>
+  </footer>
+</div>
+
+<!-- POLICY MODAL -->
+<div class="policy-overlay" id="policy-overlay">
+  <div class="policy-modal">
+    <div class="policy-hdr">
+      <div class="policy-tabs">
+        <button class="policy-tab active" id="ptab-terms" onclick="switchPolicyTab('terms')">📋 القوانين</button>
+        <button class="policy-tab" id="ptab-privacy" onclick="switchPolicyTab('privacy')">🔒 الخصوصية</button>
+        <button class="policy-tab" id="ptab-rules" onclick="switchPolicyTab('rules')">⚖️ الشروط</button>
+      </div>
+      <button class="policy-close" onclick="closePolicy()">✕</button>
+    </div>
+    <div class="policy-body" id="policy-body"></div>
+    <div class="policy-footer">غزل عراقي — نلتزم بحماية خصوصيتك وتوفير بيئة دردشة آمنة 🔐</div>
+  </div>
 </div>
 
 <!-- VISITOR MODAL -->
@@ -459,6 +638,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   <div class="fg"><label class="fl">كلمة المرور</label><input type="password" class="fi" id="lp" placeholder="••••••"></div>
   <div class="fmsg" id="lm-msg"></div>
   <button class="btn btn-p btn-full" onclick="loginM()">دخول →</button>
+  <p style="text-align:center;margin-top:12px;font-size:11px;color:var(--mut);">بتسجيل دخولك أنت توافق على <button onclick="openPolicy('terms')" style="background:transparent;border:none;color:var(--gl);cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;text-decoration:underline;">قوانين الاستخدام</button></p>
 </div></div>
 
 <!-- REGISTER MODAL -->
@@ -475,6 +655,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   </div>
   <div class="fmsg" id="rm-msg"></div>
   <button class="btn btn-p btn-full" onclick="regM()">سجل الآن →</button>
+  <p style="text-align:center;margin-top:12px;font-size:11px;color:var(--mut);">بالتسجيل أنت توافق على <button onclick="openPolicy('terms')" style="background:transparent;border:none;color:var(--gl);cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;text-decoration:underline;">قوانين وشروط الاستخدام</button></p>
 </div></div>
 
 <!-- CHAT PAGE -->
@@ -485,6 +666,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
       <button class="cnav-btn on" id="rooms-btn" onclick="openRoomsPanel()">🏠 الغرف</button>
       <button class="cnav-btn" id="admin-btn" onclick="openAdmin()" style="display:none;">👑 الأدمن</button>
       <button class="cnav-btn" id="chpass-btn" onclick="openChangePass()" style="display:none;">🔐 كلمة المرور</button>
+      <button class="cnav-btn" onclick="openPolicy('terms')" style="font-size:10px;">📋 القوانين</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sbdg"><div class="sdot"></div><span id="co">0</span></div>
@@ -571,7 +753,10 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   <div class="fg"><label class="fl">تأكيد كلمة المرور</label><input type="password" class="fi" id="rpp2" placeholder="تأكيد كلمة المرور..."></div>
   <div class="fmsg" id="rpm-msg"></div>
   <button class="btn btn-p btn-full" onclick="resetPass()">تغيير كلمة المرور →</button>
-</div>  <!-- MOBILE BOTTOM NAV -->
+</div>  <!-- CHAT PAGE FOOTER LINKS -->
+  <div style="display:none;" id="chat-footer-links"></div>
+
+  <!-- MOBILE BOTTOM NAV -->
   <div class="mob-nav" id="mob-nav">
     <button class="mob-nav-btn active" id="mn-chat" onclick="mobTab('chat')">
       <span>💬</span><span>الدردشة</span>
@@ -584,6 +769,9 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     </button>
     <button class="mob-nav-btn" id="mn-admin" onclick="mobAdmin()" style="display:none;">
       <span>👑</span><span>الأدمن</span>
+    </button>
+    <button class="mob-nav-btn" onclick="openPolicy('terms')">
+      <span>📋</span><span>القوانين</span>
     </button>
     <button class="mob-nav-btn" onclick="logout()">
       <span>🚪</span><span>خروج</span>
@@ -1420,6 +1608,130 @@ function showMobAdmin() {
     document.getElementById('mn-admin').style.display = 'flex';
   }
 }
+
+// ===== POLICY CONTENT =====
+const POLICY_CONTENT = {
+  terms: `
+    <h2>📋 قوانين وشروط استخدام غزل عراقي</h2>
+    <p>نحرص في <strong>غزل عراقي</strong> على الحفاظ على بيئة دردشة آمنة ومحترمة للجميع. يجب على كل مستخدم قراءة هذه القوانين والالتزام بها حرفياً.</p>
+    
+    <h3>🤝 الاحترام المتبادل</h3>
+    <div class="rule"><span class="rule-icon">✅</span><span class="rule-text">التعامل مع الجميع باحترام دون استخدام أي لغة غير أخلاقية لأي سبب كان.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">يمنع منعاً باتاً السب والشتم والكلام الجارح بأي لغة كانت.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">يمنع التحرش أو الإيذاء اللفظي أو العاطفي لأي مستخدم.</span></div>
+
+    <h3>🔐 أمان الحساب</h3>
+    <div class="rule"><span class="rule-icon">⚠️</span><span class="rule-text">يمنع منعاً باتاً إعطاء كلمة سر حسابك لأي شخص. الإدارة لا تتحمل مسؤولية فقدان العضوية.</span></div>
+    <div class="rule"><span class="rule-icon">⚠️</span><span class="rule-text">ضع كلمات سر قوية تحتوي على رموز وأحرف كبيرة وصغيرة وأرقام.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">يمنع انتحال شخصية إدارية أو استخدام اسم سوبر أو ادمن أو مشرف — يترتب عليه الطرد المباشر.</span></div>
+
+    <h3>🔞 المحتوى المسموح به</h3>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">عدم التكلم بالمحتوى الإباحي أو نشر صور جنسية في العام أو إحداث فوضى في الدردشة.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">عدم نشر المحتوى السياسي بشتى أنواعه.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">عدم استخدام صور رمزية غير لائقة أو مخلة بالآداب.</span></div>
+
+    <h3>📱 البيانات الشخصية</h3>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">عدم كتابة أرقام الهواتف أو الحسابات الشخصية أو الإيميلات في المحادثات العامة أو الخاصة.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">عدم نشر حسابات التواصل الاجتماعي.</span></div>
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">عدم نشر روابط أو دعوة لأي موقع آخر خارج نطاق غزل عراقي.</span></div>
+
+    <h3>👤 العضوية</h3>
+    <div class="rule"><span class="rule-icon">📌</span><span class="rule-text">لا يحق لأي مستخدم التسجيل بأكثر من عضوية واحدة.</span></div>
+    <div class="rule"><span class="rule-icon">📌</span><span class="rule-text">عدم التسجيل بأسماء غير لائقة تتضمن أرقاماً أو كلمات غير مسموح بها.</span></div>
+
+    <h3>⚖️ العقوبات</h3>
+    <div class="rule"><span class="rule-icon">🔴</span><span class="rule-text">ستتخذ الإدارة الحظر الجزئي أو الكلي ضد حسابك عند مخالفة أي من الشروط أعلاه.</span></div>
+    <div class="rule"><span class="rule-icon">🔴</span><span class="rule-text">يتم تطبيق النظام على جميع المستخدمين بلا استثناء حتى الإداريين والمشتركين بالعضويات المدفوعة.</span></div>
+  `,
+
+  privacy: `
+    <h2>🔒 سياسة الخصوصية — غزل عراقي</h2>
+    <p>تشكل خصوصية زوارنا اهتماماً كبيراً لنا في <strong>غزل عراقي</strong>. نلتزم بحماية خصوصية مستخدمينا ونرغب بإطلاعك على طبيعة البيانات والمعلومات التي نجمعها وكيفية استخدامنا لها.</p>
+
+    <h3>📋 قبول سياسة الخصوصية</h3>
+    <p>استخدامك لأي من صفحات أو خدمات غزل عراقي يعني قبولك لسياسة الخصوصية الخاصة بنا منذ اللحظة الأولى لاستخدامك لخدماتنا. إذا كنت لا توافق على بنود هذه السياسة عليك مغادرة الموقع فوراً.</p>
+
+    <h3>📁 ملفات السجل</h3>
+    <p>مثل العديد من المواقع، يقوم غزل عراقي بجمع بعض المعلومات عن الزوار مثل: رقم الـ IP، الشركة المزودة لخدمة الإنترنت، بلد الزائر، وتحركاته داخل الموقع. تُستخدم هذه المعلومات لإدارة الموقع ومعرفة توجهات المستخدمين بشكل مجهول.</p>
+
+    <h3>🍪 ملفات الارتباط (Cookies)</h3>
+    <p>يستخدم غزل عراقي ملفات الارتباط لتخزين تفضيلات المستخدمين ومعلومات الجلسة، وذلك لأغراض إدارة الموقع وتحسين تجربة المستخدم.</p>
+
+    <h3>🔐 أمان البيانات</h3>
+    <p>نحرص على التعامل مع أفضل الشركات المزودة لخدمات الإنترنت ونراجع سياسات الأمان المتبعة. كلمات المرور مشفرة بالكامل ولا يمكن لأحد — حتى الإدارة — الاطلاع عليها.</p>
+
+    <h3>👶 خصوصية الأطفال</h3>
+    <p>لا تتعامل خدمتنا مع أي شخص يقل عمره عن 18 عاماً. إذا كنت أحد الوالدين وتعلم أن طفلك يستخدم الموقع، يرجى التواصل معنا فوراً.</p>
+
+    <h3>💬 المحادثات المخزنة</h3>
+    <p>قد نقوم من وقت لآخر بتخزين المحادثات العامة في غرف الدردشة لأغراض تقنية فقط، ولفترة محدودة ثم تُحذف. لا نراقب أو نسجل المحادثات الخاصة بأي شكل.</p>
+
+    <h3>🔄 تحديث السياسة</h3>
+    <p>قد نقوم بتغيير سياسة الخصوصية من وقت لآخر. ننصحك بالاطلاع عليها بشكل دوري.</p>
+
+    <p style="margin-top:20px;padding:12px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:10px;font-size:12px;color:var(--gl);">
+      📧 للتواصل مع الإدارة بخصوص الخصوصية يمكنك مراسلتنا عبر القنوات الرسمية للموقع.
+    </p>
+  `,
+
+  rules: `
+    <h2>⚖️ الشروط والأحكام العامة</h2>
+    <p>باستخدامك لموقع <strong>غزل عراقي</strong> فأنت توافق على الشروط والأحكام التالية:</p>
+
+    <h3>📌 شروط الاستخدام العامة</h3>
+    <div class="rule"><span class="rule-icon">1️⃣</span><span class="rule-text"><strong>العمر المسموح:</strong> يُشترط أن يكون عمر المستخدم 18 عاماً أو أكثر لاستخدام خدمات الموقع.</span></div>
+    <div class="rule"><span class="rule-icon">2️⃣</span><span class="rule-text"><strong>المسؤولية الشخصية:</strong> أنت مسؤول مسؤولية كاملة عن كل ما تنشره أو تكتبه على الموقع.</span></div>
+    <div class="rule"><span class="rule-icon">3️⃣</span><span class="rule-text"><strong>حقوق الملكية:</strong> يُمنع نشر أي مواد تنتهك حقوق الملكية الفكرية لأفراد أو شركات أخرى.</span></div>
+
+    <h3>🛡️ مسؤولية الإدارة</h3>
+    <div class="rule"><span class="rule-icon">✅</span><span class="rule-text">تسعى إدارة غزل عراقي لتوفير بيئة دردشة آمنة ومحترمة على مدار الساعة.</span></div>
+    <div class="rule"><span class="rule-icon">✅</span><span class="rule-text">تحق للإدارة تعليق أو إنهاء أي حساب يخالف القوانين دون إشعار مسبق.</span></div>
+    <div class="rule"><span class="rule-icon">⚠️</span><span class="rule-text">الإدارة غير مسؤولة عن أي محتوى ينشره المستخدمون بشكل شخصي.</span></div>
+
+    <h3>💰 سياسة رد الأموال</h3>
+    <p>في حالات شراء العضويات أو الخدمات المدفوعة، لا يوجد سياسة رد الأموال. مع ذلك نلتزم بتعويض عن أي مدة خسرتها بسبب عطل تقني من طرفنا.</p>
+
+    <div class="rule"><span class="rule-icon">🚫</span><span class="rule-text">لا نقوم بتعويض الحسابات التي تم حذفها بسبب انتهاك القوانين.</span></div>
+
+    <h3>📅 تاريخ السريان</h3>
+    <p>هذه الشروط سارية المفعول منذ إنشاء الموقع وتخضع للتحديث الدوري. آخر تحديث: فبراير 2026.</p>
+
+    <p style="margin-top:20px;padding:12px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:10px;font-size:12px;color:#a5d6a7;">
+      ✅ باستخدامك للموقع فأنت تؤكد قراءتك وموافقتك الكاملة على جميع الشروط والأحكام المذكورة أعلاه.
+    </p>
+  `
+};
+
+let currentPolicyTab = 'terms';
+
+function openPolicy(tab) {
+  currentPolicyTab = tab || 'terms';
+  switchPolicyTab(currentPolicyTab);
+  document.getElementById('policy-overlay').classList.add('on');
+}
+
+function closePolicy() {
+  document.getElementById('policy-overlay').classList.remove('on');
+}
+
+function switchPolicyTab(tab) {
+  currentPolicyTab = tab;
+  // Update tabs
+  ['terms','privacy','rules'].forEach(t => {
+    document.getElementById('ptab-' + t)?.classList.toggle('active', t === tab);
+  });
+  // Update content
+  const body = document.getElementById('policy-body');
+  if (body) {
+    body.innerHTML = POLICY_CONTENT[tab] || '';
+    body.scrollTop = 0;
+  }
+}
+
+// Close on overlay click
+document.getElementById('policy-overlay')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('policy-overlay')) closePolicy();
+});
 
 function upOC(n){document.getElementById('oc').textContent=n;document.getElementById('co').textContent=n;}
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}

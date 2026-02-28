@@ -398,6 +398,14 @@ async function saveMessage(room, username, text, type='chat') {
   return msg;
 }
 
+function broadcastRoomCounts() {
+  const counts = {};
+  Object.keys(ROOMS).forEach(r => {
+    counts[r] = getRoomUsers(r).length;
+  });
+  io.emit('room-counts', counts);
+}
+
 io.on('connection', (socket) => {
 
   socket.on('join', async (data) => {
@@ -435,6 +443,8 @@ io.on('connection', (socket) => {
 
     socket.emit('init', { rooms: ROOMS, user, messages: history, onlineCount: Object.keys(chatUsers).length });
     io.emit('online-count', Object.keys(chatUsers).length);
+    // Broadcast room counts to all
+    broadcastRoomCounts();
 
     const sysMsg = await saveMessage('general', null, `🌟 ${user.name} انضم إلى الغرفة`, 'system');
     io.to('general').emit('message', { ...sysMsg, rank: user.rank });
@@ -467,6 +477,7 @@ io.on('connection', (socket) => {
     const joinMsg = await saveMessage(roomId, null, `🌟 ${user.name} انضم إلى الغرفة`, 'system');
     io.to(roomId).emit('message', joinMsg);
     io.to(roomId).emit('room-users', getRoomUsers(roomId));
+    broadcastRoomCounts();
   });
 
   // Rate limiting per socket
@@ -593,6 +604,7 @@ io.on('connection', (socket) => {
     io.to(room).emit('message', msg);
     io.to(room).emit('room-users', getRoomUsers(room));
     io.emit('online-count', Object.keys(chatUsers).length);
+    broadcastRoomCounts();
   });
 });
 

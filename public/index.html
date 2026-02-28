@@ -237,6 +237,54 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 .rk-member{background:rgba(66,165,245,.15);color:#90caf9;border-color:rgba(66,165,245,.2);}
 .rk-visitor{background:rgba(255,255,255,.08);color:#ccc;border-color:rgba(255,255,255,.15);}
 
+/* ===== EMOJI PICKER FULL ===== */
+.epicker {
+  position:absolute;
+  bottom:70px;
+  right:10px;
+  left:10px;
+  background:linear-gradient(145deg,#0d1f3c,#0a1628);
+  border:1px solid rgba(245,166,35,.2);
+  border-radius:16px;
+  padding:10px;
+  display:none;
+  flex-direction:column;
+  gap:8px;
+  z-index:50;
+  box-shadow:0 15px 50px rgba(0,0,0,.6);
+  max-height:280px;
+}
+.epicker.on { display:flex; }
+.ep-cats {
+  display:flex;
+  gap:4px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  padding-bottom:8px;
+  flex-wrap:wrap;
+}
+.ep-cat {
+  background:transparent;
+  border:none;
+  font-size:20px;
+  cursor:pointer;
+  padding:5px 8px;
+  border-radius:8px;
+  transition:.15s;
+}
+.ep-cat:hover, .ep-cat.active {
+  background:rgba(245,166,35,.2);
+  transform:scale(1.15);
+}
+.ep-grid {
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:3px;
+  overflow-y:auto;
+  max-height:180px;
+}
+.ep-grid::-webkit-scrollbar { width:3px; }
+.ep-grid::-webkit-scrollbar-thumb { background:rgba(245,166,35,.3); border-radius:3px; }
+
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
 
@@ -260,6 +308,17 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   /* Input area - bigger on mobile */
   .cin-area { padding: 10px 12px; }
   .cin { font-size: 15px; }
+
+  /* Emoji picker on mobile - full width bottom sheet */
+  .epicker {
+    position: fixed !important;
+    bottom: 60px !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 300px !important;
+  }
+  .ep-grid { grid-template-columns: repeat(7, 1fr) !important; }
 
   /* Messages */
   .msgs { padding: 10px; }
@@ -423,7 +482,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   <div class="chat-hdr">
     <div class="clogo" onclick="logout()"><div class="clogo-ic">💬</div><span class="clogo-t">غزل عراقي</span></div>
     <div class="cnav">
-      <button class="cnav-btn on">🏠 الغرف</button>
+      <button class="cnav-btn on" id="rooms-btn" onclick="openRoomsPanel()">🏠 الغرف</button>
       <button class="cnav-btn" id="admin-btn" onclick="openAdmin()" style="display:none;">👑 الأدمن</button>
       <button class="cnav-btn" id="chpass-btn" onclick="openChangePass()" style="display:none;">🔐 كلمة المرور</button>
     </div>
@@ -458,12 +517,17 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
         <div class="welcome">🌟 أهلاً وسهلاً بكم في غزل عراقي 🌟</div>
       </div>
       <div class="epicker" id="ep">
-        <button class="eb" onclick="ae('😊')">😊</button><button class="eb" onclick="ae('😂')">😂</button><button class="eb" onclick="ae('❤️')">❤️</button><button class="eb" onclick="ae('🔥')">🔥</button>
-        <button class="eb" onclick="ae('👍')">👍</button><button class="eb" onclick="ae('🌹')">🌹</button><button class="eb" onclick="ae('😍')">😍</button><button class="eb" onclick="ae('🤣')">🤣</button>
-        <button class="eb" onclick="ae('💕')">💕</button><button class="eb" onclick="ae('😎')">😎</button><button class="eb" onclick="ae('🎉')">🎉</button><button class="eb" onclick="ae('💯')">💯</button>
-        <button class="eb" onclick="ae('🌙')">🌙</button><button class="eb" onclick="ae('⭐')">⭐</button><button class="eb" onclick="ae('🎵')">🎵</button><button class="eb" onclick="ae('💎')">💎</button>
-        <button class="eb" onclick="ae('👸')">👸</button><button class="eb" onclick="ae('🤴')">🤴</button><button class="eb" onclick="ae('🌺')">🌺</button><button class="eb" onclick="ae('😘')">😘</button>
-        <button class="eb" onclick="ae('🥰')">🥰</button><button class="eb" onclick="ae('🤗')">🤗</button><button class="eb" onclick="ae('😴')">😴</button><button class="eb" onclick="ae('🙈')">🙈</button>
+        <div class="ep-cats">
+          <button class="ep-cat active" onclick="showCat('faces')">😊</button>
+          <button class="ep-cat" onclick="showCat('hearts')">❤️</button>
+          <button class="ep-cat" onclick="showCat('nature')">🌹</button>
+          <button class="ep-cat" onclick="showCat('food')">🍕</button>
+          <button class="ep-cat" onclick="showCat('activity')">⚽</button>
+          <button class="ep-cat" onclick="showCat('travel')">🌍</button>
+          <button class="ep-cat" onclick="showCat('symbols')">💯</button>
+          <button class="ep-cat" onclick="showCat('flags')">🇮🇶</button>
+        </div>
+        <div class="ep-grid" id="ep-grid"></div>
       </div>
       <div class="cin-area">
         <div class="cin-bar">
@@ -703,7 +767,26 @@ window.onload = () => {
 // SOCKET EVENTS
 socket.on('init',(d)=>{rd=d.rooms;renderRooms();upOC(d.onlineCount);d.messages.forEach(m=>renderMsg(m));});
 socket.on('message',m=>{if(m.room===cr)renderMsg(m);});
-socket.on('room-users',u=>{renderUsers(u);document.getElementById('crc').textContent=`🟢 ${u.length} متصل`;});
+socket.on('room-counts', counts => {
+  Object.entries(counts).forEach(([id, count]) => {
+    // Update desktop rooms list
+    const el = document.getElementById('rc-' + id);
+    if (el) el.textContent = count + ' متصل';
+    // Update mobile rooms list
+    const mob = document.getElementById('mrc-' + id);
+    if (mob) mob.textContent = count + ' متصل';
+  });
+});
+
+socket.on('room-users',u=>{
+  renderUsers(u);
+  document.getElementById('crc').textContent=`🟢 ${u.length} متصل`;
+  // Update count in rooms list
+  const rcEl = document.getElementById('rc-'+cr);
+  if(rcEl) rcEl.textContent = u.length + ' متصل';
+  const rcMobEl = document.getElementById('mrc-'+cr);
+  if(rcMobEl) rcMobEl.textContent = u.length + ' متصل';
+});
 socket.on('room-history',d=>{if(d.roomId===cr){const c=document.getElementById('msgs');c.innerHTML=`<div class="welcome">🌟 أهلاً في ${rd[d.roomId]?.name||d.roomId} 🌟</div>`;d.messages.forEach(m=>renderMsg(m));renderUsers(d.users);document.getElementById('crc').textContent=`🟢 ${d.users.length} متصل`;}});
 socket.on('online-count',upOC);
 socket.on('system-notice',t=>{const c=document.getElementById('msgs');const d=document.createElement('div');d.className='ntc';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;});
@@ -850,6 +933,53 @@ function addSec(c,t,users){
   });
 }
 
+// ===== EMOJI LIBRARY =====
+const EMOJIS = {
+  faces: ['😊','😂','🤣','😍','😘','🥰','😎','🤗','😴','🙈','😮','😢','😭','😡','🤔','😏','😒','🙄','😜','🤪','😋','🤩','🥳','😇','🤭','😤','😠','😱','😨','🤯','🥺','😞','😔','😩','😫','🤧','🤒','😷','🤢','🤮','👻','💀','👽','🤖','💩'],
+  hearts: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💕','💞','💓','💗','💖','💘','💝','💟','❣️','💔','❤️‍🔥','❤️‍🩹','💏','💑','👫','👬','👭'],
+  nature: ['🌹','🌷','🌸','🌺','🌻','🌼','💐','🍀','🌿','🌱','🌲','🌳','🌴','🍁','🍂','🍃','🌾','☘️','🌵','🎋','🎍','🌙','⭐','🌟','💫','✨','☀️','🌤️','⛅','🌈','🌊','🌬️','❄️','⛄','🔥','💧','🌍','🌎','🌏'],
+  food: ['🍕','🍔','🌮','🌯','🍟','🌭','🍿','🧆','🧇','🥞','🧈','🍳','🥚','🧀','🥗','🥙','🥪','🍱','🍣','🍜','🍝','🍛','🍲','🥘','🫕','🥫','🧂','🍩','🍪','🎂','🍰','🧁','🍫','🍬','🍭','🍦','🍨','🍧','🍡','🍮','🍯','☕','🧋','🥤','🍵','🧃','🍺','🍻','🥂','🍷'],
+  activity: ['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🥏','🎱','🎮','🕹️','🎰','🎲','♟️','🎯','🎳','🏓','🏸','🥊','🥋','🤼','🤸','⛹️','🤺','🏊','🚴','🏋️','🤾','🧘','🎭','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🪕','🎻'],
+  travel: ['🚗','🚕','🚙','🏎️','🚓','🚑','🚒','🛻','🚐','🚌','🚎','🚂','🚃','🚄','✈️','🚀','🛸','🚁','⛵','🚢','🛳️','🏠','🏡','🏢','🏰','🏯','🗼','🗽','⛩️','🕌','🕍','⛪','🌉','🌃','🌆','🌇','🎠','🎡','🎢','🌁'],
+  symbols: ['💯','✅','❌','⚠️','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🔶','🔷','🔸','🔹','🔺','🔻','💠','🔘','🔲','🔳','▶️','⏩','⏫','⏬','⏪','🔄','🔃','🎵','🎶','🔔','🔕','📢','📣','💬','💭','🗨️','🗯️','👋','👍','👎','👏','🙌','🤲','🤝','🙏','✊','👊','🤜','🤛','☝️','👆','👇','👈','👉','💪','🦾','🖐️','✋','🤚','👌','🤌','🤏','✌️','🤞','🖖'],
+  flags: ['🇮🇶','🇸🇦','🇦🇪','🇰🇼','🇶🇦','🇧🇭','🇴🇲','🇾🇪','🇯🇴','🇸🇾','🇱🇧','🇵🇸','🇪🇬','🇱🇾','🇹🇳','🇩🇿','🇲🇦','🇸🇩','🇸🇴','🇩🇯','🇰🇲','🇲🇷','🇹🇷','🇮🇷','🇵🇰','🇦🇫','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇷🇺','🇨🇳','🇯🇵','🇧🇷','🇮🇳'],
+};
+
+let currentCat = 'faces';
+function showCat(cat) {
+  currentCat = cat;
+  document.querySelectorAll('.ep-cat').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderEmojiGrid(cat);
+}
+
+function renderEmojiGrid(cat) {
+  const grid = document.getElementById('ep-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  (EMOJIS[cat] || EMOJIS.faces).forEach(em => {
+    const b = document.createElement('button');
+    b.className = 'eb';
+    b.textContent = em;
+    b.onclick = () => ae(em);
+    grid.appendChild(b);
+  });
+}
+
+function te() {
+  eo = !eo;
+  const picker = document.getElementById('ep');
+  picker.classList.toggle('on', eo);
+  if (eo) renderEmojiGrid(currentCat);
+}
+
+// Open rooms panel - works on both mobile and desktop
+function openRoomsPanel() {
+  if (window.innerWidth <= 768) {
+    openMobDrawer('rooms');
+  }
+}
+
 let lastSent = {text:'', time:0};
 function sm(){
   const i=document.getElementById('min');
@@ -868,8 +998,12 @@ function sm(){
   if(eo)te();
 }
 function hk(e){if(e.key==='Enter')sm();}
-function te(){eo=!eo;document.getElementById('ep').classList.toggle('on',eo);}
-function ae(e){document.getElementById('min').value+=e;document.getElementById('min').focus();}
+// te() defined above
+function ae(e){
+  document.getElementById('min').value += e;
+  document.getElementById('min').focus();
+  // Don't close picker after selecting emoji
+}
 document.addEventListener('click',e=>{if(eo&&!e.target.closest('#ep')&&!e.target.closest('.ibe')){eo=false;document.getElementById('ep').classList.remove('on');}});
 
 function openCtx(e,n){

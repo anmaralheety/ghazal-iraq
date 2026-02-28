@@ -781,14 +781,35 @@ function enterChat(){
   b.style.background=(RK_COLOR[cu.rank]||'#b0bec5')+'15';
 }
 
-// Check session on load
+// Check session on load - wait for socket to connect first
 window.onload = () => {
   const saved = sessionStorage.getItem('ghazal_user');
-  if (saved) { cu = JSON.parse(saved); enterChat(); }
+  if (saved) {
+    cu = JSON.parse(saved);
+    // If socket already connected, join now
+    if (socket.connected) {
+      enterChat();
+    } else {
+      // Wait for connection
+      socket.once('connect', () => enterChat());
+    }
+  }
 };
 
 // SOCKET EVENTS
-socket.on('init',(d)=>{rd=d.rooms;renderRooms();upOC(d.onlineCount);d.messages.forEach(m=>renderMsg(m));});
+socket.on('init',(d)=>{
+  rd = d.rooms;
+  renderRooms();
+  upOC(d.onlineCount);
+  d.messages.forEach(m=>renderMsg(m));
+  // Broadcast initial room counts
+  if(d.roomCounts) {
+    Object.entries(d.roomCounts).forEach(([id,count]) => {
+      const el = document.getElementById('rc-'+id);
+      if(el) el.textContent = count + ' متصل';
+    });
+  }
+});
 socket.on('message',m=>{if(m.room===cr)renderMsg(m);});
 socket.on('room-counts', counts => {
   Object.entries(counts).forEach(([id, count]) => {

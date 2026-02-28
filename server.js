@@ -512,7 +512,11 @@ io.on('connection', (socket) => {
       history = memMessages['general'] || [];
     }
 
-    socket.emit('init', { rooms: ROOMS, user, messages: history, onlineCount: Object.keys(chatUsers).length });
+    // Calculate room counts
+    const roomCounts = {};
+    Object.keys(ROOMS).forEach(r => { roomCounts[r] = getRoomUsers(r).length; });
+    
+    socket.emit('init', { rooms: ROOMS, user, messages: history, onlineCount: Object.keys(chatUsers).length, roomCounts });
     io.emit('online-count', Object.keys(chatUsers).length);
     // Broadcast room counts to all
     broadcastRoomCounts();

@@ -623,11 +623,21 @@ function closeM(t){document.getElementById(t+'m').classList.remove('on');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
 function setMsg(id,m,t){const el=document.getElementById(id);el.textContent=m;el.className=`fmsg ${t}`;}
 
+const CLIENT_BAD = ['زب','كس','طيز','نيك','شرموط','قحب','عاهر','سكس','sex','porn','fuck','dick','cock','pussy','slut','whore','69','xxx'];
+function checkUsername(name) {
+  const n = name.toLowerCase().replace(/\s/g,'');
+  for (const w of CLIENT_BAD) {
+    if (n.includes(w)) return false;
+  }
+  return true;
+}
+
 function joinV(){
   const n=document.getElementById('vn').value.trim();
-  if(!n)return;
+  if(!n) return setMsg('vm-msg','أدخل اسمك','e');
+  if(n.length < 2) return setMsg('vm-msg','الاسم قصير جداً','e');
+  if(!checkUsername(n)) return setMsg('vm-msg','❌ الاسم غير مقبول - اختر اسماً لائقاً','e');
   cu={name:n,age:document.getElementById('va').value,gender:document.getElementById('vg').value,rank:'visitor'};
-  // Save to session
   sessionStorage.setItem('ghazal_user', JSON.stringify(cu));
   closeM('v');enterChat();
 }
@@ -649,6 +659,7 @@ async function regM(){
   const n=document.getElementById('rn').value.trim(),p=document.getElementById('rp').value,p2=document.getElementById('rp2').value;
   const a=document.getElementById('ra').value,g=document.getElementById('rg').value;
   if(!n||!p)return setMsg('rm-msg','أدخل جميع البيانات','e');
+  if(!checkUsername(n))return setMsg('rm-msg','❌ اسم المستخدم غير مقبول - اختر اسماً لائقاً','e');
   if(p!==p2)return setMsg('rm-msg','كلمتا المرور غير متطابقتين','e');
   if(p.length<4)return setMsg('rm-msg','كلمة المرور قصيرة','e');
   try{
@@ -726,6 +737,19 @@ socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div cl
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
 socket.on('unmuted',m=>{toast('🔊 '+m,'k');const i=document.getElementById('min');i.disabled=false;i.placeholder='اكتب رسالتك هنا...';});
 socket.on('kicked',m=>{toast('🚫 '+m,'e');setTimeout(()=>logout(),2000);});
+socket.on('username-rejected', msg => {
+  // Go back to landing page and show error
+  document.getElementById('chat-page').style.display = 'none';
+  document.getElementById('landing').style.display = 'flex';
+  sessionStorage.removeItem('ghazal_user');
+  cu = null;
+  // Show modal with error
+  setTimeout(() => {
+    openM('v');
+    setMsg('vm-msg', msg, 'e');
+  }, 300);
+});
+
 socket.on('profanity-warning', data => {
   // Show warning toast
   toast(data.msg, 'e');

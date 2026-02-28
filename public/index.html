@@ -1048,20 +1048,36 @@ function mobAdmin() {
 
 // Sync mobile room/user lists
 function syncMobLists() {
-  if (!isMobile()) return;
+  // Sync rooms to mobile drawer
   const rlistMob = document.getElementById('rlist-mob');
-  const rlist = document.getElementById('rlist');
-  if (rlistMob && rlist) rlistMob.innerHTML = rlist.innerHTML;
-  // Re-attach click events
-  rlistMob.querySelectorAll('.ri').forEach(el => {
-    const id = el.id.replace('ri-', '');
-    if (rd[id]) {
-      el.onclick = () => { swRoom(id, rd[id]); closeMobDrawer('rooms'); };
-    }
-  });
+  if (rlistMob && Object.keys(rd).length) {
+    rlistMob.innerHTML = '';
+    Object.entries(rd).forEach(([id, r]) => {
+      const d = document.createElement('div');
+      d.className = 'ri' + (id === cr ? ' on' : '');
+      d.style.cssText = 'padding:14px 16px;margin-bottom:6px;cursor:pointer;';
+      d.innerHTML = `<div class="r-ic" style="width:40px;height:40px;font-size:20px;background:${RC[id]||'#333'};border-radius:10px;display:flex;align-items:center;justify-content:center;">${r.icon}</div>
+        <div style="flex:1;margin-right:10px;">
+          <div class="r-nm" style="font-size:14px;">${r.name}</div>
+          <div class="r-cn" style="font-size:12px;color:var(--mut);" id="mrc-${id}">0 متصل</div>
+        </div>`;
+      d.onclick = () => {
+        swRoom(id, r);
+        closeMobDrawer('rooms');
+        // Update active state in mobile list
+        rlistMob.querySelectorAll('.ri').forEach(x => x.classList.remove('on'));
+        d.classList.add('on');
+      };
+      rlistMob.appendChild(d);
+    });
+  }
+
+  // Sync users to mobile drawer  
   const ulistMob = document.getElementById('ulist-mob');
   const ulist = document.getElementById('ulist');
-  if (ulistMob && ulist) ulistMob.innerHTML = ulist.innerHTML;
+  if (ulistMob && ulist) {
+    ulistMob.innerHTML = ulist.innerHTML;
+  }
 }
 
 // Show admin button on mobile for admins

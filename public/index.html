@@ -311,7 +311,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 <!-- CHAT PAGE -->
 <div id="chat-page">
   <div class="chat-hdr">
-    <div class="clogo" onclick="location.reload()"><div class="clogo-ic">💬</div><span class="clogo-t">غزل عراقي</span></div>
+    <div class="clogo" onclick="logout()"><div class="clogo-ic">💬</div><span class="clogo-t">غزل عراقي</span></div>
     <div class="cnav">
       <button class="cnav-btn on">🏠 الغرف</button>
       <button class="cnav-btn" id="admin-btn" onclick="openAdmin()" style="display:none;">👑 الأدمن</button>
@@ -319,7 +319,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sbdg"><div class="sdot"></div><span id="co">0</span></div>
       <span id="my-badge" style="display:none;font-size:11px;padding:4px 10px;border-radius:50px;border:1px solid;"></span>
-      <button class="btn btn-g" style="padding:6px 12px;font-size:12px;" onclick="location.reload()">خروج</button>
+      <button class="btn btn-g" style="padding:6px 12px;font-size:12px;" onclick="logout()">خروج</button>
     </div>
   </div>
 
@@ -488,7 +488,7 @@ socket.on('system-notice',t=>{const c=document.getElementById('msgs');const d=do
 socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div class="welcome">🌟 تم مسح الغرفة 🌟</div>';});
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
 socket.on('unmuted',m=>{toast('🔊 '+m,'k');const i=document.getElementById('min');i.disabled=false;i.placeholder='اكتب رسالتك هنا...';});
-socket.on('kicked',m=>{toast('🚫 '+m,'e');setTimeout(()=>location.reload(),2000);});
+socket.on('kicked',m=>{toast('🚫 '+m,'e');setTimeout(()=>logout(),2000);});
 socket.on('private-message',pm=>{
   const o=pm.from===cu?.name?pm.to:pm.from;
   if(!document.getElementById('pm').classList.contains('on')||pmt3!==o){
@@ -633,6 +633,17 @@ async function aUnban(n){const r=await fetch('/api/admin/unban',{method:'POST',h
 async function aRank(n,rank){if(!rank)return;const r=await fetch('/api/admin/setrank',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n,rank})});const d=await r.json();if(d.ok){toast('✅ تم تغيير رتبة '+n,'k');refAdmin();}}
 async function clearRoom(id){if(!confirm(`مسح رسائل ${rd[id]?.name}؟`))return;const r=await fetch('/api/admin/clearroom',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({room:id})});const d=await r.json();if(d.ok)toast('🗑️ تم مسح الغرفة','k');}
 
+function logout(){
+  sessionStorage.removeItem('ghazal_user');
+  socket.disconnect();
+  cu = null;
+  cr = 'general';
+  document.getElementById('chat-page').style.display='none';
+  document.getElementById('landing').style.display='flex';
+  document.getElementById('msgs').innerHTML='<div class="welcome">🌟 أهلاً وسهلاً بكم في غزل عراقي 🌟</div>';
+  document.getElementById('rlist').innerHTML='';
+  document.getElementById('ulist').innerHTML='';
+}
 function upOC(n){document.getElementById('oc').textContent=n;document.getElementById('co').textContent=n;}
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>

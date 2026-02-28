@@ -142,6 +142,43 @@ app.post('/api/admin/setrank', adminAuth, async (req,res) => {
   res.json({ ok:true });
 });
 
+// Member changes their own password
+app.post('/api/changepass', async (req,res) => {
+  const { username, oldpassword, newpassword } = req.body;
+  if (!username || !oldpassword || !newpassword) return res.json({ ok:false, msg:'بيانات ناقصة' });
+  if (newpassword.length < 4) return res.json({ ok:false, msg:'كلمة المرور الجديدة قصيرة جداً' });
+  if (oldpassword === newpassword) return res.json({ ok:false, msg:'كلمة المرور الجديدة مطابقة للقديمة' });
+
+  const oldHashed = hashPassword(oldpassword);
+  const newHashed = hashPassword(newpassword);
+
+  if (useDB) {
+    // Verify old password first
+    const check = await db.query('SELECT id FROM users WHERE username=$1 AND password=$2', [username, oldHashed]);
+    if (!check.rows.length) return res.json({ ok:false, msg:'كلمة المرور القديمة خاطئة' });
+    await db.query('UPDATE users SET password=$1 WHERE username=$2', [newHashed, username]);
+  } else {
+    const u = memUsers[username];
+    if (!u || u.password !== oldHashed) return res.json({ ok:false, msg:'كلمة المرور القديمة خاطئة' });
+    u.password = newHashed;
+  }
+  res.json({ ok:true });
+});
+
+app.post('/api/admin/resetpass', adminAuth, async (req,res) => {
+  const { username, newpassword } = req.body;
+  if (!username || !newpassword || newpassword.length < 4) return res.json({ ok:false, msg:'كلمة المرور قصيرة' });
+  const hashed = hashPassword(newpassword);
+  if (useDB) {
+    const r = await db.query('UPDATE users SET password=$1 WHERE username=$2', [hashed, username]);
+    if (r.rowCount === 0) return res.json({ ok:false, msg:'المستخدم غير موجود' });
+  } else {
+    if (!memUsers[username]) return res.json({ ok:false, msg:'المستخدم غير موجود' });
+    memUsers[username].password = hashed;
+  }
+  res.json({ ok:true });
+});
+
 app.post('/api/admin/clearroom', adminAuth, async (req,res) => {
   const { room } = req.body;
   if (useDB) await db.query('DELETE FROM messages WHERE room=$1', [room]);

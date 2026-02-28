@@ -315,6 +315,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     <div class="cnav">
       <button class="cnav-btn on">🏠 الغرف</button>
       <button class="cnav-btn" id="admin-btn" onclick="openAdmin()" style="display:none;">👑 الأدمن</button>
+      <button class="cnav-btn" id="chpass-btn" onclick="openChangePass()" style="display:none;">🔐 كلمة المرور</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sbdg"><div class="sdot"></div><span id="co">0</span></div>
@@ -362,6 +363,32 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   </div>
 </div>
 
+<!-- CHANGE PASSWORD MODAL (for members) -->
+<div class="overlay" id="cpm"><div class="modal">
+  <div class="mhdr"><span class="mtit">🔐 تغيير كلمة المرور</span><button class="mcl" onclick="closeM('cp')">✕</button></div>
+  <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:11px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#a5d6a7;line-height:1.7;">
+    ✅ كلمة مرورك مشفرة ومحمية — حتى الأدمن لا يستطيع رؤيتها
+  </div>
+  <div class="fg"><label class="fl">كلمة المرور القديمة</label><input type="password" class="fi" id="cp-old" placeholder="كلمة المرور الحالية..."></div>
+  <div class="fg"><label class="fl">كلمة المرور الجديدة</label><input type="password" class="fi" id="cp-new" placeholder="كلمة المرور الجديدة..."></div>
+  <div class="fg"><label class="fl">تأكيد كلمة المرور الجديدة</label><input type="password" class="fi" id="cp-new2" placeholder="تأكيد كلمة المرور..."></div>
+  <div class="fmsg" id="cpm-msg"></div>
+  <button class="btn btn-p btn-full" onclick="changeMyPass()">تغيير كلمة المرور →</button>
+</div></div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="overlay" id="rpm"><div class="modal">
+  <div class="mhdr"><span class="mtit">🔑 إعادة تعيين كلمة المرور</span><button class="mcl" onclick="closeM('rp')">✕</button></div>
+  <div style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:11px;padding:13px;margin-bottom:16px;font-size:12px;color:var(--gl);line-height:1.7;">
+    ⚠️ هذه الميزة مخصصة للأدمن فقط لمساعدة الأعضاء الذين نسوا كلمة مرورهم
+  </div>
+  <div class="fg"><label class="fl">اسم المستخدم</label><input type="text" class="fi" id="rpu" placeholder="اسم المستخدم..."></div>
+  <div class="fg"><label class="fl">كلمة المرور الجديدة</label><input type="password" class="fi" id="rpp" placeholder="كلمة المرور الجديدة..."></div>
+  <div class="fg"><label class="fl">تأكيد كلمة المرور</label><input type="password" class="fi" id="rpp2" placeholder="تأكيد كلمة المرور..."></div>
+  <div class="fmsg" id="rpm-msg"></div>
+  <button class="btn btn-p btn-full" onclick="resetPass()">تغيير كلمة المرور →</button>
+</div></div>
+
 <!-- CTX MENU -->
 <div class="ctx" id="ctx">
   <div class="ctx-i" onclick="cxPM()">💌 رسالة خاصة</div>
@@ -391,6 +418,16 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     <div id="online-tbl" style="margin-bottom:32px;"></div>
     <h3 style="color:var(--gl);margin-bottom:16px;font-size:14px;">🗄️ جميع الأعضاء</h3>
     <div id="atbl2"></div>
+    <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🔑 إعادة تعيين كلمة المرور</h3>
+    <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:13px;color:var(--mut);margin-bottom:14px;">إذا نسي عضو كلمة مروره، يمكنك إعادة تعيينها من هنا</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" id="rpu-inline" class="fi" placeholder="اسم المستخدم..." style="flex:1;min-width:150px;">
+        <input type="password" id="rpp-inline" class="fi" placeholder="كلمة المرور الجديدة..." style="flex:1;min-width:150px;">
+        <button class="btn btn-p" style="padding:10px 18px;font-size:13px;flex-shrink:0;" onclick="resetPassInline()">🔑 تغيير</button>
+      </div>
+      <div class="fmsg" id="rpi-msg" style="margin-top:10px;"></div>
+    </div>
     <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🏠 إدارة الغرف</h3>
     <div id="rooms-tbl"></div>
   </div>
@@ -463,6 +500,10 @@ function enterChat(){
   socket.emit('join',cu);
   if(['owner','admin'].includes(cu.rank)){
     document.getElementById('admin-btn').style.display='flex';
+  }
+  // Show change password button only for registered members
+  if(cu.rank !== 'visitor'){
+    document.getElementById('chpass-btn').style.display='flex';
   }
   const b=document.getElementById('my-badge');
   b.style.display='inline-flex';
@@ -669,6 +710,59 @@ function logout(){
   document.getElementById('rlist').innerHTML='';
   document.getElementById('ulist').innerHTML='';
 }
+function openChangePass(){
+  if(cu?.rank === 'visitor'){
+    toast('⚠️ الزوار لا يملكون كلمة مرور — سجّل كعضو أولاً','e');
+    return;
+  }
+  document.getElementById('cp-old').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-new2').value='';
+  document.getElementById('cpm-msg').className='fmsg';
+  openM('cp');
+}
+
+async function changeMyPass(){
+  const oldp=document.getElementById('cp-old').value;
+  const newp=document.getElementById('cp-new').value;
+  const newp2=document.getElementById('cp-new2').value;
+  const msgEl=document.getElementById('cpm-msg');
+
+  if(!oldp||!newp||!newp2)return(msgEl.textContent='أدخل جميع الحقول',msgEl.className='fmsg e');
+  if(newp!==newp2)return(msgEl.textContent='كلمة المرور الجديدة غير متطابقة',msgEl.className='fmsg e');
+  if(newp.length<4)return(msgEl.textContent='كلمة المرور قصيرة جداً (4 أحرف على الأقل)',msgEl.className='fmsg e');
+  if(oldp===newp)return(msgEl.textContent='كلمة المرور الجديدة مطابقة للقديمة',msgEl.className='fmsg e');
+
+  try{
+    const r=await fetch('/api/changepass',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:cu.name,oldpassword:oldp,newpassword:newp})});
+    const d=await r.json();
+    if(!d.ok)return(msgEl.textContent=d.msg,msgEl.className='fmsg e');
+    msgEl.textContent='✅ تم تغيير كلمة المرور بنجاح!';
+    msgEl.className='fmsg k';
+    toast('✅ تم تغيير كلمة المرور بنجاح','k');
+    setTimeout(()=>{closeM('cp');},2000);
+  }catch(e){msgEl.textContent='خطأ في الاتصال';msgEl.className='fmsg e';}
+}
+
+async function resetPassInline(){
+  const u=document.getElementById('rpu-inline').value.trim();
+  const p=document.getElementById('rpp-inline').value;
+  const msgEl=document.getElementById('rpi-msg');
+  if(!u||!p)return (msgEl.textContent='أدخل اسم المستخدم وكلمة المرور',msgEl.className='fmsg e');
+  if(p.length<4)return (msgEl.textContent='كلمة المرور قصيرة جداً',msgEl.className='fmsg e');
+  try{
+    const r=await fetch('/api/admin/resetpass',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:u,newpassword:p})});
+    const d=await r.json();
+    if(!d.ok)return (msgEl.textContent=d.msg,msgEl.className='fmsg e');
+    msgEl.textContent='✅ تم تغيير كلمة مرور '+u+' بنجاح';
+    msgEl.className='fmsg k';
+    document.getElementById('rpu-inline').value='';
+    document.getElementById('rpp-inline').value='';
+    toast('✅ تم تغيير كلمة مرور '+u,'k');
+    setTimeout(()=>msgEl.className='fmsg',3000);
+  }catch(e){msgEl.textContent='خطأ في الاتصال';msgEl.className='fmsg e';}
+}
+
 function upOC(n){document.getElementById('oc').textContent=n;document.getElementById('co').textContent=n;}
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>

@@ -236,6 +236,116 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 .rk-vip{background:rgba(156,39,176,.2);color:#ce93d8;border-color:rgba(156,39,176,.3);}
 .rk-member{background:rgba(66,165,245,.15);color:#90caf9;border-color:rgba(66,165,245,.2);}
 .rk-visitor{background:rgba(255,255,255,.08);color:#ccc;border-color:rgba(255,255,255,.15);}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+
+  /* Hide side panels by default on mobile */
+  .rpanel { display: none; }
+  .upanel { display: none; }
+
+  /* Chat body - single column */
+  .chat-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Header mobile */
+  .chat-hdr {
+    padding: 0 10px;
+    height: 52px;
+  }
+  .clogo-t { font-size: 13px; }
+  .cnav-btn { padding: 5px 8px; font-size: 11px; }
+
+  /* Input area - bigger on mobile */
+  .cin-area { padding: 10px 12px; }
+  .cin { font-size: 15px; }
+
+  /* Messages */
+  .msgs { padding: 10px; }
+  .mn { font-size: 13px; }
+  .mx { font-size: 13px; }
+
+  /* Mobile bottom nav */
+  .mob-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(8,18,35,.97);
+    border-top: 1px solid rgba(255,255,255,.08);
+    z-index: 50;
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  /* Push chat body up to avoid overlap with mobile nav */
+  .cmain {
+    padding-bottom: 0 !important;
+  }
+
+  /* Mobile drawer for rooms */
+  .mob-drawer {
+    display: flex !important;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(5,13,26,.95);
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .mob-drawer.open { transform: translateX(0); }
+  .mob-drawer-hdr {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    flex-shrink: 0;
+  }
+  .mob-drawer-hdr span { font-size: 15px; font-weight: 700; color: var(--gl); }
+  .mob-drawer-close { background: rgba(255,255,255,.06); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer; }
+  .mob-drawer-body { flex: 1; overflow-y: auto; padding: 10px; }
+
+  /* Mobile nav buttons */
+  .mob-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--mut);
+    font-family: 'Cairo', sans-serif;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 10px;
+    transition: .2s;
+    font-size: 10px;
+  }
+  .mob-nav-btn.active { color: var(--gold); background: rgba(245,166,35,.1); }
+  .mob-nav-btn span:first-child { font-size: 20px; }
+
+  /* Room header mobile */
+  .crhdr { padding: 9px 12px; }
+  .cr-nm { font-size: 13px; }
+
+  /* Landing mobile */
+  .hero { padding: 30px 16px; }
+  .hero-h { font-size: 28px; }
+  .btn-grp { flex-direction: column; align-items: stretch; }
+  .btn { justify-content: center; }
+  .feats { gap: 10px; padding: 16px; }
+  .fc { max-width: 130px; padding: 14px; }
+  .site-hdr { padding: 10px 16px; }
+}
+
+/* Mobile nav hidden on desktop */
+.mob-nav { display: none; }
+.mob-drawer { display: none; }
 </style>
 </head>
 <body>
@@ -324,6 +434,16 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     </div>
   </div>
 
+  <!-- MOBILE DRAWERS -->
+  <div class="mob-drawer" id="mob-rooms">
+    <div class="mob-drawer-hdr"><span>🏠 الغرف</span><button class="mob-drawer-close" onclick="closeMobDrawer('rooms')">✕</button></div>
+    <div class="mob-drawer-body"><div class="slist" id="rlist-mob"></div></div>
+  </div>
+  <div class="mob-drawer" id="mob-users">
+    <div class="mob-drawer-hdr"><span>👥 المتصلون</span><button class="mob-drawer-close" onclick="closeMobDrawer('users')">✕</button></div>
+    <div class="mob-drawer-body"><div id="ulist-mob"></div></div>
+  </div>
+
   <div class="chat-body">
     <!-- ROOMS -->
     <div class="rpanel"><div class="phdr">🏠 الغرف</div><div class="slist" id="rlist"></div></div>
@@ -387,7 +507,25 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   <div class="fg"><label class="fl">تأكيد كلمة المرور</label><input type="password" class="fi" id="rpp2" placeholder="تأكيد كلمة المرور..."></div>
   <div class="fmsg" id="rpm-msg"></div>
   <button class="btn btn-p btn-full" onclick="resetPass()">تغيير كلمة المرور →</button>
-</div></div>
+</div>  <!-- MOBILE BOTTOM NAV -->
+  <div class="mob-nav" id="mob-nav">
+    <button class="mob-nav-btn active" id="mn-chat" onclick="mobTab('chat')">
+      <span>💬</span><span>الدردشة</span>
+    </button>
+    <button class="mob-nav-btn" id="mn-rooms" onclick="openMobDrawer('rooms')">
+      <span>🏠</span><span>الغرف</span>
+    </button>
+    <button class="mob-nav-btn" id="mn-users" onclick="openMobDrawer('users')">
+      <span>👥</span><span>المتصلون</span>
+    </button>
+    <button class="mob-nav-btn" id="mn-admin" onclick="mobAdmin()" style="display:none;">
+      <span>👑</span><span>الأدمن</span>
+    </button>
+    <button class="mob-nav-btn" onclick="logout()">
+      <span>🚪</span><span>خروج</span>
+    </button>
+  </div>
+</div>
 
 <!-- CTX MENU -->
 <div class="ctx" id="ctx">
@@ -536,6 +674,7 @@ function enterChat(){
   if(cu.rank !== 'visitor'){
     document.getElementById('chpass-btn').style.display='flex';
   }
+  showMobAdmin();
   const b=document.getElementById('my-badge');
   b.style.display='inline-flex';
   b.textContent=RK_LABEL[cu.rank]||'👁️ زائر';
@@ -612,6 +751,7 @@ function renderRooms(){
     d.innerHTML=`<div class="r-ic" style="background:${RC[id]||'#333'}">${r.icon}</div><div style="flex:1;min-width:0;"><div class="r-nm">${r.name}</div><div class="r-cn" id="rc-${id}">0 متصل</div></div>`;
     d.onclick=()=>swRoom(id,r);c.appendChild(d);
   });
+  syncMobLists();
 }
 
 function swRoom(id,r){
@@ -655,6 +795,7 @@ function renderUsers(users){
   if(g.vip.length)addSec(c,'💎 VIP',g.vip);
   if(g.member.length)addSec(c,'👥 الأعضاء',g.member);
   if(g.visitor.length)addSec(c,'👁️ الزوار',g.visitor);
+  syncMobLists();
 }
 
 function addSec(c,t,users){
@@ -886,6 +1027,48 @@ async function resetPassInline(){
     toast('✅ تم تغيير كلمة مرور '+u,'k');
     setTimeout(()=>msgEl.className='fmsg',3000);
   }catch(e){msgEl.textContent='خطأ في الاتصال';msgEl.className='fmsg e';}
+}
+
+// ===== MOBILE FUNCTIONS =====
+const isMobile = () => window.innerWidth <= 768;
+
+function openMobDrawer(type) {
+  document.getElementById('mob-' + type).classList.add('open');
+}
+function closeMobDrawer(type) {
+  document.getElementById('mob-' + type).classList.remove('open');
+}
+function mobTab(tab) {
+  document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mn-' + tab)?.classList.add('active');
+}
+function mobAdmin() {
+  openAdmin();
+}
+
+// Sync mobile room/user lists
+function syncMobLists() {
+  if (!isMobile()) return;
+  const rlistMob = document.getElementById('rlist-mob');
+  const rlist = document.getElementById('rlist');
+  if (rlistMob && rlist) rlistMob.innerHTML = rlist.innerHTML;
+  // Re-attach click events
+  rlistMob.querySelectorAll('.ri').forEach(el => {
+    const id = el.id.replace('ri-', '');
+    if (rd[id]) {
+      el.onclick = () => { swRoom(id, rd[id]); closeMobDrawer('rooms'); };
+    }
+  });
+  const ulistMob = document.getElementById('ulist-mob');
+  const ulist = document.getElementById('ulist');
+  if (ulistMob && ulist) ulistMob.innerHTML = ulist.innerHTML;
+}
+
+// Show admin button on mobile for admins
+function showMobAdmin() {
+  if (isMobile() && ['owner','admin'].includes(cu?.rank)) {
+    document.getElementById('mn-admin').style.display = 'flex';
+  }
 }
 
 function upOC(n){document.getElementById('oc').textContent=n;document.getElementById('co').textContent=n;}

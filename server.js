@@ -125,14 +125,14 @@ app.get('/api/rooms', (req,res) => {
 });
 
 // ===== PROFANITY FILTER =====
-const BAD_WORDS = [
+let BAD_WORDS = [
   // ===== عربية - سب وشتم =====
   'كلب','كلبة','حمار','حمارة','غبي','غبية','احمق','احمقة','معتوه',
   'وقح','وقحة','منافق','منافقة','كذاب','كذابة','لعين','لعينة',
   'يلعن','العن','تبا','ملعون','ملعونة','خنزير','خنزيرة','قرد','قردة',
   'تفو','خرا','خراء','زبالة','نجس','نجسة','وسخ','وسخة','بهيم',
   'ابو زبالة','ابن الكلب','ابن الحرام','بنت الكلب','بنت الحرام',
-  'يمك','يفك','يلعن دينك','يلعن اهلك','يلعن امك','يلعن ابوك',
+  'يمك','يفك','يلعن دينك','يلعن اهلك',
   'ثور','بقرة','حقير','حقيرة','نذل','نذلة','خسيس','خسيسة',
 
   // ===== عربية - جنسية =====
@@ -156,13 +156,30 @@ const BAD_WORDS = [
   'whore','slut','prostitute','escort','horny','masturbate','orgasm',
   'blowjob','handjob','anal','erotic','xxx','18+',
 
+  // ===== ناقصة من القائمة السابقة =====
+  'قواد','قوادة','خنيث','خناثة','منيك',
+  'كس امك','كس اختك','كسمك','ممحون','ممحونة','زق','متزوق',
+  'مقود','مقودة','ديوث','ديوثة','قرناء',
+
+  // ===== لهجة عراقية =====
+  'چوني','گاي','چخي','تعال اناكك','يعني اناكك',
+  'خنيك','خنيكة','بيه','بيها','عيري','عيرك','عيرها',
+  'كسج','كسها','كسه','طيزج','طيزها','طيزه',
+  'أنيچ','أنيكج','أنيكك','انيج','روح انتاك','روح تنتاك',
+  'ولد متناك','بنت متناكة','خوش ناكت','شكو ماكو تنيك',
+  'حبوبي تعال','حبيبي تعال ناكني','منيوچ','منيوج',
+  'گلبي','مو گلبي بس','ولد القحبة','بنت القحبة',
+  'ابن الشرموطة','ابن الغندور','غندور','غندورة',
+  'معرص','معرصة','مخنوق بيها','مخنوق بيه',
+  'روح العب','روح اللعب بنفسك',
+
   // ===== تركية / فارسية =====
   'lanet','kahpe','orospu','sikim','amk','sik','got','oç',
   'kos','jende','harami',
 ];
 
 // ===== SEXUAL USERNAMES FILTER =====
-const BAD_USERNAMES = [
+let BAD_USERNAMES = [
   // عربية - أسماء جنسية
   'زب','كس','طيز','نيك','شرموط','شرموطة','عاهر','عاهرة','قحبة','قحب',
   'زاني','زانية','مخنث','شاذ','لوطي','سكسي','سكس','ناكر','ناكت',
@@ -175,7 +192,61 @@ const BAD_USERNAMES = [
 
   // أرقام جنسية شائعة في الأسماء
   '69','18sex','sex18','porn69',
+
+  // إضافات عراقية للأسماء
+  'قواد','خنيث','ديوث','غندور','معرص','ممحون','كسمك','زق',
 ];
+
+// ===== CUSTOM WORDS MANAGEMENT =====
+// Store admin-added words separately
+let customBadWords = [];
+
+// Merge function - combine default + custom
+function getAllBadWords() {
+  return [...BAD_WORDS, ...customBadWords];
+}
+
+// Override containsBadWord to use merged list
+function containsBadWordFull(text) {
+  const normalized = normalizeAr(text.toLowerCase());
+  const compact = normalized.replace(/[\s\.\-_\*]+/g, '');
+  const allWords = getAllBadWords();
+  for (const word of allWords) {
+    const normWord = normalizeAr(word.toLowerCase());
+    if (normalized.includes(normWord)) return { found: true, word };
+    if (compact.includes(normWord.replace(/\s/g,''))) return { found: true, word };
+  }
+  return { found: false };
+}
+
+// Admin: get all bad words
+app.get('/api/admin/badwords', adminAuth, (req,res) => {
+  res.json({ ok:true, default: BAD_WORDS, custom: customBadWords });
+});
+
+// Admin: add custom word
+app.post('/api/admin/badwords/add', adminAuth, (req,res) => {
+  const { word } = req.body;
+  if (!word || word.trim().length < 2) return res.json({ ok:false, msg:'الكلمة قصيرة جداً' });
+  const w = word.trim().toLowerCase();
+  if (customBadWords.includes(w)) return res.json({ ok:false, msg:'الكلمة موجودة مسبقاً' });
+  customBadWords.push(w);
+  res.json({ ok:true, custom: customBadWords });
+});
+
+// Admin: remove custom word
+app.post('/api/admin/badwords/remove', adminAuth, (req,res) => {
+  const { word } = req.body;
+  customBadWords = customBadWords.filter(w => w !== word.trim().toLowerCase());
+  res.json({ ok:true, custom: customBadWords });
+});
+
+// Admin: remove from default list too
+app.post('/api/admin/badwords/removedefault', adminAuth, (req,res) => {
+  const { word } = req.body;
+  BAD_WORDS = BAD_WORDS.filter(w => w !== word);
+  res.json({ ok:true });
+});
 
 function containsBadUsername(name) {
   const normalized = normalizeAr(name.toLowerCase()).replace(/\s+/g,'');
@@ -239,7 +310,7 @@ app.post('/api/register', async (req,res) => {
   const { username, password, gender, age } = req.body;
   if (!username || !password || username.length < 3) return res.json({ ok:false, msg:'بيانات غير صحيحة' });
   // Check for bad/sexual username
-  if (containsBadUsername(username) || containsBadWord(username).found) {
+  if (containsBadUsername(username) || containsBadWordFull(username).found) {
     return res.json({ ok:false, msg:'❌ اسم المستخدم غير مقبول - يحتوي على كلمات غير لائقة' });
   }
   const hashed = hashPassword(password);
@@ -411,7 +482,7 @@ io.on('connection', (socket) => {
   socket.on('join', async (data) => {
     // Check username for bad/sexual content
     const nameCheck = data.name || '';
-    if (containsBadUsername(nameCheck) || containsBadWord(nameCheck).found) {
+    if (containsBadUsername(nameCheck) || containsBadWordFull(nameCheck).found) {
       socket.emit('username-rejected', '❌ الاسم غير مقبول - يحتوي على كلمات غير لائقة');
       return;
     }
@@ -519,7 +590,7 @@ io.on('connection', (socket) => {
     }
 
     // 4. Profanity filter
-    const badCheck = containsBadWord(text);
+    const badCheck = containsBadWordFull(text);
     if (badCheck.found) {
       const uid = user.name;
       warnCount[uid] = (warnCount[uid] || 0) + 1;

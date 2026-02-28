@@ -620,6 +620,29 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     <div id="online-tbl" style="margin-bottom:32px;"></div>
     <h3 style="color:var(--gl);margin-bottom:16px;font-size:14px;">🗄️ جميع الأعضاء</h3>
     <div id="atbl2"></div>
+    <h3 style="color:var(--gl);margin:0 0 16px;font-size:14px;">🚫 إدارة الكلمات الممنوعة</h3>
+    <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:24px;">
+      
+      <!-- Add word -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <input type="text" id="new-bad-word" class="fi" placeholder="أضف كلمة ممنوعة جديدة..." style="flex:1;min-width:180px;" onkeypress="if(event.key==='Enter')addBadWord()">
+        <button class="btn btn-p" style="padding:10px 18px;font-size:13px;flex-shrink:0;" onclick="addBadWord()">➕ إضافة</button>
+      </div>
+      <div class="fmsg" id="bw-msg" style="margin-bottom:12px;"></div>
+
+      <!-- Search -->
+      <input type="text" id="bw-search" class="fi" placeholder="🔍 ابحث في الكلمات..." style="margin-bottom:14px;" oninput="filterBadWords()">
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="bw-tab-custom" class="cnav-btn on" onclick="showBWTab('custom')" style="font-size:12px;">✏️ مضافة من الأدمن (<span id="custom-count">0</span>)</button>
+        <button id="bw-tab-default" class="cnav-btn" onclick="showBWTab('default')" style="font-size:12px;">📋 القائمة الافتراضية (<span id="default-count">0</span>)</button>
+      </div>
+
+      <!-- Words list -->
+      <div id="bw-list" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding:4px;"></div>
+    </div>
+
     <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🔑 إعادة تعيين كلمة المرور</h3>
     <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:24px;">
       <p style="font-size:13px;color:var(--mut);margin-bottom:14px;">إذا نسي عضو كلمة مروره، يمكنك إعادة تعيينها من هنا</p>
@@ -1056,6 +1079,9 @@ async function refAdmin(){
       </tr>`).join('')}</tbody></table>`;
   }catch(e){console.error(e);}
 
+  // Load bad words
+  await loadBadWords();
+
   // Rooms management table
   document.getElementById('rooms-tbl').innerHTML=`<table class="atbl">
     <thead><tr><th>الأيقونة</th><th>الاسم</th><th>الإجراءات</th></tr></thead>
@@ -1153,6 +1179,114 @@ async function editRoom(id, name, icon, color) {
     if (d.ok) { toast('✅ تم تعديل الغرفة', 'k'); refAdmin(); }
     else toast('❌ ' + d.msg, 'e');
   } catch(e) { toast('خطأ في الاتصال','e'); }
+}
+
+// ===== BAD WORDS MANAGEMENT =====
+let bwData = { default: [], custom: [] };
+let currentBWTab = 'custom';
+
+async function loadBadWords() {
+  try {
+    const r = await fetch('/api/admin/badwords', { headers: { 'x-admin-token': AK } });
+    const d = await r.json();
+    if (!d.ok) return;
+    bwData = d;
+    document.getElementById('custom-count').textContent = d.custom.length;
+    document.getElementById('default-count').textContent = d.default.length;
+    renderBadWords();
+  } catch(e) { console.error(e); }
+}
+
+function showBWTab(tab) {
+  currentBWTab = tab;
+  document.getElementById('bw-tab-custom').classList.toggle('on', tab === 'custom');
+  document.getElementById('bw-tab-default').classList.toggle('on', tab === 'default');
+  renderBadWords();
+}
+
+function filterBadWords() {
+  renderBadWords();
+}
+
+function renderBadWords() {
+  const search = (document.getElementById('bw-search')?.value || '').toLowerCase();
+  const list = document.getElementById('bw-list');
+  if (!list) return;
+  
+  const words = currentBWTab === 'custom' ? bwData.custom : bwData.default;
+  const filtered = search ? words.filter(w => w.includes(search)) : words;
+  
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="color:var(--mut);font-size:12px;padding:10px;">${search ? 'لا توجد نتائج' : currentBWTab === 'custom' ? 'لا توجد كلمات مضافة بعد' : ''}</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(w => `
+    <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.25);border-radius:20px;padding:4px 10px;font-size:12px;color:#ef9a9a;">
+      <span>${w}</span>
+      <button onclick="${currentBWTab === 'custom' ? `removeBadWord('${w}')` : `removeDefaultWord('${w}')`}" 
+        style="background:transparent;border:none;color:#ef5350;cursor:pointer;font-size:14px;padding:0;line-height:1;">×</button>
+    </div>
+  `).join('');
+}
+
+async function addBadWord() {
+  const input = document.getElementById('new-bad-word');
+  const word = input.value.trim();
+  const msgEl = document.getElementById('bw-msg');
+  if (!word) return (msgEl.textContent='أدخل الكلمة', msgEl.className='fmsg e');
+  
+  try {
+    const r = await fetch('/api/admin/badwords/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': AK },
+      body: JSON.stringify({ word })
+    });
+    const d = await r.json();
+    if (!d.ok) return (msgEl.textContent=d.msg, msgEl.className='fmsg e');
+    
+    msgEl.textContent = '✅ تمت إضافة: ' + word;
+    msgEl.className = 'fmsg k';
+    input.value = '';
+    bwData.custom = d.custom;
+    document.getElementById('custom-count').textContent = d.custom.length;
+    currentBWTab = 'custom';
+    showBWTab('custom');
+    toast('✅ تمت إضافة كلمة ممنوعة جديدة', 'k');
+    setTimeout(() => msgEl.className='fmsg', 3000);
+  } catch(e) { msgEl.textContent='خطأ'; msgEl.className='fmsg e'; }
+}
+
+async function removeBadWord(word) {
+  if (!confirm('حذف "' + word + '" من القائمة؟')) return;
+  const r = await fetch('/api/admin/badwords/remove', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': AK },
+    body: JSON.stringify({ word })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    bwData.custom = d.custom;
+    document.getElementById('custom-count').textContent = d.custom.length;
+    renderBadWords();
+    toast('🗑️ تم حذف الكلمة', 'k');
+  }
+}
+
+async function removeDefaultWord(word) {
+  if (!confirm('حذف "' + word + '" من القائمة الافتراضية؟')) return;
+  const r = await fetch('/api/admin/badwords/removedefault', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': AK },
+    body: JSON.stringify({ word })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    bwData.default = bwData.default.filter(w => w !== word);
+    document.getElementById('default-count').textContent = bwData.default.length;
+    renderBadWords();
+    toast('🗑️ تم حذف الكلمة', 'k');
+  }
 }
 
 function openChangePass(){

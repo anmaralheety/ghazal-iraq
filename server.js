@@ -54,8 +54,8 @@ const memMessages = {};
 
 function hashPassword(p) { return crypto.createHash('sha256').update(p).digest('hex'); }
 
-// ===== ROOMS =====
-const ROOMS = {
+// ===== ROOMS (dynamic) =====
+let ROOMS = {
   general:  { name:'الغرفة العامة',  icon:'🌍', color:'#1565c0' },
   iraq:     { name:'غرفة العراق',    icon:'🇮🇶', color:'#c62828' },
   youth:    { name:'غرفة الشباب',    icon:'🔥', color:'#e65100' },
@@ -66,6 +66,63 @@ const ROOMS = {
   elders:   { name:'غرفة كبار السن', icon:'🌹', color:'#37474f' },
 };
 Object.keys(ROOMS).forEach(r => memMessages[r] = []);
+
+// Room slug generator
+function slugify(text) {
+  return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '') || 'room-' + Date.now();
+}
+
+// ===== ROOM MANAGEMENT ROUTES =====
+// Add room
+app.post('/api/admin/addroom', adminAuth, (req,res) => {
+  const { name, icon, color } = req.body;
+  if (!name || !icon) return res.json({ ok:false, msg:'الاسم والأيقونة مطلوبان' });
+  if (Object.keys(ROOMS).length >= 20) return res.json({ ok:false, msg:'الحد الأقصى 20 غرفة' });
+  const id = slugify(name) + '-' + Date.now().toString().slice(-4);
+  ROOMS[id] = { name, icon, color: color || '#1565c0' };
+  memMessages[id] = [];
+  io.emit('rooms-updated', ROOMS);
+  res.json({ ok:true, id });
+});
+
+// Edit room
+app.post('/api/admin/editroom', adminAuth, (req,res) => {
+  const { id, name, icon, color } = req.body;
+  if (!ROOMS[id]) return res.json({ ok:false, msg:'الغرفة غير موجودة' });
+  if (name) ROOMS[id].name = name;
+  if (icon) ROOMS[id].icon = icon;
+  if (color) ROOMS[id].color = color;
+  io.emit('rooms-updated', ROOMS);
+  io.to(id).emit('room-info-updated', { id, ...ROOMS[id] });
+  res.json({ ok:true });
+});
+
+// Delete room
+app.post('/api/admin/deleteroom', adminAuth, (req,res) => {
+  const { id } = req.body;
+  const protectedRooms = ['general'];
+  if (protectedRooms.includes(id)) return res.json({ ok:false, msg:'لا يمكن حذف الغرفة العامة' });
+  if (!ROOMS[id]) return res.json({ ok:false, msg:'الغرفة غير موجودة' });
+  // Move users in that room to general
+  Object.values(chatUsers).forEach(u => {
+    if (u.room === id) {
+      const sid = u.id;
+      io.to(sid).emit('room-deleted', 'تم حذف الغرفة، تم نقلك للغرفة العامة');
+      const socket = io.sockets.sockets.get(sid);
+      if (socket) { socket.leave(id); socket.join('general'); }
+      u.room = 'general';
+    }
+  });
+  delete ROOMS[id];
+  delete memMessages[id];
+  io.emit('rooms-updated', ROOMS);
+  res.json({ ok:true });
+});
+
+// Get all rooms
+app.get('/api/rooms', (req,res) => {
+  res.json({ ok:true, rooms: ROOMS });
+});
 
 // Rank colors & labels
 const RANK_COLORS = { owner:'#ff6b35', admin:'#ffd54f', vip:'#ce93d8', member:'#90caf9', visitor:'#b0bec5' };

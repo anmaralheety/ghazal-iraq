@@ -429,6 +429,37 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
       <div class="fmsg" id="rpi-msg" style="margin-top:10px;"></div>
     </div>
     <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🏠 إدارة الغرف</h3>
+
+    <!-- ADD ROOM -->
+    <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--gl);margin-bottom:14px;">➕ إضافة غرفة جديدة</div>
+      <div style="display:grid;grid-template-columns:1fr 80px 120px;gap:10px;margin-bottom:10px;">
+        <input type="text" id="new-room-name" class="fi" placeholder="اسم الغرفة..." maxlength="20">
+        <input type="text" id="new-room-icon" class="fi" placeholder="🏠" maxlength="4" style="text-align:center;font-size:20px;">
+        <input type="color" id="new-room-color" value="#1565c0" style="width:100%;height:44px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.04);cursor:pointer;">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:12px;color:var(--mut);">اختر أيقونة سريعة:</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="pickIcon('🎮')" class="eb" style="font-size:18px;">🎮</button>
+          <button onclick="pickIcon('🎨')" class="eb" style="font-size:18px;">🎨</button>
+          <button onclick="pickIcon('📚')" class="eb" style="font-size:18px;">📚</button>
+          <button onclick="pickIcon('🍕')" class="eb" style="font-size:18px;">🍕</button>
+          <button onclick="pickIcon('💼')" class="eb" style="font-size:18px;">💼</button>
+          <button onclick="pickIcon('🌍')" class="eb" style="font-size:18px;">🌍</button>
+          <button onclick="pickIcon('💻')" class="eb" style="font-size:18px;">💻</button>
+          <button onclick="pickIcon('🎭')" class="eb" style="font-size:18px;">🎭</button>
+          <button onclick="pickIcon('🏋️')" class="eb" style="font-size:18px;">🏋️</button>
+          <button onclick="pickIcon('🌙')" class="eb" style="font-size:18px;">🌙</button>
+          <button onclick="pickIcon('❤️')" class="eb" style="font-size:18px;">❤️</button>
+          <button onclick="pickIcon('🎵')" class="eb" style="font-size:18px;">🎵</button>
+        </div>
+      </div>
+      <div class="fmsg" id="add-room-msg" style="margin-bottom:10px;"></div>
+      <button class="btn btn-p" style="padding:10px 20px;font-size:13px;" onclick="addRoom()">➕ إضافة الغرفة</button>
+    </div>
+
+    <!-- ROOMS LIST -->
     <div id="rooms-tbl"></div>
   </div>
 </div>
@@ -526,6 +557,32 @@ socket.on('room-users',u=>{renderUsers(u);document.getElementById('crc').textCon
 socket.on('room-history',d=>{if(d.roomId===cr){const c=document.getElementById('msgs');c.innerHTML=`<div class="welcome">🌟 أهلاً في ${rd[d.roomId]?.name||d.roomId} 🌟</div>`;d.messages.forEach(m=>renderMsg(m));renderUsers(d.users);document.getElementById('crc').textContent=`🟢 ${d.users.length} متصل`;}});
 socket.on('online-count',upOC);
 socket.on('system-notice',t=>{const c=document.getElementById('msgs');const d=document.createElement('div');d.className='ntc';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;});
+socket.on('rooms-updated', (newRooms) => {
+  rd = newRooms;
+  renderRooms();
+  // If current room was deleted, switch to general
+  if (!rd[cr]) {
+    cr = 'general';
+    document.getElementById('crn').textContent = rd.general.name;
+    document.getElementById('cri').textContent = rd.general.icon;
+    document.getElementById('msgs').innerHTML = '<div class="welcome">🌟 تم نقلك للغرفة العامة 🌟</div>';
+  }
+});
+
+socket.on('room-info-updated', (data) => {
+  const el = document.getElementById('ri-' + data.id);
+  if (el) {
+    el.querySelector('.r-nm').textContent = data.name;
+    el.querySelector('.r-ic').textContent = data.icon;
+  }
+  if (cr === data.id) {
+    document.getElementById('crn').textContent = data.name;
+    document.getElementById('cri').textContent = data.icon;
+  }
+});
+
+socket.on('room-deleted', msg => { toast('🗑️ ' + msg, 'e'); });
+
 socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div class="welcome">🌟 تم مسح الغرفة 🌟</div>';});
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
 socket.on('unmuted',m=>{toast('🔊 '+m,'k');const i=document.getElementById('min');i.disabled=false;i.placeholder='اكتب رسالتك هنا...';});
@@ -685,12 +742,20 @@ async function refAdmin(){
       </tr>`).join('')}</tbody></table>`;
   }catch(e){console.error(e);}
 
-  // Rooms management
+  // Rooms management table
   document.getElementById('rooms-tbl').innerHTML=`<table class="atbl">
-    <thead><tr><th>الغرفة</th><th>إجراء</th></tr></thead>
+    <thead><tr><th>الأيقونة</th><th>الاسم</th><th>الإجراءات</th></tr></thead>
     <tbody>${Object.entries(rd).map(([id,r])=>`<tr>
-      <td>${r.icon} ${r.name}</td>
-      <td><button class="aab ab-ban" onclick="clearRoom('${id}')">🗑️ مسح الرسائل</button></td>
+      <td style="font-size:22px;text-align:center;">${r.icon}</td>
+      <td>
+        <strong>${r.name}</strong>
+        <div style="font-size:10px;color:var(--mut);">${id}</div>
+      </td>
+      <td>
+        <button class="aab" style="background:rgba(66,165,245,.2);color:#90caf9;border:1px solid rgba(66,165,245,.3);" onclick="editRoomModal('${id}','${r.name}','${r.icon}','${r.color||'#1565c0'}')">✏️ تعديل</button>
+        <button class="aab ab-ban" onclick="clearRoom('${id}')">🗑️ مسح</button>
+        ${id!=='general'?`<button class="aab" style="background:rgba(239,83,80,.3);color:#ef9a9a;border:1px solid rgba(239,83,80,.4);" onclick="deleteRoom('${id}','${r.name}')">❌ حذف</button>`:'<span style="font-size:10px;color:var(--mut);">محمية</span>'}
+      </td>
     </tr>`).join('')}</tbody></table>`;
 }
 
@@ -710,6 +775,66 @@ function logout(){
   document.getElementById('rlist').innerHTML='';
   document.getElementById('ulist').innerHTML='';
 }
+// ROOM MANAGEMENT FUNCTIONS
+function pickIcon(icon) {
+  document.getElementById('new-room-icon').value = icon;
+}
+
+async function addRoom() {
+  const name = document.getElementById('new-room-name').value.trim();
+  const icon = document.getElementById('new-room-icon').value.trim() || '🏠';
+  const color = document.getElementById('new-room-color').value;
+  const msgEl = document.getElementById('add-room-msg');
+
+  if (!name) return (msgEl.textContent='أدخل اسم الغرفة', msgEl.className='fmsg e');
+
+  try {
+    const r = await fetch('/api/admin/addroom', {method:'POST', headers:{'Content-Type':'application/json','x-admin-token':AK}, body:JSON.stringify({name,icon,color})});
+    const d = await r.json();
+    if (!d.ok) return (msgEl.textContent=d.msg, msgEl.className='fmsg e');
+    msgEl.textContent = '✅ تم إضافة غرفة ' + name;
+    msgEl.className = 'fmsg k';
+    document.getElementById('new-room-name').value='';
+    document.getElementById('new-room-icon').value='';
+    toast('✅ تم إضافة غرفة: ' + name, 'k');
+    await refAdmin();
+    setTimeout(()=>msgEl.className='fmsg', 3000);
+  } catch(e) { msgEl.textContent='خطأ في الاتصال'; msgEl.className='fmsg e'; }
+}
+
+async function deleteRoom(id, name) {
+  if (!confirm('حذف غرفة ' + name + '؟ سيتم نقل المتصلين للغرفة العامة')) return;
+  const r = await fetch('/api/admin/deleteroom', {method:'POST', headers:{'Content-Type':'application/json','x-admin-token':AK}, body:JSON.stringify({id})});
+  const d = await r.json();
+  if (d.ok) { toast('🗑️ تم حذف ' + name, 'k'); refAdmin(); }
+  else toast('❌ ' + d.msg, 'e');
+}
+
+// Edit room modal
+let editingRoomId = null;
+function editRoomModal(id, name, icon, color) {
+  editingRoomId = id;
+  // Create inline edit row
+  const row = document.querySelector(`[data-room-id="${id}"]`);
+  
+  // Simple prompt-based edit for now
+  const newName = prompt('اسم الغرفة الجديد:', name);
+  if (newName === null) return;
+  const newIcon = prompt('أيقونة الغرفة:', icon);
+  if (newIcon === null) return;
+  
+  editRoom(id, newName.trim() || name, newIcon.trim() || icon, color);
+}
+
+async function editRoom(id, name, icon, color) {
+  try {
+    const r = await fetch('/api/admin/editroom', {method:'POST', headers:{'Content-Type':'application/json','x-admin-token':AK}, body:JSON.stringify({id,name,icon,color})});
+    const d = await r.json();
+    if (d.ok) { toast('✅ تم تعديل الغرفة', 'k'); refAdmin(); }
+    else toast('❌ ' + d.msg, 'e');
+  } catch(e) { toast('خطأ في الاتصال','e'); }
+}
+
 function openChangePass(){
   if(cu?.rank === 'visitor'){
     toast('⚠️ الزوار لا يملكون كلمة مرور — سجّل كعضو أولاً','e');

@@ -489,6 +489,15 @@ socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div cl
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
 socket.on('unmuted',m=>{toast('🔊 '+m,'k');const i=document.getElementById('min');i.disabled=false;i.placeholder='اكتب رسالتك هنا...';});
 socket.on('kicked',m=>{toast('🚫 '+m,'e');setTimeout(()=>logout(),2000);});
+socket.on('spam-warning', msg => {
+  // Show warning in input area without toast
+  const bar = document.getElementById('min');
+  const orig = bar.placeholder;
+  bar.placeholder = msg;
+  bar.style.color = '#ef9a9a';
+  setTimeout(() => { bar.placeholder = 'اكتب رسالتك هنا...'; bar.style.color = ''; }, 2500);
+});
+
 socket.on('private-message',pm=>{
   const o=pm.from===cu?.name?pm.to:pm.from;
   if(!document.getElementById('pm').classList.contains('on')||pmt3!==o){
@@ -563,7 +572,23 @@ function addSec(c,t,users){
   });
 }
 
-function sm(){const i=document.getElementById('min');const t=i.value.trim();if(!t)return;socket.emit('chat-message',{text:t});i.value='';if(eo)te();}
+let lastSent = {text:'', time:0};
+function sm(){
+  const i=document.getElementById('min');
+  const t=i.value.trim();
+  if(!t)return;
+  const now=Date.now();
+  // Client-side duplicate check
+  if(t===lastSent.text && now-lastSent.time < 3000){
+    i.placeholder='⚠️ لا تكرر نفس الرسالة';
+    setTimeout(()=>i.placeholder='اكتب رسالتك هنا...',2000);
+    return;
+  }
+  lastSent={text:t,time:now};
+  socket.emit('chat-message',{text:t});
+  i.value='';
+  if(eo)te();
+}
 function hk(e){if(e.key==='Enter')sm();}
 function te(){eo=!eo;document.getElementById('ep').classList.toggle('on',eo);}
 function ae(e){document.getElementById('min').value+=e;document.getElementById('min').focus();}

@@ -253,12 +253,43 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room-users', getRoomUsers(roomId));
   });
 
+  // Rate limiting per socket
+  const rateLimits = {};
+  const lastMessages = {};
+
   socket.on('chat-message', async (data) => {
     const user = chatUsers[socket.id];
     if (!user) return;
     if (mutedUsers.has(user.name)) { socket.emit('muted', 'أنت مكتوم'); return; }
+
     const text = (data.text || '').trim().substring(0, 300);
     if (!text) return;
+
+    // 1. Block spam - max 3 messages per 3 seconds
+    const now = Date.now();
+    const sid = socket.id;
+    if (!rateLimits[sid]) rateLimits[sid] = [];
+    rateLimits[sid] = rateLimits[sid].filter(t => now - t < 3000);
+    if (rateLimits[sid].length >= 3) {
+      socket.emit('spam-warning', '⚠️ أنت ترسل رسائل بسرعة كبيرة، انتظر قليلاً');
+      return;
+    }
+    rateLimits[sid].push(now);
+
+    // 2. Block duplicate messages
+    const lastMsg = lastMessages[sid];
+    if (lastMsg && lastMsg.text === text && now - lastMsg.time < 5000) {
+      socket.emit('spam-warning', '⚠️ لا تكرر نفس الرسالة');
+      return;
+    }
+    lastMessages[sid] = { text, time: now };
+
+    // 3. Block harmful content / XSS
+    const dangerous = /<script|javascript:|on\w+=/i;
+    if (dangerous.test(text)) {
+      socket.emit('spam-warning', '⚠️ رسالة غير مسموح بها');
+      return;
+    }
 
     const msg = await saveMessage(user.room, user.name, text);
     io.to(user.room).emit('message', {

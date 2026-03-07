@@ -559,7 +559,53 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 /* Mobile nav hidden on desktop */
 .mob-nav { display: none; }
 .mob-drawer { display: none; }
-</style>
+/* ===== NEW RANK STYLES ===== */
+.msg-big .mn { animation: nameGlow 2s infinite alternate; }
+@keyframes nameGlow { from { opacity: 0.85; } to { opacity: 1; } }
+.quiz-msg { display:flex; align-items:flex-start; gap:8px; padding:8px 12px; background:linear-gradient(135deg,#f9a82522,#ffd70011); border-right:3px solid #ffd700; margin:4px 8px; border-radius:8px; flex-wrap:wrap; }
+.quiz-bot-badge { background:#ffd700; color:#000; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; flex-shrink:0; }
+.quiz-text { color:#fff; font-size:14px; line-height:1.5; flex:1; }
+
+/* VOICE/VIDEO BAR */
+.voice-bar { display:none; background:#1a1a2e; border-top:1px solid #333; padding:8px 12px; align-items:center; gap:8px; flex-shrink:0; }
+.voice-bar.active { display:flex; }
+.voice-btn { padding:6px 12px; border-radius:20px; border:none; cursor:pointer; font-size:12px; font-weight:600; transition:all .2s; }
+.vbtn-mic { background:#2e7d32; color:#fff; }
+.vbtn-mic.muted { background:#c62828; }
+.vbtn-cam { background:#1565c0; color:#fff; }
+.vbtn-cam.off { background:#555; }
+.vbtn-leave { background:#c62828; color:#fff; }
+.vbtn-join { background:#2e7d32; color:#fff; }
+.voice-users { display:flex; gap:6px; flex:1; flex-wrap:wrap; }
+.vu-chip { background:#ffffff15; border:1px solid #ffffff33; border-radius:12px; padding:2px 8px; font-size:11px; color:#ccc; display:flex; align-items:center; gap:4px; }
+.vu-chip.speaking { border-color:#4caf50; color:#4caf50; animation: pulse 0.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+/* VIDEO GRID */
+.video-overlay { display:none; position:fixed; inset:0; background:#000e; z-index:200; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
+.video-overlay.show { display:flex; }
+.video-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; max-width:900px; width:90%; }
+.video-item { background:#1a1a2e; border-radius:12px; overflow:hidden; position:relative; aspect-ratio:16/9; }
+.video-item video { width:100%; height:100%; object-fit:cover; }
+.video-item .vname { position:absolute; bottom:8px; left:8px; background:#000a; color:#fff; padding:2px 8px; border-radius:8px; font-size:12px; }
+.video-close { background:#c62828; color:#fff; border:none; padding:10px 24px; border-radius:20px; cursor:pointer; font-size:14px; }
+
+/* RANK SETRANK SELECT */
+.rank-select { width:100%; padding:8px; background:#1a1a2e; color:#fff; border:1px solid #333; border-radius:8px; font-size:13px; }
+
+/* AD WARNING */
+.ad-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#c62828; color:#fff; padding:12px 24px; border-radius:12px; font-size:14px; z-index:999; display:none; }
+.ad-toast.show { display:block; animation:fadeInDown .3s; }
+@keyframes fadeInDown { from{opacity:0;transform:translateX(-50%) translateY(-10px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
+
+/* POINTS BADGE */
+.points-badge { background:#ffd70022; border:1px solid #ffd70044; color:#ffd700; font-size:11px; padding:2px 8px; border-radius:12px; cursor:pointer; }
+
+/* PROFILE MODAL */
+#profile-modal.show { display:flex !important; }
+@keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+.profile-action-btn { padding:8px 14px; border-radius:20px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all .2s; }
+
 </head>
 <body>
 <div class="bg"></div>
@@ -671,6 +717,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sbdg"><div class="sdot"></div><span id="co">0</span></div>
       <span id="my-badge" style="display:none;font-size:11px;padding:4px 10px;border-radius:50px;border:1px solid;"></span>
+      <span id="points-badge" class="points-badge" style="display:none" onclick="showLeaderboard()">🏆 0 نقطة</span>
       <button class="btn btn-g" style="padding:6px 12px;font-size:12px;" onclick="logout()">خروج</button>
     </div>
   </div>
@@ -711,6 +758,14 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
         </div>
         <div class="ep-grid" id="ep-grid"></div>
       </div>
+      <!-- VOICE BAR -->
+      <div class="voice-bar" id="voice-bar">
+        <button class="voice-btn vbtn-join" onclick="joinVoice()" id="voice-join-btn">🎤 دخول الصوت</button>
+        <button class="voice-btn vbtn-mic" onclick="toggleMic()" id="mic-btn" style="display:none">🎤 مايك</button>
+        <button class="voice-btn vbtn-cam" onclick="toggleCam()" id="cam-btn" style="display:none">📷 كاميرا</button>
+        <div class="voice-users" id="voice-users"></div>
+        <button class="voice-btn vbtn-leave" onclick="leaveVoice()" style="display:none" id="voice-leave-btn">📴 خروج</button>
+      </div>
       <div class="cin-area">
         <div class="cin-bar">
           <input type="text" class="cin" id="min" placeholder="اكتب رسالتك هنا..." onkeypress="hk(event)">
@@ -727,6 +782,13 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
       <div class="slist" id="ulist"></div>
     </div>
   </div>
+<!-- VIDEO OVERLAY -->
+<div class="video-overlay" id="video-overlay">
+  <div class="video-grid" id="video-grid"></div>
+  <button class="video-close" onclick="closeVideoOverlay()">❌ إغلاق</button>
+</div>
+<!-- AD TOAST -->
+<div class="ad-toast" id="ad-toast"></div>
 </div>
 
 <!-- CHANGE PASSWORD MODAL (for members) -->
@@ -786,6 +848,67 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   <div class="ctx-i d" id="cx-unmute" onclick="cxUnmute()" style="display:none;">🔊 رفع الكتم</div>
   <div class="ctx-i d" id="cx-kick" onclick="cxKick()" style="display:none;">🚫 طرد</div>
 </div>
+
+<!-- PROFILE MODAL -->
+<div id="profile-modal" style="display:none;position:fixed;inset:0;background:#000d;z-index:250;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#0d1117;border:1px solid #333;border-radius:20px;width:100%;max-width:460px;overflow:hidden;position:relative;">
+    <!-- Cover -->
+    <div id="profile-cover" style="height:120px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);position:relative;">
+      <div id="profile-music-indicator" style="display:none;position:absolute;top:10px;right:10px;background:#000a;border-radius:20px;padding:4px 10px;font-size:11px;color:#ffd700;display:flex;align-items:center;gap:5px;">
+        <span style="animation:spin 2s linear infinite;display:inline-block">🎵</span>
+        <span id="profile-music-name">موسيقى</span>
+      </div>
+    </div>
+    <!-- Avatar + Info -->
+    <div style="padding:0 20px 20px;position:relative;">
+      <div style="display:flex;align-items:flex-end;gap:12px;margin-top:-40px;margin-bottom:12px;">
+        <div id="profile-avatar-wrap" style="width:80px;height:80px;border-radius:50%;border:3px solid #0d1117;overflow:hidden;background:#1a1a2e;flex-shrink:0;cursor:pointer;" onclick="clickProfileAvatar()">
+          <img id="profile-avatar-img" style="width:100%;height:100%;object-fit:cover;display:none">
+          <div id="profile-avatar-initials" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff;"></div>
+        </div>
+        <div style="flex:1;padding-bottom:4px;">
+          <div id="profile-name" style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;"></div>
+          <div id="profile-rank-badge" style="font-size:12px;padding:2px 10px;border-radius:12px;display:inline-block;"></div>
+        </div>
+        <div style="display:flex;gap:6px;padding-bottom:4px;">
+          <button onclick="closeProfile()" style="background:#333;color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:14px;">✕</button>
+        </div>
+      </div>
+      <!-- Bio -->
+      <div id="profile-bio" style="font-size:13px;color:#aaa;margin-bottom:14px;min-height:16px;"></div>
+      <!-- Stats -->
+      <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <div style="background:#ffffff0a;border-radius:10px;padding:10px 16px;flex:1;text-align:center;">
+          <div id="profile-points" style="font-size:20px;font-weight:700;color:#ffd700;"></div>
+          <div style="font-size:11px;color:#666;">نقطة</div>
+        </div>
+        <div style="background:#ffffff0a;border-radius:10px;padding:10px 16px;flex:1;text-align:center;">
+          <div id="profile-gender-age" style="font-size:14px;color:#ccc;"></div>
+          <div style="font-size:11px;color:#666;">الجنس / العمر</div>
+        </div>
+      </div>
+      <!-- Actions -->
+      <div id="profile-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <!-- Edit section (own profile only) -->
+      <div id="profile-edit-section" style="display:none;border-top:1px solid #222;padding-top:14px;">
+        <div style="font-size:13px;color:#888;margin-bottom:10px;">✏️ تعديل ملفك الشخصي</div>
+        <textarea id="profile-bio-input" placeholder="اكتب نبذة عنك..." maxlength="200"
+          style="width:100%;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-size:13px;resize:none;height:60px;margin-bottom:10px;font-family:inherit;box-sizing:border-box;"></textarea>
+        <input id="profile-music-input" placeholder="رابط أغنية (YouTube / SoundCloud)" type="url"
+          style="width:100%;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
+        <input id="profile-music-name-input" placeholder="اسم الأغنية" type="text" maxlength="60"
+          style="width:100%;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
+        <input type="file" id="profile-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+        <div style="display:flex;gap:8px;">
+          <button onclick="document.getElementById('profile-avatar-file').click()" style="flex:1;background:#1565c0;color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;">🖼️ تغيير الصورة</button>
+          <button onclick="saveProfile()" style="flex:1;background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">💾 حفظ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Hidden audio for profile music -->
+<audio id="profile-audio" style="display:none" preload="none"></audio>
 
 <!-- PM BOX -->
 <div class="pm" id="pm">
@@ -886,9 +1009,23 @@ const socket=io();
 const AK='ghazal-admin-2024';
 const AVC=['#1565c0','#c62828','#6a1b9a','#2e7d32','#e65100','#00838f','#ad1457','#4527a0'];
 const RC={general:'linear-gradient(135deg,#1565c0,#0d47a1)',iraq:'linear-gradient(135deg,#c62828,#b71c1c)',youth:'linear-gradient(135deg,#e65100,#bf360c)',feelings:'linear-gradient(135deg,#c2185b,#880e4f)',music:'linear-gradient(135deg,#6a1b9a,#4a148c)',sports:'linear-gradient(135deg,#2e7d32,#1b5e20)',fun:'linear-gradient(135deg,#f57f17,#e65100)',elders:'linear-gradient(135deg,#37474f,#263238)'};
-const RK_COLOR={owner:'#ff6b35',admin:'#ffd54f',vip:'#ce93d8',member:'#90caf9',visitor:'#b0bec5'};
-const RK_LABEL={owner:'👑 مالك',admin:'⚙️ إداري',vip:'💎 VIP',member:'👤 عضو',visitor:'👁️ زائر'};
-const RK_CLASS={owner:'rk-owner',admin:'rk-admin',vip:'rk-vip',member:'rk-member',visitor:'rk-visitor'};
+// ===== 10-RANK SYSTEM =====
+const RANKS_DATA = {
+  owner:       {label:'👑 مالك',       color:'#ff4444',fontSize:'22px',fontWeight:'900',glow:'0 0 10px #ff4444',bigName:true},
+  owner_admin: {label:'💼 أونر إداري', color:'#ff8c00',fontSize:'20px',fontWeight:'800',glow:'0 0 8px #ff8c00',bigName:true},
+  owner_vip:   {label:'⭐ أونر',        color:'#ffd700',fontSize:'19px',fontWeight:'700',glow:'0 0 8px #ffd700',bigName:true},
+  super_admin: {label:'🔱 سوبر أدمن',  color:'#b044ff',fontSize:'18px',fontWeight:'700',glow:'0 0 6px #b044ff',bigName:true},
+  admin:       {label:'⚙️ أدمن',       color:'#00bfff',fontSize:'17px',fontWeight:'700',glow:'0 0 5px #00bfff',bigName:false},
+  premium:     {label:'💎 بريميوم',    color:'#00e5ff',fontSize:'16px',fontWeight:'600',glow:'none',bigName:false},
+  vip:         {label:'🌟 عضو مميز',   color:'#ce93d8',fontSize:'16px',fontWeight:'600',glow:'none',bigName:false},
+  gold:        {label:'🥇 عضو ذهبي',   color:'#ffc107',fontSize:'15px',fontWeight:'500',glow:'none',bigName:false},
+  member:      {label:'👤 عضو مسجل',   color:'#90caf9',fontSize:'14px',fontWeight:'400',glow:'none',bigName:false},
+  visitor:     {label:'👁️ زائر',       color:'#b0bec5',fontSize:'13px',fontWeight:'400',glow:'none',bigName:false},
+};
+const ADMIN_RANKS=['owner','owner_admin','owner_vip','super_admin','admin'];
+function getRK(rank){return RANKS_DATA[rank]||RANKS_DATA['visitor'];}
+const RK_COLOR={};const RK_LABEL={};const RK_CLASS={};
+Object.entries(RANKS_DATA).forEach(([k,v])=>{RK_COLOR[k]=v.color;RK_LABEL[k]=v.label;RK_CLASS[k]='rk-'+k;});
 
 let cu=null,cr='general',eo=false,pmt3=null,cx3=null,rd={};
 
@@ -953,13 +1090,18 @@ function enterChat(){
   document.getElementById('chat-page').style.display='flex';
   cr='general';
   socket.emit('join',cu);
-  if(['owner','admin'].includes(cu.rank)){
+  if(ADMIN_RANKS.includes(cu.rank)){
     document.getElementById('admin-btn').style.display='flex';
   }
   // Show change password button only for registered members
   if(cu.rank !== 'visitor'){
     document.getElementById('chpass-btn').style.display='flex';
   }
+  // Show points for all users
+  const pb=document.getElementById('points-badge');
+  if(pb){pb.style.display='inline-flex';pb.textContent='🏆 '+(cu.points||0)+' نقطة';}
+  // Show voice bar
+  showVoiceBar();
   showMobAdmin();
   const b=document.getElementById('my-badge');
   b.style.display='inline-flex';
@@ -987,6 +1129,8 @@ window.onload = () => {
 // SOCKET EVENTS
 socket.on('init',(d)=>{
   rd = d.rooms;
+  window._liveUsers = {};
+  window._avatarCache = window._avatarCache || {};
   renderRooms();
   upOC(d.onlineCount);
   d.messages.forEach(m=>renderMsg(m));
@@ -1052,6 +1196,18 @@ socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div cl
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
 socket.on('unmuted',m=>{toast('🔊 '+m,'k');const i=document.getElementById('min');i.disabled=false;i.placeholder='اكتب رسالتك هنا...';});
 socket.on('kicked',m=>{toast('🚫 '+m,'e');setTimeout(()=>logout(),2000);});
+socket.on('rank-changed',d=>{cu.rank=d.rank;toast('🎉 تم تغيير رتبتك إلى '+d.rankInfo.label,'k');const b=document.getElementById('my-badge');if(b){b.textContent=d.rankInfo.label;b.style.color=d.rankInfo.color;b.style.borderColor=d.rankInfo.color+'55';b.style.background=d.rankInfo.color+'15';}});
+socket.on('ad-warning',m=>{const t=document.getElementById('ad-toast');t.textContent=m;t.classList.add('show');setTimeout(()=>{t.classList.remove('show');setTimeout(()=>logout(),1000);},3000);});
+socket.on('points-updated',d=>{cu.points=d.points;const pb=document.getElementById('points-badge');if(pb)pb.textContent='🏆 '+d.points+' نقطة';});
+socket.on('user-rank-updated',d=>{// Update user in list if visible
+  renderUsersUpdate(d);
+});
+socket.on('voice-user-joined',d=>{addVoiceChip(d.username,d.peerId);createPeerConnection(d.peerId,true);});
+socket.on('voice-user-left',d=>{removeVoiceChip(d.peerId);closePeerConnection(d.peerId);});
+socket.on('voice-room-update',d=>{updateVoiceUsers(d.users);});
+socket.on('rtc-offer',async d=>{await handleOffer(d.from,d.offer);});
+socket.on('rtc-answer',async d=>{await handleAnswer(d.from,d.answer);});
+socket.on('rtc-ice',async d=>{await handleIce(d.from,d.candidate);});
 socket.on('username-rejected', msg => {
   // Go back to landing page and show error
   document.getElementById('chat-page').style.display = 'none';
@@ -1121,46 +1277,61 @@ function renderMsg(m){
   const c=document.getElementById('msgs');
   if(m.type==='system'){
     const d=document.createElement('div');d.className='sys';d.textContent=m.text;c.appendChild(d);
-  } else {
-    const u=m.user||{name:m.username||'?',rank:'visitor'};
-    const col=AVC[(u.name||'?').charCodeAt(0)%AVC.length];
-    const rkc=RK_CLASS[u.rank]||'rk-visitor';
-    const rkl=RK_LABEL[u.rank]||'👁️ زائر';
-    const nc=RK_COLOR[u.rank]||'#b0bec5';
-    const d=document.createElement('div');d.className='msg';
-    d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99)">${(u.name||'?').charAt(0)}</div>
-      <div class="mc"><div class="mh">
-        <span class="mn" style="color:${nc}">${u.name}</span>
-        <span class="mb ${rkc}">${rkl}</span>
-        <span class="mt">${m.time||''}</span>
-      </div><div class="mx">${esc(m.text)}</div></div>`;
-    c.appendChild(d);
+    c.scrollTop=c.scrollHeight; return;
   }
+  if(m.type==='quiz'){
+    const d=document.createElement('div');d.className='quiz-msg';
+    d.innerHTML=`<span class="quiz-bot-badge">🏆 مسابقات</span><span class="quiz-text">${esc(m.text)}</span><span class="mt">${m.time||''}</span>`;
+    c.appendChild(d); c.scrollTop=c.scrollHeight; return;
+  }
+  const u=m.user||{name:m.username||'?',rank:'visitor'};
+  const rk=getRK(u.rank);
+  const col=AVC[(u.name||'?').charCodeAt(0)%AVC.length];
+  const glowStyle=rk.glow&&rk.glow!=='none'?`text-shadow:${rk.glow};`:'';
+  const nameStyle=`color:${rk.color};font-size:${rk.fontSize};font-weight:${rk.fontWeight};${glowStyle}`;
+  const d=document.createElement('div');d.className='msg'+(rk.bigName?' msg-big':'');
+  d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${rk.color}44;cursor:pointer" onclick="openProfile('${u.name.replace(/'/g,"\\'")}')">
+    ${window._avatarCache&&window._avatarCache[u.name]?`<img src="${window._avatarCache[u.name]}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(u.name||'?').charAt(0)}</div>
+    <div class="mc"><div class="mh">
+      <span class="mn" style="${nameStyle};cursor:pointer" onclick="openProfile('${u.name.replace(/'/g,"\\'")}'">${u.name}</span>
+      <span class="mb" style="background:${rk.color}22;color:${rk.color};border:1px solid ${rk.color}44">${rk.label}</span>
+      <span class="mt">${m.time||''}</span>
+    </div><div class="mx">${esc(m.text)}</div></div>`;
+  c.appendChild(d);
   c.scrollTop=c.scrollHeight;
 }
 
 function renderUsers(users){
   const c=document.getElementById('ulist');c.innerHTML='';
+  window._liveUsers = {};
+  users.forEach(u=>{ window._liveUsers[u.name]=u; });
   document.getElementById('uc').textContent=users.length;
-  const g={owner:[],admin:[],vip:[],member:[],visitor:[]};
-  users.forEach(u=>{(g[u.rank]||g.visitor).push(u);});
-  if(g.owner.length)addSec(c,'👑 المالك',g.owner);
-  if(g.admin.length)addSec(c,'⚙️ الإداريون',g.admin);
-  if(g.vip.length)addSec(c,'💎 VIP',g.vip);
-  if(g.member.length)addSec(c,'👥 الأعضاء',g.member);
-  if(g.visitor.length)addSec(c,'👁️ الزوار',g.visitor);
+  const groups={owner:[],owner_admin:[],owner_vip:[],super_admin:[],admin:[],premium:[],vip:[],gold:[],member:[],visitor:[]};
+  users.forEach(u=>{(groups[u.rank]||groups.visitor).push(u);});
+  if(groups.owner.length) addSec(c,'👑 المالك',groups.owner);
+  if(groups.owner_admin.length) addSec(c,'💼 أونر إداري',groups.owner_admin);
+  if(groups.owner_vip.length) addSec(c,'⭐ أونر',groups.owner_vip);
+  if(groups.super_admin.length) addSec(c,'🔱 سوبر أدمن',groups.super_admin);
+  if(groups.admin.length) addSec(c,'⚙️ أدمن',groups.admin);
+  if(groups.premium.length) addSec(c,'💎 بريميوم',groups.premium);
+  if(groups.vip.length) addSec(c,'🌟 عضو مميز',groups.vip);
+  if(groups.gold.length) addSec(c,'🥇 عضو ذهبي',groups.gold);
+  if(groups.member.length) addSec(c,'👤 أعضاء',groups.member);
+  if(groups.visitor.length) addSec(c,'👁️ زوار',groups.visitor);
   syncMobLists();
 }
 
 function addSec(c,t,users){
   const l=document.createElement('div');l.className='usl';l.textContent=t;c.appendChild(l);
   users.forEach(u=>{
+    const rk=getRK(u.rank);
     const col=AVC[(u.name||'?').charCodeAt(0)%AVC.length];
+    const glowStyle=rk.glow&&rk.glow!=='none'?`text-shadow:${rk.glow};`:'';
     const d=document.createElement('div');d.className='ui';
-    d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99)">${(u.name||'?').charAt(0)}<div class="udot"></div></div>
-      <div style="flex:1;min-width:0;"><div class="un" style="color:${RK_COLOR[u.rank]||'#fff'}">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
+    d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${rk.color}55">${(u.name||'?').charAt(0)}<div class="udot"></div></div>
+      <div style="flex:1;min-width:0;"><div class="un" style="color:${rk.color};font-size:${rk.fontSize};font-weight:${rk.fontWeight};${glowStyle}">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
     d.addEventListener('contextmenu',e=>{e.preventDefault();openCtx(e,u.name);});
-    d.onclick=()=>openPM(u.name);
+    d.onclick=()=>openProfile(u.name);
     c.appendChild(d);
   });
 }
@@ -1279,9 +1450,14 @@ async function refAdmin(){
           <select onchange="aRank('${u.username}',this.value)" style="background:#0d1f3c;color:white;border:1px solid rgba(245,166,35,.3);border-radius:7px;padding:3px 7px;font-family:'Cairo',sans-serif;font-size:11px;margin:2px;">
             <option value="" disabled selected>تغيير الرتبة</option>
             <option value="visitor">👁️ زائر</option>
-            <option value="member">👤 عضو</option>
-            <option value="vip">💎 VIP</option>
-            <option value="admin">⚙️ إداري</option>
+            <option value="member">👤 عضو مسجل</option>
+            <option value="gold">🥇 عضو ذهبي</option>
+            <option value="vip">🌟 عضو مميز</option>
+            <option value="premium">💎 بريميوم</option>
+            <option value="admin">⚙️ أدمن</option>
+            <option value="super_admin">🔱 سوبر أدمن</option>
+            <option value="owner_vip">⭐ أونر</option>
+            <option value="owner_admin">💼 أونر إداري</option>
             <option value="owner">👑 مالك</option>
           </select>
         </td>
@@ -1735,6 +1911,335 @@ document.getElementById('policy-overlay')?.addEventListener('click', e => {
 
 function upOC(n){document.getElementById('oc').textContent=n;document.getElementById('co').textContent=n;}
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ===== VOICE/VIDEO (WebRTC) =====
+let localStream=null; let peerConnections={}; let inVoice=false; let micOn=true; let camOn=false;
+const ICE_SERVERS={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]};
+
+async function joinVoice(){
+  try {
+    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    inVoice=true; micOn=true;
+    document.getElementById('voice-join-btn').style.display='none';
+    document.getElementById('mic-btn').style.display='';
+    document.getElementById('cam-btn').style.display='';
+    document.getElementById('voice-leave-btn').style.display='';
+    socket.emit('voice-join',cr);
+    addVoiceChip(cu.username,'local');
+    toast('🎤 انضممت للغرفة الصوتية','k');
+    // Add local video element
+    addVideoElement('local',localStream,cu.username);
+  } catch(e){ toast('❌ لا يمكن الوصول للمايك: '+e.message,'e'); }
+}
+
+function toggleMic(){
+  if (!localStream) return;
+  micOn=!micOn;
+  localStream.getAudioTracks().forEach(t=>t.enabled=micOn);
+  const btn=document.getElementById('mic-btn');
+  btn.textContent=micOn?'🎤 مايك':'🔇 صامت';
+  btn.className='voice-btn '+(micOn?'vbtn-mic':'vbtn-mic muted');
+}
+
+async function toggleCam(){
+  if (!localStream) return;
+  camOn=!camOn;
+  if (camOn){
+    try {
+      const vs=await navigator.mediaDevices.getUserMedia({video:true});
+      vs.getVideoTracks().forEach(t=>localStream.addTrack(t));
+      // Add video to existing peer connections
+      Object.values(peerConnections).forEach(pc=>{
+        vs.getVideoTracks().forEach(t=>pc.addTrack(t,localStream));
+      });
+      document.getElementById('video-overlay').classList.add('show');
+      addVideoElement('local',localStream,cu.username);
+      document.getElementById('cam-btn').textContent='📷 كاميرا';
+      document.getElementById('cam-btn').className='voice-btn vbtn-cam';
+    } catch(e){ camOn=false; toast('❌ لا يمكن الوصول للكاميرا','e'); }
+  } else {
+    localStream.getVideoTracks().forEach(t=>{t.stop();localStream.removeTrack(t);});
+    document.getElementById('cam-btn').textContent='📹 تشغيل';
+    document.getElementById('cam-btn').className='voice-btn vbtn-cam off';
+    if (!Object.values(peerConnections).some(pc=>pc.remoteVideoActive)) {
+      document.getElementById('video-overlay').classList.remove('show');
+    }
+  }
+}
+
+function leaveVoice(){
+  if (localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+  Object.keys(peerConnections).forEach(id=>closePeerConnection(id));
+  peerConnections={};
+  inVoice=false;
+  socket.emit('voice-leave',cr);
+  document.getElementById('voice-join-btn').style.display='';
+  document.getElementById('mic-btn').style.display='none';
+  document.getElementById('cam-btn').style.display='none';
+  document.getElementById('voice-leave-btn').style.display='none';
+  document.getElementById('voice-users').innerHTML='';
+  document.getElementById('video-overlay').classList.remove('show');
+  document.getElementById('video-grid').innerHTML='';
+  toast('📴 غادرت الغرفة الصوتية','e');
+}
+
+function closeVideoOverlay(){ document.getElementById('video-overlay').classList.remove('show'); }
+
+function addVideoElement(id,stream,name){
+  const grid=document.getElementById('video-grid');
+  let item=document.getElementById('vid-'+id);
+  if (!item){ item=document.createElement('div'); item.className='video-item'; item.id='vid-'+id; grid.appendChild(item); }
+  item.innerHTML=`<video autoplay playsinline muted="${id==='local'}"></video><div class="vname">${name}</div>`;
+  item.querySelector('video').srcObject=stream;
+}
+
+async function createPeerConnection(peerId,isInitiator){
+  const pc=new RTCPeerConnection(ICE_SERVERS);
+  peerConnections[peerId]=pc;
+  if (localStream) localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  pc.onicecandidate=e=>{ if(e.candidate) socket.emit('rtc-ice',{to:peerId,candidate:e.candidate}); };
+  pc.ontrack=e=>{ const s=e.streams[0]; addVideoElement(peerId,s,'مستخدم'); if(e.track.kind==='video'){document.getElementById('video-overlay').classList.add('show');} };
+  if (isInitiator){
+    const offer=await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit('rtc-offer',{to:peerId,offer});
+  }
+  return pc;
+}
+
+async function handleOffer(from,offer){
+  const pc=await createPeerConnection(from,false);
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit('rtc-answer',{to:from,answer});
+}
+
+async function handleAnswer(from,answer){
+  const pc=peerConnections[from]; if (!pc) return;
+  await pc.setRemoteDescription(new RTCSessionDescription(answer));
+}
+
+async function handleIce(from,candidate){
+  const pc=peerConnections[from]; if (!pc) return;
+  try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch(e){}
+}
+
+function closePeerConnection(peerId){
+  if (peerConnections[peerId]) { peerConnections[peerId].close(); delete peerConnections[peerId]; }
+  const vi=document.getElementById('vid-'+peerId); if (vi) vi.remove();
+}
+
+function addVoiceChip(username,peerId){
+  const c=document.getElementById('voice-users');
+  if (document.getElementById('vc-'+peerId)) return;
+  const chip=document.createElement('div'); chip.className='vu-chip'; chip.id='vc-'+peerId;
+  chip.textContent='🎤 '+username; c.appendChild(chip);
+}
+function removeVoiceChip(peerId){ const c=document.getElementById('vc-'+peerId); if(c) c.remove(); }
+function updateVoiceUsers(users){ /* handled by individual join/leave events */ }
+
+// Show voice bar when entering a room
+function showVoiceBar(){ document.getElementById('voice-bar').classList.add('active'); }
+function renderUsersUpdate(d){}// placeholder
+
+// ===== PROFILE SYSTEM =====
+let currentProfileAudio = null;
+
+async function openProfile(username) {
+  const modal = document.getElementById('profile-modal');
+  modal.classList.add('show');
+  // Reset
+  document.getElementById('profile-avatar-img').style.display='none';
+  document.getElementById('profile-music-indicator').style.display='none';
+  document.getElementById('profile-edit-section').style.display='none';
+  document.getElementById('profile-actions').innerHTML='';
+  stopProfileMusic();
+
+  // Find live user data
+  const liveUser = Object.values(window._liveUsers||{}).find(u=>u.name===username) || {};
+
+  try {
+    const r = await fetch('/api/profile/'+encodeURIComponent(username));
+    const d = await r.json();
+    if (!d.ok) { toast('❌ لم يتم العثور على الملف','e'); closeProfile(); return; }
+    const p = d.profile;
+    const rk = RANKS_DATA[p.rank]||RANKS_DATA['visitor'];
+    const col = AVC[(username||'?').charCodeAt(0)%AVC.length];
+
+    // Name & rank
+    document.getElementById('profile-name').textContent = p.username;
+    document.getElementById('profile-name').style.cssText = `font-size:18px;font-weight:700;color:${rk.color};text-shadow:${rk.glow!=='none'?rk.glow:'none'};`;
+    const badge = document.getElementById('profile-rank-badge');
+    badge.textContent = rk.label;
+    badge.style.cssText = `font-size:12px;padding:2px 10px;border-radius:12px;display:inline-block;background:${rk.color}22;color:${rk.color};border:1px solid ${rk.color}44;`;
+
+    // Avatar
+    const initials = document.getElementById('profile-avatar-initials');
+    initials.textContent = (p.username||'?').charAt(0).toUpperCase();
+    initials.style.background = `linear-gradient(135deg,${col},${col}99)`;
+    const avatarWrap = document.getElementById('profile-avatar-wrap');
+    avatarWrap.style.borderColor = rk.color;
+    if (p.avatar) {
+      document.getElementById('profile-avatar-img').src = p.avatar;
+      document.getElementById('profile-avatar-img').style.display = 'block';
+      initials.style.display='none';
+    } else {
+      document.getElementById('profile-avatar-img').style.display='none';
+      initials.style.display='flex';
+    }
+
+    // Bio
+    document.getElementById('profile-bio').textContent = p.bio || '';
+
+    // Stats
+    document.getElementById('profile-points').textContent = (p.points||0).toLocaleString();
+    document.getElementById('profile-gender-age').textContent =
+      (liveUser.gender||'') + (liveUser.age?' · '+liveUser.age:'');
+
+    // Cover color based on rank
+    document.getElementById('profile-cover').style.background =
+      `linear-gradient(135deg,${rk.color}33,#0d1117,${rk.color}11)`;
+
+    // Music
+    if (p.music_url) {
+      document.getElementById('profile-music-indicator').style.display='flex';
+      document.getElementById('profile-music-name').textContent = p.music_name||'موسيقى';
+      playProfileMusic(p.music_url, p.music_name);
+    }
+
+    // Actions
+    const actions = document.getElementById('profile-actions');
+    if (p.username !== cu?.username) {
+      // PM button
+      const pmBtn = document.createElement('button');
+      pmBtn.className='profile-action-btn';
+      pmBtn.style.cssText='background:#1565c0;color:#fff;';
+      pmBtn.innerHTML='💌 رسالة خاصة';
+      pmBtn.onclick=()=>{ closeProfile(); openPM(p.username); };
+      actions.appendChild(pmBtn);
+      // Admin actions
+      if (ADMIN_RANKS.includes(cu?.rank)) {
+        const muteBtn = document.createElement('button');
+        muteBtn.className='profile-action-btn';
+        muteBtn.style.cssText='background:#e65100;color:#fff;';
+        muteBtn.innerHTML='🔇 كتم';
+        muteBtn.onclick=()=>{ socket.emit('admin-mute',{username:p.username}); closeProfile(); };
+        actions.appendChild(muteBtn);
+        const kickBtn = document.createElement('button');
+        kickBtn.className='profile-action-btn';
+        kickBtn.style.cssText='background:#c62828;color:#fff;';
+        kickBtn.innerHTML='🚫 طرد';
+        kickBtn.onclick=()=>{ socket.emit('admin-kick',{username:p.username}); closeProfile(); };
+        actions.appendChild(kickBtn);
+      }
+    } else {
+      // Own profile - show edit
+      document.getElementById('profile-edit-section').style.display='block';
+      document.getElementById('profile-bio-input').value = p.bio||'';
+      document.getElementById('profile-music-input').value = p.music_url||'';
+      document.getElementById('profile-music-name-input').value = p.music_name||'';
+    }
+  } catch(e) { toast('❌ خطأ في تحميل الملف','e'); closeProfile(); }
+}
+
+function closeProfile() {
+  document.getElementById('profile-modal').classList.remove('show');
+  stopProfileMusic();
+}
+
+function clickProfileAvatar() {
+  // Only own profile can change avatar
+  const name = document.getElementById('profile-name').textContent;
+  if (name === cu?.username) document.getElementById('profile-avatar-file').click();
+}
+
+function stopProfileMusic() {
+  const audio = document.getElementById('profile-audio');
+  audio.pause(); audio.src='';
+}
+
+function playProfileMusic(url, name) {
+  // For YouTube: extract embed audio (limited), for direct URLs play directly
+  const audio = document.getElementById('profile-audio');
+  // Try direct audio URL first
+  if (url.match(/\.(mp3|ogg|wav|m4a)(\?|$)/i)) {
+    audio.src = url;
+    audio.play().catch(()=>{});
+  }
+  // SoundCloud widget API would need iframe - show indicator only
+}
+
+async function handleAvatarUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2*1024*1024) { toast('❌ الصورة كبيرة جداً، الحد الأقصى 2MB','e'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const base64 = e.target.result;
+    document.getElementById('profile-avatar-img').src = base64;
+    document.getElementById('profile-avatar-img').style.display='block';
+    document.getElementById('profile-avatar-initials').style.display='none';
+    // Store temporarily
+    window._pendingAvatar = base64;
+    toast('✅ تم اختيار الصورة، اضغط حفظ','k');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile() {
+  const bio = document.getElementById('profile-bio-input').value.trim();
+  const music_url = document.getElementById('profile-music-input').value.trim();
+  const music_name = document.getElementById('profile-music-name-input').value.trim();
+  const avatar = window._pendingAvatar || null;
+
+  try {
+    const r = await fetch('/api/profile/update', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username:cu.username, bio, music_url, music_name, avatar })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toast('✅ تم حفظ الملف الشخصي','k');
+      window._pendingAvatar = null;
+      // Update avatar in chat
+      if (avatar) window._myAvatar = avatar;
+      closeProfile();
+    } else { toast('❌ '+d.msg,'e'); }
+  } catch(e) { toast('❌ خطأ في الحفظ','e'); }
+}
+
+// Close profile on overlay click
+document.getElementById('profile-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('profile-modal')) closeProfile();
+});
+
+async function showLeaderboard(){
+  const r=await fetch('/api/leaderboard'); const d=await r.json();
+  if (!d.ok) return;
+  let html=`<div style="background:#0d1117;border:1px solid #333;border-radius:12px;padding:20px;max-width:400px;margin:auto;">
+    <h3 style="text-align:center;color:#ffd700;margin:0 0 16px">🏆 لوحة الصدارة</h3>`;
+  d.users.forEach((u,i)=>{
+    const rk=RANKS_DATA[u.rank]||RANKS_DATA['visitor'];
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #333;"><span style="font-size:18px;min-width:28px">${medal}</span>
+      <span style="color:${rk.color};font-weight:600;flex:1">${u.username}</span>
+      <span style="color:#ffd700;font-weight:700">${u.points} نقطة</span></div>`;
+  });
+  html+=`</div>`;
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:#000c;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML=html+`<button onclick="this.parentElement.remove()" style="position:absolute;top:20px;right:20px;background:#c62828;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;">✕ إغلاق</button>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+
+// Update enterChat to show voice bar
+const _origEnter=enterChat;
+function enterChat(){
+  _origEnter && typeof _origEnter === 'function' && _origEnter();
+}
 </script>
 </body>
 </html>

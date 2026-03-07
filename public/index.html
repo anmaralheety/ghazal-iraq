@@ -2237,23 +2237,27 @@ async function saveProfile() {
 document.getElementById('profile-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('profile-modal')) closeProfile();
 });
-  const r=await fetch('/api/leaderboard'); const d=await r.json();
-  if (!d.ok) return;
-  let html=`<div style="background:#0d1117;border:1px solid #333;border-radius:12px;padding:20px;max-width:400px;margin:auto;">
+
+async function showLeaderboard(){
+  try {
+    const r=await fetch('/api/leaderboard'); const d=await r.json();
+    if (!d.ok) return;
+    let html=`<div style="background:#0d1117;border:1px solid #333;border-radius:12px;padding:20px;max-width:400px;margin:auto;">
     <h3 style="text-align:center;color:#ffd700;margin:0 0 16px">🏆 لوحة الصدارة</h3>`;
-  d.users.forEach((u,i)=>{
-    const rk=RANKS_DATA[u.rank]||RANKS_DATA['visitor'];
-    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
-    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #333;"><span style="font-size:18px;min-width:28px">${medal}</span>
-      <span style="color:${rk.color};font-weight:600;flex:1">${u.username}</span>
-      <span style="color:#ffd700;font-weight:700">${u.points} نقطة</span></div>`;
-  });
-  html+=`</div>`;
-  const modal=document.createElement('div');
-  modal.style.cssText='position:fixed;inset:0;background:#000c;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML=html+`<button onclick="this.parentElement.remove()" style="position:absolute;top:20px;right:20px;background:#c62828;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;">✕ إغلاق</button>`;
-  modal.onclick=e=>{if(e.target===modal)modal.remove();};
-  document.body.appendChild(modal);
+    d.users.forEach((u,i)=>{
+      const rk=RANKS_DATA[u.rank]||RANKS_DATA['visitor'];
+      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+      html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #333;"><span style="font-size:18px;min-width:28px">${medal}</span>
+        <span style="color:${rk.color};font-weight:600;flex:1">${u.username}</span>
+        <span style="color:#ffd700;font-weight:700">${u.points} نقطة</span></div>`;
+    });
+    html+=`</div>`;
+    const modal=document.createElement('div');
+    modal.style.cssText='position:fixed;inset:0;background:#000c;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML=html+`<button onclick="this.parentElement.remove()" style="position:absolute;top:20px;right:20px;background:#c62828;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;">✕ إغلاق</button>`;
+    modal.onclick=e=>{if(e.target===modal)modal.remove();};
+    document.body.appendChild(modal);
+  } catch(e){}
 }
 </script>
 </body>

@@ -9,7 +9,8 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ===== DATABASE =====
 let db = null;
@@ -386,8 +387,8 @@ app.get('/api/profile/:username', async (req,res) => {
 app.post('/api/profile/update', async (req,res) => {
   const { username, avatar, music_url, music_name, bio } = req.body;
   if (!username) return res.json({ok:false,msg:'مطلوب اسم المستخدم'});
-  // Validate avatar size (base64 max ~2MB)
-  if (avatar && avatar.length > 2*1024*1024) return res.json({ok:false,msg:'الصورة كبيرة جداً، الحد الأقصى 2MB'});
+  // base64 size check: 4MB base64 ≈ 3MB actual
+  if (avatar && avatar.length > 4 * 1024 * 1024) return res.json({ok:false,msg:'الصورة كبيرة جداً، الحد الأقصى 3MB'});
   if (useDB) {
     await db.query(`INSERT INTO profiles (username,avatar,music_url,music_name,bio,updated_at)
       VALUES ($1,$2,$3,$4,$5,NOW())
@@ -405,9 +406,13 @@ app.post('/api/profile/update', async (req,res) => {
     if (music_name) memProfiles[username].music_name = music_name;
     if (bio !== undefined) memProfiles[username].bio = bio;
   }
-  // Update live socket user avatar
+  // Update live socket user avatar + broadcast to room
   const sid = Object.keys(chatUsers).find(id=>chatUsers[id].name===username);
-  if (sid) chatUsers[sid].avatar = avatar || chatUsers[sid].avatar;
+  if (sid) {
+    if (avatar) chatUsers[sid].avatar = avatar;
+    const room = chatUsers[sid].room;
+    if (room) io.to(room).emit('room-users', getRoomUsers(room));
+  }
   res.json({ok:true});
 });
 
@@ -510,7 +515,12 @@ function kickUser(username,reason) {
   if (sid) { io.to(sid).emit('kicked',reason); setTimeout(()=>io.sockets.sockets.get(sid)?.disconnect(),500); }
 }
 function getTime() { const n=new Date(); return `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`; }
-function getRoomUsers(r) { return Object.values(chatUsers).filter(u=>u.room===r); }
+function getRoomUsers(r) {
+  return Object.values(chatUsers).filter(u=>u.room===r).map(u => {
+    const avatar = (memProfiles[u.name] && memProfiles[u.name].avatar) || u.avatar || null;
+    return { ...u, avatar };
+  });
+}
 async function saveMessage(room,username,text,type='chat') {
   const msg={room,username,text,type,time:getTime()};
   if (useDB) await db.query('INSERT INTO messages (room,username,text,type) VALUES ($1,$2,$3,$4)',[room,username,text,type]);
@@ -657,6 +667,59 @@ io.on('connection', (socket) => {
 
   // PRIVATE MESSAGES
   // Admin adds quiz question via socket (fallback)
+  // ===== VOICE MESSAGES (relay) =====
+  socket.on('voice-message', (data) => {
+    const user = chatUsers[socket.id];
+    if (!user || !data.room || !data.data) return;
+    if (data.data.length > 5 * 1024 * 1024) return; // max 5MB base64 (~1min audio)
+    // Broadcast to room (except sender)
+    socket.to(data.room).emit('voice-message', {
+      room: data.room,
+      data: data.data,
+      duration: Math.min(data.duration || 0, 60),
+      from: user.name
+    });
+  });
+
+  socket.on('pm-voice-message', (data) => {
+    const user = chatUsers[socket.id];
+    if (!user || !data.to || !data.data) return;
+    if (data.data.length > 5 * 1024 * 1024) return;
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) {
+      io.to(toSid).emit('pm-voice-message', {
+        from: user.name,
+        to: data.to,
+        data: data.data,
+        duration: Math.min(data.duration || 0, 60)
+      });
+    }
+  });
+
+  // ===== WebRTC CALLS (relay) =====
+  socket.on('call-offer', (data) => {
+    const user = chatUsers[socket.id];
+    if (!user || !data.to) return;
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('call-offer', { ...data, from: user.name });
+  });
+  socket.on('call-answer', (data) => {
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('call-answer', data);
+  });
+  socket.on('call-ice', (data) => {
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('call-ice', data);
+  });
+  socket.on('call-reject', (data) => {
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('call-reject', {});
+  });
+  socket.on('call-end', (data) => {
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('call-end', {});
+  });
+
   socket.on('admin-add-quiz-q', (data) => {
     const user = chatUsers[socket.id];
     if (!user || !['owner','owner_admin','super_admin','admin'].includes(user.rank)) return;

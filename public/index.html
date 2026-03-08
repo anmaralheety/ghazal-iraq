@@ -713,9 +713,17 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
       </div>
       <div class="cin-area">
         <div class="cin-bar">
+          <button id="voice-rec-btn" onclick="toggleVoiceRec()" title="رسالة صوتية" style="width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;transition:.2s;color:#b0bec5;">🎤</button>
           <input type="text" class="cin" id="min" placeholder="اكتب رسالتك هنا..." onkeypress="hk(event)">
           <button class="ib ibe" onclick="te()">😊</button>
           <button class="ib ibs" onclick="sm()">➤</button>
+        </div>
+        <!-- Voice recording indicator -->
+        <div id="voice-rec-bar" style="display:none;align-items:center;gap:10px;padding:6px 12px;background:rgba(255,60,60,.1);border-top:1px solid rgba(255,60,60,.2);border-radius:0 0 12px 12px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite;"></div>
+          <span style="font-size:12px;color:#ff6b6b;flex:1;">جارٍ التسجيل... <span id="voice-rec-time">0:00</span></span>
+          <button onclick="cancelVoiceRec()" style="background:rgba(255,60,60,.2);border:1px solid rgba(255,60,60,.3);color:#ff6b6b;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;">❌ إلغاء</button>
+          <button onclick="sendVoiceRec()" style="background:linear-gradient(135deg,#2e7d32,#43a047);border:none;color:#fff;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:700;font-family:'Cairo',sans-serif;">✅ إرسال</button>
         </div>
       </div>
     </div>
@@ -789,9 +797,27 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 
 <!-- PM BOX -->
 <div class="pm" id="pm">
-  <div class="pmh"><span class="pmt">💌 <span id="pmt2"></span></span><button class="pmc" onclick="closePM()">✕</button></div>
+  <div class="pmh">
+    <span class="pmt">💌 <span id="pmt2"></span></span>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button onclick="startPMCall('audio')" title="مكالمة صوتية" style="background:rgba(0,191,255,.15);border:1px solid rgba(0,191,255,.3);color:#00bfff;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:15px;">📞</button>
+      <button onclick="startPMCall('video')" title="مكالمة فيديو" style="background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.3);color:#00e676;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:15px;">📹</button>
+      <button class="pmc" onclick="closePM()">✕</button>
+    </div>
+  </div>
   <div class="pmm" id="pmm"></div>
-  <div class="pmir"><input type="text" class="pmin" id="pmi" placeholder="اكتب رسالة..." onkeypress="hpk(event)"><button class="pmse" onclick="spm()">إرسال</button></div>
+  <div class="pmir">
+    <button onclick="togglePMVoiceRec()" id="pm-voice-btn" title="رسالة صوتية" style="background:none;border:none;cursor:pointer;font-size:18px;color:#b0bec5;padding:0 4px;transition:color .2s;">🎤</button>
+    <input type="text" class="pmin" id="pmi" placeholder="اكتب رسالة..." onkeypress="hpk(event)">
+    <button class="pmse" onclick="spm()">إرسال</button>
+  </div>
+  <!-- PM voice rec bar -->
+  <div id="pm-voice-bar" style="display:none;align-items:center;gap:8px;padding:5px 10px;background:rgba(255,60,60,.1);border-top:1px solid rgba(255,60,60,.2);">
+    <div style="width:8px;height:8px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite;"></div>
+    <span style="font-size:11px;color:#ff6b6b;flex:1;">تسجيل... <span id="pm-rec-time">0:00</span></span>
+    <button onclick="cancelPMVoice()" style="background:rgba(255,60,60,.15);border:1px solid rgba(255,60,60,.3);color:#ff6b6b;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">❌</button>
+    <button onclick="sendPMVoice()" style="background:#2e7d32;border:none;color:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">✅ إرسال</button>
+  </div>
 </div>
 
 <!-- ADMIN PANEL -->
@@ -1165,8 +1191,9 @@ function renderMsg(m){
   const fw=RK_WEIGHT[u.rank]||'400';
   const glow=RK_GLOW[u.rank]?`text-shadow:${RK_GLOW[u.rank]};`:'';
   const nameStyle=`color:${nc};font-size:${fs};font-weight:${fw};${glow}cursor:pointer;`;
+  const avHtml=u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${u.name.charAt(0)}`;
   const d=document.createElement('div');d.className='msg';
-  d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;cursor:pointer;" onclick="openProfile('${esc(u.name)}')">${u.name.charAt(0)}</div>
+  d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;cursor:pointer;overflow:hidden;" onclick="openProfile('${esc(u.name)}')">${avHtml}</div>
     <div class="mc"><div class="mh">
       <span class="mn" style="${nameStyle}" onclick="openProfile('${esc(u.name)}')">${u.name}</span>
       <span class="mb" style="background:${nc}22;color:${nc};border:1px solid ${nc}44;border-radius:20px;padding:1px 8px;font-size:11px;">${rkl}</span>
@@ -1213,10 +1240,14 @@ function addSec(c,t,users){
     const d=document.createElement('div');d.className='ui';
     if(u.offline){
       d.style.cssText='opacity:0.5;cursor:default;';
-      d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;filter:grayscale(0.5)">${(u.name||'?').charAt(0)}<div class="udot" style="background:#555!important;box-shadow:none!important;"></div></div>
+      d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;filter:grayscale(0.5);overflow:hidden;">
+        ${u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${(u.name||'?').charAt(0)}`}
+        <div class="udot" style="background:#555!important;box-shadow:none!important;"></div></div>
         <div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}">${u.name}</div><div class="um" style="color:#666;">⚫ غير متصل</div></div>`;
     } else {
-      d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}44">${(u.name||'?').charAt(0)}<div class="udot"></div></div>
+      d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}44;overflow:hidden;">
+        ${u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${(u.name||'?').charAt(0)}`}
+        <div class="udot"></div></div>
         <div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
       d.addEventListener('contextmenu',e=>{e.preventDefault();openCtx(e,u.name);});
       d.onclick=()=>openProfile(u.name);
@@ -2111,6 +2142,279 @@ function saveProfile() {
   }).catch(() => toast('❌ خطأ في الحفظ', 'e'));
 }
 
+// ===== VOICE MESSAGES =====
+let _mediaRec = null, _recChunks = [], _recTimer = null, _recSecs = 0, _recTarget = 'room';
+
+function _startRecTimer(displayId) {
+  _recSecs = 0;
+  clearInterval(_recTimer);
+  _recTimer = setInterval(() => {
+    _recSecs++;
+    const m = Math.floor(_recSecs/60), s = _recSecs%60;
+    const el = document.getElementById(displayId);
+    if (el) el.textContent = m+':'+(s<10?'0':'')+s;
+    if (_recSecs >= 60) { // max 60s
+      if (_recTarget === 'room') sendVoiceRec();
+      else sendPMVoice();
+    }
+  }, 1000);
+}
+
+async function _startRecording(target) {
+  if (_mediaRec) return;
+  _recTarget = target;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _recChunks = [];
+    _mediaRec = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+    _mediaRec.ondataavailable = e => { if (e.data.size) _recChunks.push(e.data); };
+    _mediaRec.start(100);
+    if (target === 'room') {
+      document.getElementById('voice-rec-bar').style.display = 'flex';
+      document.getElementById('voice-rec-btn').style.color = '#ff4444';
+      _startRecTimer('voice-rec-time');
+    } else {
+      document.getElementById('pm-voice-bar').style.display = 'flex';
+      document.getElementById('pm-voice-btn').style.color = '#ff4444';
+      _startRecTimer('pm-rec-time');
+    }
+  } catch(e) {
+    toast('❌ لا يمكن الوصول للميكروفون', 'e');
+  }
+}
+
+function _stopRecording() {
+  clearInterval(_recTimer);
+  if (_mediaRec) {
+    _mediaRec.stream.getTracks().forEach(t => t.stop());
+    _mediaRec = null;
+  }
+  document.getElementById('voice-rec-bar').style.display = 'none';
+  document.getElementById('voice-rec-btn').style.color = '#b0bec5';
+  document.getElementById('pm-voice-bar').style.display = 'none';
+  document.getElementById('pm-voice-btn').style.color = '#b0bec5';
+}
+
+function toggleVoiceRec() { _mediaRec ? sendVoiceRec() : _startRecording('room'); }
+function togglePMVoiceRec() { _mediaRec ? sendPMVoice() : _startRecording('pm'); }
+function cancelVoiceRec() { _stopRecording(); _recChunks = []; }
+function cancelPMVoice() { _stopRecording(); _recChunks = []; }
+
+function _buildVoiceBlob(cb) {
+  if (!_mediaRec) return;
+  _mediaRec.onstop = () => {
+    const blob = new Blob(_recChunks, { type: 'audio/webm' });
+    const reader = new FileReader();
+    reader.onload = ev => cb(ev.target.result, blob);
+    reader.readAsDataURL(blob);
+  };
+  _mediaRec.stop();
+  _mediaRec.stream.getTracks().forEach(t => t.stop());
+  _mediaRec = null;
+  clearInterval(_recTimer);
+}
+
+function sendVoiceRec() {
+  _buildVoiceBlob((b64, blob) => {
+    _stopRecording();
+    const dur = _recSecs;
+    // إرسال عبر socket كـ base64
+    socket.emit('voice-message', { room: cr, data: b64, duration: dur, from: cu?.name||cu?.username });
+    // عرض محلياً فوراً
+    appendVoiceMsg(b64, dur, cu?.name||cu?.username, true);
+  });
+}
+
+function sendPMVoice() {
+  if (!pmt3) return;
+  _buildVoiceBlob((b64, blob) => {
+    _stopRecording();
+    const dur = _recSecs;
+    socket.emit('pm-voice-message', { to: pmt3, data: b64, duration: dur, from: cu?.name||cu?.username });
+    appendPMVoiceMsg(b64, dur, cu?.name||cu?.username, true);
+  });
+}
+
+function appendVoiceMsg(b64, dur, fromName, isMine) {
+  const msgs = document.getElementById('msgs');
+  const d = document.createElement('div');
+  d.className = 'msg ' + (isMine ? 'mine' : '');
+  const m = Math.floor(dur/60), s = dur%60;
+  const durStr = m+':'+(s<10?'0':'')+s;
+  const uid = 'vm_'+Date.now();
+  d.innerHTML = `<div style="display:flex;flex-direction:column;${isMine?'align-items:flex-end':'align-items:flex-start'}">
+    ${!isMine?`<span style="font-size:11px;color:#888;margin-bottom:3px;">${fromName}</span>`:''}
+    <div class="voice-msg-bubble" onclick="playVoiceMsg('${uid}','${b64}')">
+      <div class="vplay" id="vplay_${uid}">▶</div>
+      <div class="vwav">${Array(8).fill(0).map((_,i)=>`<div class="vbar" style="animation-delay:${i*0.15}s;height:${4+Math.random()*16}px"></div>`).join('')}</div>
+      <div class="vdur">🎤 ${durStr}</div>
+    </div>
+    <audio id="${uid}" src="${b64}" style="display:none"></audio>
+  </div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendPMVoiceMsg(b64, dur, fromName, isMine) {
+  const pmm = document.getElementById('pmm');
+  const d = document.createElement('div');
+  d.className = 'pm-msg ' + (isMine ? 'mine' : '');
+  const m = Math.floor(dur/60), s = dur%60;
+  const durStr = m+':'+(s<10?'0':'')+s;
+  const uid = 'pmv_'+Date.now();
+  d.innerHTML = `<div class="voice-msg-bubble" onclick="playVoiceMsg('${uid}','${b64}')">
+    <div class="vplay" id="vplay_${uid}">▶</div>
+    <div class="vwav">${Array(6).fill(0).map((_,i)=>`<div class="vbar" style="animation-delay:${i*0.15}s;"></div>`).join('')}</div>
+    <div class="vdur">🎤 ${durStr}</div>
+  </div>
+  <audio id="${uid}" src="${b64}" style="display:none"></audio>`;
+  pmm.appendChild(d);
+  pmm.scrollTop = pmm.scrollHeight;
+}
+
+let _curVoiceAudio = null;
+function playVoiceMsg(uid, b64) {
+  if (_curVoiceAudio && _curVoiceAudio !== uid) {
+    const prev = document.getElementById(_curVoiceAudio);
+    if (prev) { prev.pause(); prev.currentTime = 0; }
+    const prevBtn = document.getElementById('vplay_' + _curVoiceAudio);
+    if (prevBtn) prevBtn.textContent = '▶';
+  }
+  const audio = document.getElementById(uid);
+  const btn = document.getElementById('vplay_' + uid);
+  if (!audio) return;
+  if (audio.paused) {
+    audio.play();
+    if (btn) btn.textContent = '⏸';
+    _curVoiceAudio = uid;
+    audio.onended = () => { if (btn) btn.textContent = '▶'; _curVoiceAudio = null; };
+  } else {
+    audio.pause();
+    if (btn) btn.textContent = '▶';
+    _curVoiceAudio = null;
+  }
+}
+
+// Receive voice messages
+socket.on('voice-message', d => {
+  if (d.room === cr) appendVoiceMsg(d.data, d.duration, d.from, false);
+});
+socket.on('pm-voice-message', d => {
+  if (d.from === pmt3 || d.to === pmt3) appendPMVoiceMsg(d.data, d.duration, d.from, false);
+});
+
+// ===== WebRTC CALLS =====
+let _pc = null, _localStream = null, _callTarget = null, _callType = null, _callTimer = null, _callSecs = 0, _isCaller = false, _pendingOffer = null, _callMuted = false, _camOff = false;
+const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }] };
+
+function _callTimerStart() {
+  _callSecs = 0;
+  clearInterval(_callTimer);
+  _callTimer = setInterval(() => {
+    _callSecs++;
+    const m = Math.floor(_callSecs/60), s = _callSecs%60;
+    const el = document.getElementById('call-timer-disp');
+    if (el) el.textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  }, 1000);
+}
+
+function showCallModal(name, type, status) {
+  const modal = document.getElementById('call-modal');
+  modal.style.display = 'flex';
+  document.getElementById('call-name').textContent = name;
+  document.getElementById('call-status').textContent = status;
+  document.getElementById('call-avatar').textContent = (name||'?').charAt(0).toUpperCase();
+  document.getElementById('call-timer-disp').textContent = '00:00';
+  document.getElementById('call-cam-btn').style.display = type === 'video' ? 'flex' : 'none';
+  document.getElementById('remote-video').style.display = type === 'video' ? 'block' : 'none';
+  document.getElementById('local-video').style.display = type === 'video' ? 'block' : 'none';
+}
+
+async function startPMCall(type) {
+  if (!pmt3) return;
+  _callTarget = pmt3; _callType = type; _isCaller = true;
+  showCallModal(pmt3, type, '🔔 جارٍ الاتصال...');
+  try {
+    _localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type==='video' });
+    if (type === 'video') document.getElementById('local-video').srcObject = _localStream;
+    _pc = new RTCPeerConnection(ICE);
+    _localStream.getTracks().forEach(t => _pc.addTrack(t, _localStream));
+    _pc.onicecandidate = e => { if (e.candidate) socket.emit('call-ice', { to: _callTarget, candidate: e.candidate }); };
+    _pc.ontrack = e => {
+      const rv = document.getElementById('remote-video');
+      if (!rv.srcObject) rv.srcObject = e.streams[0];
+    };
+    const offer = await _pc.createOffer();
+    await _pc.setLocalDescription(offer);
+    socket.emit('call-offer', { to: _callTarget, offer, type, from: cu?.name||cu?.username });
+  } catch(e) { toast('❌ لا يمكن الوصول للكاميرا/الميكروفون', 'e'); endCall(); }
+}
+
+async function acceptCall() {
+  document.getElementById('incoming-call').style.display = 'none';
+  showCallModal(_callTarget, _callType, '🟢 متصل');
+  _callTimerStart();
+  try {
+    _localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: _callType==='video' });
+    if (_callType === 'video') document.getElementById('local-video').srcObject = _localStream;
+    _pc = new RTCPeerConnection(ICE);
+    _localStream.getTracks().forEach(t => _pc.addTrack(t, _localStream));
+    _pc.onicecandidate = e => { if (e.candidate) socket.emit('call-ice', { to: _callTarget, candidate: e.candidate }); };
+    _pc.ontrack = e => {
+      const rv = document.getElementById('remote-video');
+      if (!rv.srcObject) rv.srcObject = e.streams[0];
+    };
+    await _pc.setRemoteDescription(_pendingOffer);
+    const answer = await _pc.createAnswer();
+    await _pc.setLocalDescription(answer);
+    socket.emit('call-answer', { to: _callTarget, answer });
+  } catch(e) { toast('❌ فشل قبول المكالمة', 'e'); endCall(); }
+}
+
+function rejectCall() {
+  socket.emit('call-reject', { to: _callTarget });
+  document.getElementById('incoming-call').style.display = 'none';
+  _callTarget = null; _pendingOffer = null;
+}
+
+function endCall() {
+  clearInterval(_callTimer);
+  if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
+  if (_pc) { _pc.close(); _pc = null; }
+  if (_callTarget) socket.emit('call-end', { to: _callTarget });
+  document.getElementById('call-modal').style.display = 'none';
+  document.getElementById('remote-video').srcObject = null;
+  document.getElementById('local-video').srcObject = null;
+  _callTarget = null; _callType = null; _isCaller = false;
+}
+
+function toggleCallMute() {
+  _callMuted = !_callMuted;
+  if (_localStream) _localStream.getAudioTracks().forEach(t => t.enabled = !_callMuted);
+  document.getElementById('call-mute-btn').textContent = _callMuted ? '🔇' : '🎤';
+}
+function toggleCallCam() {
+  _camOff = !_camOff;
+  if (_localStream) _localStream.getVideoTracks().forEach(t => t.enabled = !_camOff);
+  document.getElementById('call-cam-btn').textContent = _camOff ? '📷' : '📹';
+}
+
+// Call socket events
+socket.on('call-offer', async d => {
+  _callTarget = d.from; _callType = d.type; _pendingOffer = new RTCSessionDescription(d.offer); _isCaller = false;
+  document.getElementById('inc-name').textContent = '📞 ' + d.from;
+  document.getElementById('inc-type').textContent = d.type === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية';
+  document.getElementById('incoming-call').style.display = 'block';
+});
+socket.on('call-answer', async d => {
+  if (_pc) { await _pc.setRemoteDescription(new RTCSessionDescription(d.answer)); _callTimerStart(); document.getElementById('call-status').textContent = '🟢 متصل'; }
+});
+socket.on('call-ice', async d => {
+  if (_pc && d.candidate) try { await _pc.addIceCandidate(new RTCIceCandidate(d.candidate)); } catch(e){}
+});
+socket.on('call-reject', () => { toast('❌ لم يقبل المكالمة', 'e'); endCall(); });
+socket.on('call-end', () => { toast('📵 انتهت المكالمة', 'k'); endCall(); });
+
 async function showLeaderboard() {
   try {
     const r = await fetch('/api/leaderboard');
@@ -2260,5 +2564,45 @@ textarea.prof-input{resize:none;height:58px}
 </div>
 
 <audio id="profile-audio" preload="none"></audio>
+
+<!-- CALL MODAL -->
+<div id="call-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="background:#0d1117;border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:28px;text-align:center;min-width:280px;max-width:340px;width:90%;">
+    <div id="call-status" style="font-size:13px;color:#888;margin-bottom:12px;">جارٍ الاتصال...</div>
+    <div id="call-avatar" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#7b1fa2);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;margin:0 auto 12px;border:3px solid rgba(255,255,255,.2);box-shadow:0 0 30px rgba(100,100,255,.3);"></div>
+    <div id="call-name" style="font-size:18px;font-weight:800;color:#fff;margin-bottom:6px;"></div>
+    <div id="call-timer-disp" style="font-size:13px;color:#666;margin-bottom:16px;">00:00</div>
+    <!-- Remote video -->
+    <video id="remote-video" autoplay playsinline style="display:none;width:100%;border-radius:14px;max-height:200px;background:#000;margin-bottom:12px;"></video>
+    <!-- Local video (small) -->
+    <video id="local-video" autoplay playsinline muted style="display:none;width:80px;border-radius:10px;position:absolute;bottom:80px;left:16px;border:2px solid rgba(255,255,255,.2);"></video>
+    <!-- Call buttons -->
+    <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;">
+      <button id="call-mute-btn" onclick="toggleCallMute()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:20px;cursor:pointer;">🎤</button>
+      <button onclick="endCall()" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c62828,#e53935);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(198,40,40,.4);">📵</button>
+      <button id="call-cam-btn" onclick="toggleCallCam()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:20px;cursor:pointer;display:none;">📷</button>
+    </div>
+  </div>
+</div>
+
+<!-- INCOMING CALL -->
+<div id="incoming-call" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:9998;background:#0d1117;border:1px solid rgba(0,191,255,.3);border-radius:18px;padding:16px 20px;text-align:center;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+  <div id="inc-name" style="font-size:15px;font-weight:700;color:#00bfff;margin-bottom:4px;"></div>
+  <div id="inc-type" style="font-size:12px;color:#888;margin-bottom:14px;">يتصل بك...</div>
+  <div style="display:flex;gap:12px;justify-content:center;">
+    <button onclick="acceptCall()" style="background:linear-gradient(135deg,#2e7d32,#43a047);border:none;color:#fff;border-radius:12px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;">📞 قبول</button>
+    <button onclick="rejectCall()" style="background:linear-gradient(135deg,#c62828,#e53935);border:none;color:#fff;border-radius:12px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;">❌ رفض</button>
+  </div>
+</div>
+
+<style>
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.voice-msg-bubble{display:flex;align-items:center;gap:8px;background:rgba(0,191,255,.08);border:1px solid rgba(0,191,255,.2);border-radius:12px;padding:8px 12px;cursor:pointer;min-width:160px;max-width:240px;}
+.voice-msg-bubble .vplay{width:32px;height:32px;border-radius:50%;background:rgba(0,191,255,.2);border:1px solid rgba(0,191,255,.3);color:#00bfff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.voice-msg-bubble .vwav{flex:1;height:28px;display:flex;align-items:center;gap:2px;}
+.voice-msg-bubble .vbar{width:3px;border-radius:2px;background:#00bfff66;animation:vbar-anim 1.2s ease-in-out infinite;}
+.voice-msg-bubble .vdur{font-size:11px;color:#666;flex-shrink:0;}
+@keyframes vbar-anim{0%,100%{height:4px}50%{height:20px}}
+</style>
 </body>
 </html>

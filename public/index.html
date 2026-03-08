@@ -25,22 +25,54 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   --t-card:rgba(255,255,255,.03); --t-border:rgba(255,255,255,.08);
   --t-hdr:rgba(255,255,255,.03);
 }
+/* ===== THEME 2: EMERALD NIGHT ===== */
 body.theme-rose{
-  --t-bg1:#1a0512; --t-bg2:#280d1e; --t-bg3:#3d1030;
-  --t-accent:#e91e8c; --t-accent2:#ff6ec7; --t-glow:rgba(233,30,140,.4);
-  --t-card:rgba(233,30,140,.04); --t-border:rgba(233,30,140,.15);
-  --t-hdr:rgba(233,30,140,.05);
+  --t-bg1:#010f0a; --t-bg2:#021a10; --t-bg3:#032b18;
+  --t-accent:#00e5a0; --t-accent2:#00ffcc; --t-glow:rgba(0,229,160,.35);
+  --t-card:rgba(0,229,160,.04); --t-border:rgba(0,229,160,.15);
+  --t-hdr:rgba(0,229,160,.04);
+  --gold:#00e5a0; --gl:#00ffcc; --gd:#00b37a;
 }
 body.theme-rose .bg{
-  background: radial-gradient(ellipse at 20% 50%,rgba(180,0,100,.35),transparent 60%),
-    radial-gradient(ellipse at 80% 20%,rgba(233,30,140,.2),transparent 50%),
-    linear-gradient(135deg,#100008,#1a0512,#280d1e) !important;
+  background:
+    radial-gradient(ellipse at 15% 60%, rgba(0,180,100,.3), transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(0,229,160,.18), transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,80,50,.4), transparent 60%),
+    linear-gradient(160deg,#010f0a,#021a10,#032b18) !important;
 }
-body.theme-rose .star{background:#ff6ec7 !important;}
+body.theme-rose .star{background:#00e5a0 !important;opacity:.6;}
+
+/* Fix hero title gradient for theme 2 */
 body.theme-rose .hero-h .g{
-  background:linear-gradient(135deg,#ff6ec7,#e91e8c,#c2185b) !important;
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  background:linear-gradient(135deg,#00ffcc,#00e5a0,#00b37a) !important;
+  -webkit-background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+  background-clip:text !important;
 }
+body.theme-rose .site-hdr{border-bottom-color:rgba(0,229,160,.2);}
+body.theme-rose .hero-badge{
+  background:rgba(0,229,160,.08);
+  border-color:rgba(0,229,160,.3);
+  color:#00ffcc;
+}
+body.theme-rose .btn-p{
+  background:linear-gradient(135deg,#00b37a,#00e5a0,#00ffcc);
+  box-shadow:0 6px 25px rgba(0,229,160,.4);
+  color:#010f0a;
+}
+body.theme-rose .btn-g{color:#00ffcc;border-color:rgba(0,229,160,.4);}
+body.theme-rose .stat-num{color:#00ffcc;}
+body.theme-rose .logo-t{
+  background:linear-gradient(135deg,#00ffcc,#00e5a0) !important;
+  -webkit-background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+  background-clip:text !important;
+}
+body.theme-rose .sdot{background:#00e5a0;box-shadow:0 0 8px #00e5a0;}
+
+/* Emerald accent on hover for feature strip */
+body.theme-rose .fs-item:hover{background:rgba(0,229,160,.06);}
+
 
 /* Theme toggle button */
 .theme-toggle{
@@ -56,7 +88,7 @@ body.theme-rose .hero-h .g{
 .theme-toggle:hover{transform:scale(1.1) rotate(20deg);}
 
 .site-hdr{padding:14px 32px;display:flex;align-items:center;justify-content:space-between;background:var(--t-hdr);backdrop-filter:blur(20px);border-bottom:1px solid rgba(245,166,35,.15);flex-shrink:0;}
-body.theme-rose .site-hdr{border-bottom-color:rgba(233,30,140,.2);}
+body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 .logo{display:flex;align-items:center;gap:12px;}
 .logo-ic{
   width:46px;height:46px;
@@ -78,7 +110,6 @@ body.theme-rose .site-hdr{border-bottom-color:rgba(233,30,140,.2);}
   padding:7px 18px;border-radius:50px;font-size:12px;color:var(--gl);margin-bottom:24px;
   animation:fadeInDown .8s ease;
 }
-body.theme-rose .hero-badge{background:rgba(233,30,140,.1);border-color:rgba(233,30,140,.3);color:#ff6ec7;}
 @keyframes fadeInDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 .hero-h{font-family:'Tajawal',sans-serif;font-size:clamp(32px,5vw,64px);font-weight:900;line-height:1.1;margin-bottom:14px;animation:fadeInUp .8s ease .1s both;}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -88,10 +119,8 @@ body.theme-rose .hero-badge{background:rgba(233,30,140,.1);border-color:rgba(233
 .btn{padding:13px 28px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:8px;}
 .btn:hover{transform:translateY(-3px) scale(1.03);}
 .btn-p{background:linear-gradient(135deg,var(--t-accent),var(--t-accent2),#e65100);color:white;box-shadow:0 6px 25px var(--t-glow);}
-body.theme-rose .btn-p{background:linear-gradient(135deg,#e91e8c,#ff6ec7,#c2185b);box-shadow:0 6px 25px rgba(233,30,140,.4);}
 .btn-s{background:rgba(255,255,255,.06);color:var(--w);border:1px solid rgba(255,255,255,.15);}
 .btn-g{background:transparent;color:var(--gl);border:2px solid rgba(245,166,35,.4);}
-body.theme-rose .btn-g{color:#ff6ec7;border-color:rgba(233,30,140,.4);}
 
 /* FEATURES STRIP */
 .feats-strip{
@@ -147,7 +176,6 @@ body.theme-rose .btn-g{color:#ff6ec7;border-color:rgba(233,30,140,.4);}
 }
 .stat-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .stat-num{font-family:'Tajawal',sans-serif;font-size:22px;font-weight:900;color:var(--t-accent2);}
-body.theme-rose .stat-num{color:#ff6ec7;}
 .stat-lbl{font-size:10px;color:var(--mut);letter-spacing:1px;}
 
 /* Footer */
@@ -684,7 +712,7 @@ body.theme-rose .stat-num{color:#ff6ec7;}
 <!-- LANDING -->
 <div id="landing">
   <!-- Theme Toggle Button -->
-  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="تغيير الثيم">🎨</button>
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="التبديل للثيم الزمردي">💎</button>
 
   <header class="site-hdr">
     <div class="logo">
@@ -1555,10 +1583,14 @@ function applyTheme(t) {
     document.body.classList.add('theme-rose');
     document.getElementById('theme-btn').textContent = '🌙';
     document.getElementById('theme-btn').title = 'التبديل للثيم الذهبي';
+    document.getElementById('theme-btn').style.background = 'rgba(0,229,160,.15)';
+    document.getElementById('theme-btn').style.borderColor = 'rgba(0,229,160,.3)';
   } else {
     document.body.classList.remove('theme-rose');
-    document.getElementById('theme-btn').textContent = '🌹';
-    document.getElementById('theme-btn').title = 'التبديل للثيم الوردي';
+    document.getElementById('theme-btn').textContent = '💎';
+    document.getElementById('theme-btn').title = 'التبديل للثيم الزمردي';
+    document.getElementById('theme-btn').style.background = 'rgba(255,255,255,.07)';
+    document.getElementById('theme-btn').style.borderColor = 'rgba(255,255,255,.15)';
   }
   localStorage.setItem('ghazal-theme', t);
 }

@@ -3071,8 +3071,72 @@ let _pendingOffer = null, _callMuted = false, _camOff = false, _callEnding = fal
 const ICE = { iceServers: [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' }
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' }
 ]};
+
+// ===== ICE QUEUE — يحفظ candidates قبل setRemoteDescription =====
+let _iceQueue = [];
+
+async function _flushIceQueue() {
+  while (_iceQueue.length && _pc && _pc.remoteDescription) {
+    const c = _iceQueue.shift();
+    try { await _pc.addIceCandidate(new RTCIceCandidate(c)); } catch(e) {}
+  }
+}
+
+function _setupPC() {
+  _pc = new RTCPeerConnection(ICE);
+
+  // إرسال ICE للطرف الآخر
+  _pc.onicecandidate = e => {
+    if (e.candidate && _callTarget)
+      socket.emit('call-ice', { to: _callTarget, candidate: e.candidate });
+  };
+
+  // استقبال stream الطرف الآخر → إظهاره في remote-video
+  _pc.ontrack = e => {
+    console.log('ontrack fired', e.streams);
+    const rv = document.getElementById('remote-video');
+    if (e.streams && e.streams[0]) {
+      rv.srcObject = e.streams[0];
+      rv.style.display = 'block';
+      rv.play().catch(()=>{});
+    }
+  };
+
+  _pc.onconnectionstatechange = () => {
+    const st = _pc?.connectionState;
+    console.log('connection state:', st);
+    if (st === 'connected') {
+      document.getElementById('call-status').textContent = '🟢 متصل';
+      _callTimerStart();
+    } else if (st === 'disconnected' || st === 'failed') {
+      if (!_callEnding) { toast('📵 انقطع الاتصال', 'k'); endCall(); }
+    }
+  };
+
+  _pc.onicegatheringstatechange = () => {
+    console.log('ICE gathering:', _pc?.iceGatheringState);
+  };
+}
+
+function _attachLocalVideo(stream, isVideo) {
+  const lv = document.getElementById('local-video');
+  const rv = document.getElementById('remote-video');
+  const wrap = document.getElementById('call-video-wrap');
+
+  if (isVideo) {
+    lv.srcObject = stream;
+    lv.style.display = 'block';
+    rv.style.display = 'block'; // جاهز لاستقبال الطرف الثاني
+    if (wrap) wrap.style.minHeight = '220px';
+  } else {
+    lv.style.display = 'none';
+    rv.style.display = 'none';
+  }
+}
+
 
 function _callTimerStart() {
   _callSecs = 0;
@@ -3130,35 +3194,26 @@ async function _getMedia(wantVideo) {
 async function startPMCall(type) {
   if (_pc) { toast('يوجد مكالمة نشطة بالفعل', 'e'); return; }
   _callTarget = pmt3; _callType = type; _isCaller = true; _callEnding = false;
+  _iceQueue = [];
   showCallModal(pmt3, type, '🔔 جارٍ الاتصال...');
   try {
     _localStream = await _getMedia(type === 'video');
-    if (type === 'video') {
-      const lv = document.getElementById('local-video');
-      lv.srcObject = _localStream;
-    }
-    _pc = new RTCPeerConnection(ICE);
+    _attachLocalVideo(_localStream, type === 'video');
+
+    _setupPC();
     _localStream.getTracks().forEach(t => _pc.addTrack(t, _localStream));
-    _pc.onicecandidate = e => {
-      if (e.candidate && _callTarget)
-        socket.emit('call-ice', { to: _callTarget, candidate: e.candidate });
-    };
-    _pc.ontrack = e => {
-      const rv = document.getElementById('remote-video');
-      if (e.streams && e.streams[0]) rv.srcObject = e.streams[0];
-    };
-    _pc.onconnectionstatechange = () => {
-      const st = _pc?.connectionState;
-      if (st === 'connected') {
-        document.getElementById('call-status').textContent = '🟢 متصل';
-        _callTimerStart();
-      } else if (st === 'disconnected' || st === 'failed') {
-        if (!_callEnding) { toast('📵 انقطع الاتصال', 'k'); endCall(); }
-      }
-    };
-    const offer = await _pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: type === 'video' });
+
+    const offer = await _pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: type === 'video'
+    });
     await _pc.setLocalDescription(offer);
-    socket.emit('call-offer', { to: _callTarget, offer: _pc.localDescription, type, from: cu?.name||cu?.username });
+    socket.emit('call-offer', {
+      to: _callTarget,
+      offer: _pc.localDescription,
+      type,
+      from: cu?.name || cu?.username
+    });
   } catch(err) {
     console.error('Call error:', err);
     toast('❌ ' + (err.message || 'لا يمكن الوصول للميكروفون/الكاميرا'), 'e');
@@ -3173,30 +3228,15 @@ async function acceptCall() {
   showCallModal(_callTarget, _callType, '⏳ جارٍ الاتصال...');
   try {
     _localStream = await _getMedia(_callType === 'video');
-    if (_callType === 'video') {
-      const lv = document.getElementById('local-video');
-      lv.srcObject = _localStream;
-    }
-    _pc = new RTCPeerConnection(ICE);
+    _attachLocalVideo(_localStream, _callType === 'video');
+
+    _setupPC();
     _localStream.getTracks().forEach(t => _pc.addTrack(t, _localStream));
-    _pc.onicecandidate = e => {
-      if (e.candidate && _callTarget)
-        socket.emit('call-ice', { to: _callTarget, candidate: e.candidate });
-    };
-    _pc.ontrack = e => {
-      const rv = document.getElementById('remote-video');
-      if (e.streams && e.streams[0]) rv.srcObject = e.streams[0];
-    };
-    _pc.onconnectionstatechange = () => {
-      const st = _pc?.connectionState;
-      if (st === 'connected') {
-        document.getElementById('call-status').textContent = '🟢 متصل';
-        _callTimerStart();
-      } else if (st === 'disconnected' || st === 'failed') {
-        if (!_callEnding) { toast('📵 انقطع الاتصال', 'k'); endCall(); }
-      }
-    };
+
     await _pc.setRemoteDescription(new RTCSessionDescription(_pendingOffer));
+    // تفريغ ICE queue المتراكم
+    await _flushIceQueue();
+
     const answer = await _pc.createAnswer();
     await _pc.setLocalDescription(answer);
     socket.emit('call-answer', { to: _callTarget, answer: _pc.localDescription });
@@ -3217,6 +3257,7 @@ function rejectCall() {
 function endCall() {
   _callEnding = true;
   clearInterval(_callTimer);
+  _iceQueue = []; // مسح queue
   const target = _callTarget;
   _callTarget = null; _callType = null; _isCaller = false; _pendingOffer = null;
   if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
@@ -3226,8 +3267,8 @@ function endCall() {
   if (modal) modal.style.display = 'none';
   const rv = document.getElementById('remote-video');
   const lv = document.getElementById('local-video');
-  if (rv) rv.srcObject = null;
-  if (lv) lv.srcObject = null;
+  if (rv) { rv.srcObject = null; rv.style.display = 'none'; }
+  if (lv) { lv.srcObject = null; lv.style.display = 'none'; lv._big = false; }
 }
 
 function toggleCallMute() {
@@ -3245,21 +3286,30 @@ function toggleCallCam() {
 socket.on('call-offer', d => {
   if (_pc) { socket.emit('call-reject', { to: d.from }); return; } // مشغول
   _callTarget = d.from; _callType = d.type; _pendingOffer = d.offer; _isCaller = false;
+  _iceQueue = []; // مسح قديم
   document.getElementById('inc-name').textContent = '📞 ' + d.from;
   document.getElementById('inc-type').textContent = d.type === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية';
   document.getElementById('incoming-call').style.display = 'block';
 });
 socket.on('call-answer', async d => {
   try {
-    if (_pc && _pc.signalingState !== 'closed')
+    if (_pc && _pc.signalingState !== 'closed') {
       await _pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+      // تفريغ ICE queue بعد setRemoteDescription
+      await _flushIceQueue();
+    }
   } catch(e) { console.error('set answer error:', e); }
 });
 socket.on('call-ice', async d => {
   try {
-    if (_pc && _pc.remoteDescription && d.candidate)
+    if (!d.candidate) return;
+    if (_pc && _pc.remoteDescription) {
       await _pc.addIceCandidate(new RTCIceCandidate(d.candidate));
-  } catch(e) {}
+    } else {
+      // احفظه في queue لحين جهوزية remoteDescription
+      _iceQueue.push(d.candidate);
+    }
+  } catch(e) { console.error('ICE error:', e); }
 });
 socket.on('call-reject', () => { toast('❌ رفض المكالمة', 'e'); endCall(); });
 socket.on('call-end', () => { if (!_callEnding) { toast('📵 انتهت المكالمة', 'k'); endCall(); } });

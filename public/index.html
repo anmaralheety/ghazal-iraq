@@ -26,53 +26,235 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
   --t-hdr:rgba(255,255,255,.03);
 }
 /* ===== THEME 2: EMERALD NIGHT ===== */
-body.theme-rose{
-  --t-bg1:#010f0a; --t-bg2:#021a10; --t-bg3:#032b18;
-  --t-accent:#00e5a0; --t-accent2:#00ffcc; --t-glow:rgba(0,229,160,.35);
-  --t-card:rgba(0,229,160,.04); --t-border:rgba(0,229,160,.15);
-  --t-hdr:rgba(0,229,160,.04);
-  --gold:#00e5a0; --gl:#00ffcc; --gd:#00b37a;
+/* ================================================================
+   THEME 2: GLASS CITY — عصري زجاجي حضري
+   فكرة: خلفية داكنة عميقة + بطاقات زجاجية شفافة + نيون أزرق/بنفسجي
+   مختلف كلياً عن الأول
+================================================================ */
+body.theme2 {
+  --c1: #7c3aed;   /* بنفسجي نيون */
+  --c2: #06b6d4;   /* سماوي */
+  --c3: #a78bfa;   /* بنفسجي فاتح */
+  --cm: rgba(255,255,255,.55);
 }
-body.theme-rose .bg{
-  background:
-    radial-gradient(ellipse at 15% 60%, rgba(0,180,100,.3), transparent 55%),
-    radial-gradient(ellipse at 85% 15%, rgba(0,229,160,.18), transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(0,80,50,.4), transparent 60%),
-    linear-gradient(160deg,#010f0a,#021a10,#032b18) !important;
-}
-body.theme-rose .star{background:#00e5a0 !important;opacity:.6;}
+/* إخفاء الـ landing الأصلي وإظهار landing2 */
+body.theme2 #landing { display: none !important; }
+body.theme2 #landing2 { display: flex !important; }
 
-/* Fix hero title gradient for theme 2 */
-body.theme-rose .hero-h .g{
-  background:linear-gradient(135deg,#00ffcc,#00e5a0,#00b37a) !important;
-  -webkit-background-clip:text !important;
-  -webkit-text-fill-color:transparent !important;
-  background-clip:text !important;
-}
-body.theme-rose .site-hdr{border-bottom-color:rgba(0,229,160,.2);}
-body.theme-rose .hero-badge{
-  background:rgba(0,229,160,.08);
-  border-color:rgba(0,229,160,.3);
-  color:#00ffcc;
-}
-body.theme-rose .btn-p{
-  background:linear-gradient(135deg,#00b37a,#00e5a0,#00ffcc);
-  box-shadow:0 6px 25px rgba(0,229,160,.4);
-  color:#010f0a;
-}
-body.theme-rose .btn-g{color:#00ffcc;border-color:rgba(0,229,160,.4);}
-body.theme-rose .stat-num{color:#00ffcc;}
-body.theme-rose .logo-t{
-  background:linear-gradient(135deg,#00ffcc,#00e5a0) !important;
-  -webkit-background-clip:text !important;
-  -webkit-text-fill-color:transparent !important;
-  background-clip:text !important;
-}
-body.theme-rose .sdot{background:#00e5a0;box-shadow:0 0 8px #00e5a0;}
 
-/* Emerald accent on hover for feature strip */
-body.theme-rose .fs-item:hover{background:rgba(0,229,160,.06);}
+/* ================================================================
+   LANDING 2 — GLASS CITY THEME
+   فكرة: شبكة هندسية + زجاج شفاف + نيون بنفسجي/سماوي
+   مختلف 180° عن الأول
+================================================================ */
+#landing2{
+  display:none;
+  position:relative;z-index:1;
+  height:100vh;
+  flex-direction:column;
+  overflow:hidden;
+  font-family:'Cairo',sans-serif;
+}
+/* الخلفية الهندسية */
+.t2-bg{
+  position:fixed;inset:0;z-index:0;
+  background: linear-gradient(135deg,#0f0c29,#1a1040,#302b63);
+}
+.t2-grid{
+  position:fixed;inset:0;z-index:1;
+  background-image:
+    linear-gradient(rgba(124,58,237,.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,.12) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+}
+.t2-glow1{
+  position:fixed;top:-20%;right:-10%;width:600px;height:600px;
+  background:radial-gradient(circle, rgba(124,58,237,.35) 0%, transparent 70%);
+  z-index:1;animation:t2float 8s ease-in-out infinite;
+}
+.t2-glow2{
+  position:fixed;bottom:-20%;left:-10%;width:500px;height:500px;
+  background:radial-gradient(circle, rgba(6,182,212,.25) 0%, transparent 70%);
+  z-index:1;animation:t2float 10s ease-in-out infinite reverse;
+}
+@keyframes t2float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
 
+/* الهيدر */
+.t2-hdr{
+  position:relative;z-index:10;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 32px;
+  background:rgba(255,255,255,.03);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.t2-logo{display:flex;align-items:center;gap:12px;}
+.t2-logo-ic{
+  width:44px;height:44px;border-radius:14px;
+  background:linear-gradient(135deg,#7c3aed,#06b6d4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  box-shadow:0 0 20px rgba(124,58,237,.5),0 0 40px rgba(6,182,212,.2);
+}
+.t2-logo-name{
+  font-family:'Tajawal',sans-serif;font-size:20px;font-weight:900;
+  background:linear-gradient(135deg,#a78bfa,#06b6d4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.t2-logo-sub{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:3px;text-transform:uppercase;}
+.t2-badge{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(124,58,237,.15);
+  border:1px solid rgba(124,58,237,.3);
+  padding:6px 14px;border-radius:50px;font-size:12px;color:#a78bfa;
+}
+.t2-dot{width:7px;height:7px;border-radius:50%;background:#06b6d4;box-shadow:0 0 8px #06b6d4;animation:pulse 2s infinite;}
+
+/* المحتوى الرئيسي */
+.t2-main{
+  flex:1;display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  gap:0;
+  position:relative;z-index:10;
+  padding:0 5%;
+  min-height:0;
+}
+/* القسم الأيسر (النص) */
+.t2-left{
+  display:flex;flex-direction:column;gap:20px;
+  padding:30px 40px 30px 0;
+}
+.t2-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(6,182,212,.1);
+  border:1px solid rgba(6,182,212,.25);
+  padding:6px 16px;border-radius:50px;
+  font-size:11px;color:#67e8f9;letter-spacing:1px;
+  width:fit-content;
+}
+.t2-title{
+  font-family:'Tajawal',sans-serif;
+  font-size:clamp(30px,4vw,58px);
+  font-weight:900;line-height:1.15;
+}
+.t2-title .t2-hi{color:rgba(255,255,255,.85);display:block;font-size:.5em;letter-spacing:4px;margin-bottom:4px;font-weight:700;}
+.t2-title .t2-name{
+  background:linear-gradient(135deg,#a78bfa,#7c3aed,#06b6d4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  display:block;
+}
+.t2-desc{font-size:14px;color:rgba(255,255,255,.5);line-height:1.8;max-width:360px;}
+/* أزرار الثيم2 */
+.t2-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.t2-btn{
+  padding:13px 24px;border-radius:14px;
+  font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;
+  border:none;cursor:pointer;
+  display:flex;align-items:center;gap:8px;
+  transition:.3s cubic-bezier(.34,1.56,.64,1);
+}
+.t2-btn:hover{transform:translateY(-3px) scale(1.04);}
+.t2-btn-p{
+  background:linear-gradient(135deg,#7c3aed,#6d28d9);
+  color:#fff;
+  box-shadow:0 6px 24px rgba(124,58,237,.45);
+}
+.t2-btn-s{
+  background:rgba(6,182,212,.12);
+  color:#67e8f9;
+  border:1px solid rgba(6,182,212,.3);
+  backdrop-filter:blur(10px);
+}
+.t2-btn-g{
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.1);
+  backdrop-filter:blur(10px);
+}
+/* الإحصائيات */
+.t2-stats{display:flex;gap:24px;}
+.t2-stat{display:flex;flex-direction:column;}
+.t2-stat-n{
+  font-family:'Tajawal',sans-serif;font-size:26px;font-weight:900;
+  background:linear-gradient(135deg,#a78bfa,#06b6d4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.t2-stat-l{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:1px;}
+
+/* القسم الأيمن - البطاقات الزجاجية */
+.t2-right{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  padding:30px 0 30px 20px;
+}
+.t2-card{
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:20px;
+  padding:20px 18px;
+  position:relative;overflow:hidden;
+  transition:.35s cubic-bezier(.34,1.56,.64,1);
+  cursor:default;
+}
+.t2-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.06),transparent);
+  border-radius:20px;
+}
+.t2-card:hover{
+  transform:translateY(-6px);
+  border-color:rgba(124,58,237,.4);
+  background:rgba(124,58,237,.08);
+  box-shadow:0 12px 40px rgba(124,58,237,.2);
+}
+.t2-card:nth-child(2):hover{border-color:rgba(6,182,212,.4);background:rgba(6,182,212,.08);box-shadow:0 12px 40px rgba(6,182,212,.2);}
+.t2-card:nth-child(3):hover{border-color:rgba(167,139,250,.4);}
+.t2-card:nth-child(4):hover{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.06);}
+.t2-card-ic{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;font-size:20px;
+}
+.t2-card-t{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:4px;}
+.t2-card-s{font-size:11px;color:rgba(255,255,255,.35);line-height:1.5;}
+/* خط متوهج عند أعلى البطاقة */
+.t2-card-line{
+  position:absolute;top:0;left:20%;right:20%;height:2px;border-radius:0 0 4px 4px;
+}
+
+/* الفوتر */
+.t2-footer{
+  position:relative;z-index:10;
+  padding:10px 24px;
+  border-top:1px solid rgba(255,255,255,.05);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.t2-footer-links{display:flex;gap:16px;}
+.t2-footer-btn{
+  background:none;border:none;color:rgba(255,255,255,.25);
+  font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;
+  transition:.2s;padding:4px;
+}
+.t2-footer-btn:hover{color:rgba(255,255,255,.6);}
+.t2-copy{font-size:10px;color:rgba(255,255,255,.15);}
+
+/* Mobile responsive for theme2 */
+@media(max-width:768px){
+  .t2-main{grid-template-columns:1fr;padding:0 5%;overflow-y:auto;}
+  .t2-left{padding:20px 0 0;gap:14px;}
+  .t2-right{grid-template-columns:1fr 1fr;padding:16px 0;gap:10px;}
+  .t2-title{font-size:clamp(26px,7vw,40px);}
+  .t2-card{padding:14px 12px;}
+  .t2-card-ic{width:36px;height:36px;font-size:16px;}
+  .t2-hdr{padding:12px 16px;}
+  .t2-footer{flex-direction:column;gap:6px;text-align:center;}
+}
 
 /* Theme toggle button */
 .theme-toggle{
@@ -832,6 +1014,136 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
   </footer>
 </div>
 
+<!-- ================================================================
+     LANDING 2 — GLASS CITY THEME (Futuristic / Glassmorphism)
+================================================================ -->
+<div id="landing2">
+  <!-- خلفيات الثيم -->
+  <div class="t2-bg"></div>
+  <div class="t2-grid"></div>
+  <div class="t2-glow1"></div>
+  <div class="t2-glow2"></div>
+
+  <!-- زر التبديل للثيم الأول -->
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn2" title="العودة للثيم الأول" style="top:16px;left:16px;">🌙</button>
+
+  <!-- هيدر -->
+  <header class="t2-hdr">
+    <div class="t2-logo">
+      <div class="t2-logo-ic">✦</div>
+      <div>
+        <div class="t2-logo-name">غزل عراقي</div>
+        <div class="t2-logo-sub">GHAZAL · IRAQ</div>
+      </div>
+    </div>
+    <div class="t2-badge">
+      <div class="t2-dot"></div>
+      <span><strong id="oc3">0</strong> متصل الآن</span>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <div class="t2-main">
+    <!-- يسار: النص والأزرار -->
+    <div class="t2-left">
+      <div class="t2-tag">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        الدردشة العراقية · منذ 2026
+      </div>
+
+      <div class="t2-title">
+        <span class="t2-hi">أهلاً بك في</span>
+        <span class="t2-name">غزل عراقي</span>
+      </div>
+
+      <p class="t2-desc">تجربة دردشة عراقية فريدة من نوعها — تواصل حي، رسائل خاصة، مكالمات صوتية وفيديو، ونظام رتب حصري</p>
+
+      <!-- إحصائيات -->
+      <div class="t2-stats">
+        <div class="t2-stat">
+          <span class="t2-stat-n" id="oc4">0</span>
+          <span class="t2-stat-l">متصل الآن</span>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,.08);"></div>
+        <div class="t2-stat">
+          <span class="t2-stat-n">9</span>
+          <span class="t2-stat-l">غرفة</span>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,.08);"></div>
+        <div class="t2-stat">
+          <span class="t2-stat-n">10</span>
+          <span class="t2-stat-l">رتبة</span>
+        </div>
+      </div>
+
+      <!-- أزرار -->
+      <div class="t2-btns">
+        <button class="t2-btn t2-btn-p" onclick="openM('v')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          دخول كزائر
+        </button>
+        <button class="t2-btn t2-btn-s" onclick="openM('l')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          دخول الأعضاء
+        </button>
+        <button class="t2-btn t2-btn-g" onclick="openM('r')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          سجل مجاناً
+        </button>
+      </div>
+    </div>
+
+    <!-- يمين: بطاقات زجاجية -->
+    <div class="t2-right">
+      <div class="t2-card">
+        <div class="t2-card-line" style="background:linear-gradient(90deg,transparent,#7c3aed,transparent);"></div>
+        <div class="t2-card-ic" style="background:rgba(124,58,237,.2);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="t2-card-t">دردشة حية</div>
+        <div class="t2-card-s">نص · صوت · فيديو في آن واحد</div>
+      </div>
+
+      <div class="t2-card">
+        <div class="t2-card-line" style="background:linear-gradient(90deg,transparent,#06b6d4,transparent);"></div>
+        <div class="t2-card-ic" style="background:rgba(6,182,212,.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        </div>
+        <div class="t2-card-t">10 رتب حصرية</div>
+        <div class="t2-card-s">مالك · أدمن · VIP · ذهبي</div>
+      </div>
+
+      <div class="t2-card">
+        <div class="t2-card-line" style="background:linear-gradient(90deg,transparent,#a78bfa,transparent);"></div>
+        <div class="t2-card-ic" style="background:rgba(167,139,250,.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="t2-card-t">ملف شخصي</div>
+        <div class="t2-card-s">صورة · موسيقى · بيو فاخر</div>
+      </div>
+
+      <div class="t2-card">
+        <div class="t2-card-line" style="background:linear-gradient(90deg,transparent,#10b981,transparent);"></div>
+        <div class="t2-card-ic" style="background:rgba(16,185,129,.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div class="t2-card-t">مسابقات ونقاط</div>
+        <div class="t2-card-s">ربوت أسئلة · لوحة صدارة</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- فوتر -->
+  <footer class="t2-footer">
+    <div class="t2-footer-links">
+      <button class="t2-footer-btn" onclick="openPolicy('terms')">قوانين الاستخدام</button>
+      <button class="t2-footer-btn" onclick="openPolicy('privacy')">سياسة الخصوصية</button>
+      <button class="t2-footer-btn" onclick="openPolicy('rules')">الشروط والأحكام</button>
+    </div>
+    <div class="t2-copy">© 2026 غزل عراقي — جميع الحقوق محفوظة</div>
+  </footer>
+</div>
+
 <!-- POLICY MODAL -->
 <div class="policy-overlay" id="policy-overlay">
   <div class="policy-modal">
@@ -1577,26 +1889,59 @@ function hpk(e){if(e.key==='Enter')spm();}
 
 // ===== THEME SYSTEM =====
 let _currentTheme = localStorage.getItem('ghazal-theme') || 'gold';
+
 function applyTheme(t) {
   _currentTheme = t;
-  if (t === 'rose') {
-    document.body.classList.add('theme-rose');
-    document.getElementById('theme-btn').textContent = '🌙';
-    document.getElementById('theme-btn').title = 'التبديل للثيم الذهبي';
-    document.getElementById('theme-btn').style.background = 'rgba(0,229,160,.15)';
-    document.getElementById('theme-btn').style.borderColor = 'rgba(0,229,160,.3)';
+  const L1 = document.getElementById('landing');
+  const L2 = document.getElementById('landing2');
+  
+  if (t === 'city') {
+    // ثيم المدينة الزجاجية
+    document.body.classList.add('theme2');
+    if (L1) L1.style.display = 'none';
+    if (L2) L2.style.display = 'flex';
+    // زر التبديل في landing2
+    const b2 = document.getElementById('theme-btn2');
+    if (b2) { b2.textContent = '☀️'; b2.title = 'العودة للثيم الذهبي'; }
+    // زر التبديل في landing (إن ظهر)
+    const b1 = document.getElementById('theme-btn');
+    if (b1) { b1.textContent = '💎'; b1.title = 'الثيم الزجاجي'; }
+    // sync counters
+    const oc3 = document.getElementById('oc3');
+    const oc4 = document.getElementById('oc4');
+    const oc = document.getElementById('oc');
+    if (oc3 && oc) oc3.textContent = oc.textContent;
+    if (oc4 && oc) oc4.textContent = oc.textContent;
   } else {
-    document.body.classList.remove('theme-rose');
-    document.getElementById('theme-btn').textContent = '💎';
-    document.getElementById('theme-btn').title = 'التبديل للثيم الزمردي';
-    document.getElementById('theme-btn').style.background = 'rgba(255,255,255,.07)';
-    document.getElementById('theme-btn').style.borderColor = 'rgba(255,255,255,.15)';
+    // الثيم الذهبي الأصلي
+    document.body.classList.remove('theme2');
+    if (L1) L1.style.display = 'flex';
+    if (L2) L2.style.display = 'none';
+    const b1 = document.getElementById('theme-btn');
+    if (b1) {
+      b1.textContent = '💎';
+      b1.title = 'التبديل للثيم الزجاجي';
+      b1.style.background = 'rgba(255,255,255,.07)';
+      b1.style.borderColor = 'rgba(255,255,255,.15)';
+    }
   }
   localStorage.setItem('ghazal-theme', t);
 }
+
 function toggleTheme() {
-  applyTheme(_currentTheme === 'gold' ? 'rose' : 'gold');
+  applyTheme(_currentTheme === 'gold' ? 'city' : 'gold');
 }
+
+// Sync online count to theme2 counters
+const _origUpOC = upOC;
+function upOC(n) {
+  _origUpOC(n);
+  const oc3 = document.getElementById('oc3');
+  const oc4 = document.getElementById('oc4');
+  if (oc3) oc3.textContent = n;
+  if (oc4) oc4.textContent = n;
+}
+
 // Apply saved theme on load
 applyTheme(_currentTheme);
 
@@ -2212,6 +2557,7 @@ function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 // ===== PROFILE SYSTEM - LUXURY DESIGN =====
 let _profMusicPlaying = false;
 let _profMusicUrl = '';
+let _profMusicYT = null;
 
 function openProfile(username) {
   if (!username) return;
@@ -2329,42 +2675,101 @@ function closeProfile() {
   _stopProfMusic();
 }
 
+function _getYouTubeId(url) {
+  if (!url) return null;
+  // يوتيوب: watch?v=, youtu.be/, embed/
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 function _playProfMusic() {
   if (!_profMusicUrl) return;
-  const audio = document.getElementById('profile-audio');
-  audio.src = _profMusicUrl;
-  audio.play().then(() => {
-    _profMusicPlaying = true;
-    document.getElementById('prof-disc').classList.add('spinning');
-    document.getElementById('prof-play-icon').textContent = '⏸';
-  }).catch(() => {
-    document.getElementById('prof-music-sub').textContent = 'تعذر التشغيل التلقائي - اضغط ▶';
-  });
-}
-
-function _stopProfMusic() {
-  const audio = document.getElementById('profile-audio');
-  audio.pause();
-  audio.src = '';
-  _profMusicPlaying = false;
-  _profMusicUrl = '';
-  const disc = document.getElementById('prof-disc');
-  if (disc) disc.classList.remove('spinning');
-}
-
-function toggleProfMusic() {
-  const audio = document.getElementById('profile-audio');
-  if (_profMusicPlaying) {
-    audio.pause();
-    _profMusicPlaying = false;
-    document.getElementById('prof-disc').classList.remove('spinning');
-    document.getElementById('prof-play-icon').textContent = '▶';
+  const ytId = _getYouTubeId(_profMusicUrl);
+  if (ytId) {
+    _playYoutube(ytId);
   } else {
+    // رابط مباشر mp3/soundcloud
+    const audio = document.getElementById('profile-audio');
+    audio.src = _profMusicUrl;
     audio.play().then(() => {
       _profMusicPlaying = true;
       document.getElementById('prof-disc').classList.add('spinning');
       document.getElementById('prof-play-icon').textContent = '⏸';
+      document.getElementById('prof-music-sub').textContent = '▶ يشغل الآن';
+    }).catch(() => {
+      document.getElementById('prof-music-sub').textContent = 'اضغط ▶ للتشغيل';
     });
+  }
+}
+
+function _playYoutube(ytId) {
+  // إنشاء أو تحديث iframe يوتيوب مخفي
+  let frame = document.getElementById('yt-music-frame');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = 'yt-music-frame';
+    frame.style.cssText = 'display:none;width:0;height:0;position:absolute;';
+    frame.allow = 'autoplay';
+    document.body.appendChild(frame);
+  }
+  frame.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1`;
+  _profMusicPlaying = true;
+  _profMusicYT = ytId;
+  document.getElementById('prof-disc').classList.add('spinning');
+  document.getElementById('prof-play-icon').textContent = '⏸';
+  document.getElementById('prof-music-sub').textContent = '▶ يشغل الآن';
+}
+
+function _stopYoutube() {
+  const frame = document.getElementById('yt-music-frame');
+  if (frame) { frame.src = ''; frame.remove(); }
+  _profMusicYT = null;
+}
+
+function _stopProfMusic() {
+  // وقف audio العادي
+  const audio = document.getElementById('profile-audio');
+  audio.pause();
+  audio.src = '';
+  // وقف يوتيوب
+  _stopYoutube();
+  _profMusicPlaying = false;
+  _profMusicUrl = '';
+  const disc = document.getElementById('prof-disc');
+  if (disc) disc.classList.remove('spinning');
+  const pi = document.getElementById('prof-play-icon');
+  if (pi) pi.textContent = '▶';
+  const sub = document.getElementById('prof-music-sub');
+  if (sub) sub.textContent = 'يشغل تلقائياً';
+}
+
+function toggleProfMusic() {
+  const ytId = _getYouTubeId(_profMusicUrl);
+  if (_profMusicPlaying) {
+    // إيقاف
+    if (ytId) {
+      _stopYoutube();
+    } else {
+      const audio = document.getElementById('profile-audio');
+      audio.pause();
+    }
+    _profMusicPlaying = false;
+    document.getElementById('prof-disc').classList.remove('spinning');
+    document.getElementById('prof-play-icon').textContent = '▶';
+    document.getElementById('prof-music-sub').textContent = 'متوقف — اضغط للتشغيل';
+  } else {
+    // تشغيل
+    if (ytId) {
+      _playYoutube(ytId);
+    } else {
+      const audio = document.getElementById('profile-audio');
+      audio.play().then(() => {
+        _profMusicPlaying = true;
+        document.getElementById('prof-disc').classList.add('spinning');
+        document.getElementById('prof-play-icon').textContent = '⏸';
+        document.getElementById('prof-music-sub').textContent = '▶ يشغل الآن';
+      });
+    }
   }
 }
 

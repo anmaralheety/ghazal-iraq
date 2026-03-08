@@ -2067,16 +2067,31 @@ function profAvatarClick() {
 
 function handleAvatarUpload(e) {
   const f = e.target.files[0]; if (!f) return;
-  if (f.size > 2 * 1024 * 1024) { toast('❌ الصورة كبيرة جداً (حد 2MB)', 'e'); return; }
-  const r = new FileReader();
-  r.onload = ev => {
-    window._pendingAvatar = ev.target.result;
-    document.getElementById('prof-avatar-img').src = ev.target.result;
-    document.getElementById('prof-avatar-img').style.display = 'block';
-    document.getElementById('prof-initials').style.display = 'none';
-    toast('✅ تم اختيار الصورة، اضغط حفظ', 'k');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    // ضغط الصورة تلقائياً إلى 200x200 بكيفية أي حجم
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 200;
+      canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      // قص الصورة من المركز (crop دائري)
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+      // ضغط إلى JPEG جودة 85%
+      const compressed = canvas.toDataURL('image/jpeg', 0.85);
+      window._pendingAvatar = compressed;
+      document.getElementById('prof-avatar-img').src = compressed;
+      document.getElementById('prof-avatar-img').style.display = 'block';
+      document.getElementById('prof-initials').style.display = 'none';
+      toast('✅ تم اختيار الصورة، اضغط حفظ', 'k');
+    };
+    img.src = ev.target.result;
   };
-  r.readAsDataURL(f);
+  reader.readAsDataURL(f);
 }
 
 function saveProfile() {

@@ -195,7 +195,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 .ctx-i.d{color:#ef9a9a;}.ctx-i.d:hover{background:rgba(239,83,80,.15);}
 
 /* PM */
-.pm{position:fixed;bottom:16px;left:16px;width:340px;height:440px;background:linear-gradient(145deg,#0d1f3c,#0a1628);border:1px solid rgba(245,166,35,.3);border-radius:15px;z-index:200;box-shadow:0 15px 50px rgba(0,0,0,.6);display:none;flex-direction:column;resize:both;overflow:hidden;min-width:260px;min-height:300px;max-width:600px;max-height:80vh;}
+.pm{position:fixed;bottom:16px;left:16px;width:340px;height:440px;background:linear-gradient(145deg,#0d1f3c,#0a1628);border:1px solid rgba(245,166,35,.3);border-radius:15px;z-index:200;box-shadow:0 15px 50px rgba(0,0,0,.6);display:none;flex-direction:column;min-width:260px;min-height:300px;}
 .pm.on{display:flex;}
 .pmh{padding:11px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);cursor:move;user-select:none;flex-shrink:0;}
 .pmt{font-size:12px;font-weight:700;color:var(--gl);}
@@ -1790,11 +1790,30 @@ function syncMobLists() {
     });
   }
 
-  // Sync users to mobile drawer  
+  // Sync users to mobile drawer - rebuild properly
   const ulistMob = document.getElementById('ulist-mob');
-  const ulist = document.getElementById('ulist');
-  if (ulistMob && ulist) {
-    ulistMob.innerHTML = ulist.innerHTML;
+  if (ulistMob) {
+    ulistMob.innerHTML = '';
+    // Get all user items from desktop list and clone with working onclick
+    const ulist = document.getElementById('ulist');
+    if (ulist) {
+      const sections = ulist.querySelectorAll('.usl');
+      const items = ulist.querySelectorAll('.ui');
+      // Clone sections and items
+      ulist.childNodes.forEach(node => {
+        const clone = node.cloneNode(true);
+        // Re-attach click handlers for profile opening
+        if (clone.classList && clone.classList.contains('ui')) {
+          const nameEl = clone.querySelector('.un');
+          if (nameEl) {
+            const uname = nameEl.textContent;
+            clone.style.cursor = 'pointer';
+            clone.onclick = () => { openProfile(uname); closeMobDrawer('users'); };
+          }
+        }
+        ulistMob.appendChild(clone);
+      });
+    }
   }
 }
 
@@ -2347,29 +2366,38 @@ socket.on('pm-voice-message', d => {
 })();
 
 let _pmMaximized = false;
+let _pmLastPos = { left:'16px', bottom:'16px', top:'auto', width:'340px', height:'440px' };
 function togglePMSize() {
   const pm = document.getElementById('pm');
   const btn = document.getElementById('pm-max-btn');
   if (_pmMaximized) {
-    pm.style.width = '340px';
-    pm.style.height = '440px';
-    pm.style.top = '';
-    pm.style.left = '16px';
-    pm.style.bottom = '16px';
+    // تصغير - رجوع للحجم الأصلي
+    pm.style.width = _pmLastPos.width;
+    pm.style.height = _pmLastPos.height;
+    pm.style.left = _pmLastPos.left;
+    pm.style.top = _pmLastPos.top;
+    pm.style.bottom = _pmLastPos.bottom;
     btn.textContent = '⛶';
     _pmMaximized = false;
   } else {
-    pm.style.width = '520px';
-    pm.style.height = '600px';
-    pm.style.top = '50%';
-    pm.style.left = '50%';
+    // حفظ الموضع الحالي
+    _pmLastPos = {
+      left: pm.style.left || '16px',
+      top: pm.style.top || 'auto',
+      bottom: pm.style.bottom || '16px',
+      width: pm.style.width || '340px',
+      height: pm.style.height || '440px'
+    };
+    // تكبير في المنتصف
+    const w = Math.min(560, window.innerWidth - 32);
+    const h = Math.min(640, window.innerHeight - 32);
+    pm.style.width = w + 'px';
+    pm.style.height = h + 'px';
+    pm.style.left = Math.round((window.innerWidth - w) / 2) + 'px';
+    pm.style.top = Math.round((window.innerHeight - h) / 2) + 'px';
     pm.style.bottom = 'auto';
-    pm.style.transform = 'translate(-50%,-50%)';
     btn.textContent = '⊡';
     _pmMaximized = true;
-    setTimeout(() => { pm.style.transform = ''; }, 10);
-    pm.style.left = (window.innerWidth/2 - 260) + 'px';
-    pm.style.top = (window.innerHeight/2 - 300) + 'px';
   }
 }
 
@@ -2395,6 +2423,21 @@ function _callTimerStart() {
   }, 1000);
 }
 
+function toggleLocalVideoSize(el) {
+  if (el._big) {
+    el.style.width = '120px'; el.style.height = '90px';
+    el.style.bottom = '8px'; el.style.right = '8px';
+    el.style.left = 'auto'; el.style.top = 'auto';
+    el._big = false;
+  } else {
+    el.style.width = '100%'; el.style.height = '100%';
+    el.style.bottom = '0'; el.style.right = '0';
+    el.style.left = '0'; el.style.top = '0';
+    el.style.borderRadius = '14px';
+    el._big = true;
+  }
+}
+
 function showCallModal(name, type, status) {
   const modal = document.getElementById('call-modal');
   modal.style.display = 'flex';
@@ -2403,20 +2446,31 @@ function showCallModal(name, type, status) {
   document.getElementById('call-avatar').textContent = (name||'?').charAt(0).toUpperCase();
   document.getElementById('call-timer-disp').textContent = '00:00';
   const isVideo = type === 'video';
-  document.getElementById('call-cam-btn').style.display = isVideo ? 'flex' : 'none';
+  const camBtn = document.getElementById('call-cam-btn');
+  camBtn.style.display = isVideo ? 'flex' : 'none';
   document.getElementById('remote-video').style.display = isVideo ? 'block' : 'none';
   document.getElementById('local-video').style.display = isVideo ? 'block' : 'none';
 }
 
+async function _getMedia(wantVideo) {
+  if (wantVideo) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 640, height: 480, facingMode: 'user' } });
+    } catch(e) {
+      console.warn('Camera failed, trying audio only:', e.message);
+      toast('⚠️ لم يتم الوصول للكاميرا، سيتم الاتصال بالصوت فقط', 'k');
+      return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    }
+  }
+  return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+}
+
 async function startPMCall(type) {
-  if (!pmt3) return;
   if (_pc) { toast('يوجد مكالمة نشطة بالفعل', 'e'); return; }
   _callTarget = pmt3; _callType = type; _isCaller = true; _callEnding = false;
   showCallModal(pmt3, type, '🔔 جارٍ الاتصال...');
   try {
-    _localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true, video: type === 'video'
-    });
+    _localStream = await _getMedia(type === 'video');
     if (type === 'video') {
       const lv = document.getElementById('local-video');
       lv.srcObject = _localStream;
@@ -2456,9 +2510,7 @@ async function acceptCall() {
   _callEnding = false;
   showCallModal(_callTarget, _callType, '⏳ جارٍ الاتصال...');
   try {
-    _localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true, video: _callType === 'video'
-    });
+    _localStream = await _getMedia(_callType === 'video');
     if (_callType === 'video') {
       const lv = document.getElementById('local-video');
       lv.srcObject = _localStream;
@@ -2701,32 +2753,33 @@ textarea.prof-input{resize:none;height:58px}
 <audio id="profile-audio" preload="none"></audio>
 
 <!-- CALL MODAL -->
-<div id="call-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
-  <div style="background:#0d1117;border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:28px;text-align:center;min-width:280px;max-width:340px;width:90%;">
-    <div id="call-status" style="font-size:13px;color:#888;margin-bottom:12px;">جارٍ الاتصال...</div>
-    <div id="call-avatar" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#7b1fa2);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;margin:0 auto 12px;border:3px solid rgba(255,255,255,.2);box-shadow:0 0 30px rgba(100,100,255,.3);"></div>
-    <div id="call-name" style="font-size:18px;font-weight:800;color:#fff;margin-bottom:6px;"></div>
-    <div id="call-timer-disp" style="font-size:13px;color:#666;margin-bottom:16px;">00:00</div>
-    <!-- Remote video -->
-    <video id="remote-video" autoplay playsinline style="display:none;width:100%;border-radius:14px;max-height:200px;background:#000;margin-bottom:12px;"></video>
-    <!-- Local video (small) -->
-    <video id="local-video" autoplay playsinline muted style="display:none;width:80px;border-radius:10px;position:absolute;bottom:80px;left:16px;border:2px solid rgba(255,255,255,.2);"></video>
-    <!-- Call buttons -->
-    <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;">
-      <button id="call-mute-btn" onclick="toggleCallMute()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:20px;cursor:pointer;">🎤</button>
-      <button onclick="endCall()" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c62828,#e53935);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(198,40,40,.4);">📵</button>
-      <button id="call-cam-btn" onclick="toggleCallCam()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:20px;cursor:pointer;display:none;">📷</button>
+<div id="call-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid rgba(255,255,255,.12);border-radius:24px;width:min(420px,95vw);max-height:95vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:18px 20px 10px;text-align:center;flex-shrink:0;">
+      <div id="call-status" style="font-size:12px;color:#888;margin-bottom:8px;">جارٍ الاتصال...</div>
+      <div id="call-avatar" style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#7b1fa2);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#fff;margin:0 auto 8px;border:3px solid rgba(255,255,255,.2);box-shadow:0 0 24px rgba(100,100,255,.4);"></div>
+      <div id="call-name" style="font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;"></div>
+      <div id="call-timer-disp" style="font-size:13px;color:#555;">00:00</div>
+    </div>
+    <div style="position:relative;margin:8px 12px;background:#111;border-radius:14px;overflow:hidden;min-height:220px;">
+      <video id="remote-video" autoplay playsinline style="display:none;width:100%;max-height:50vh;object-fit:cover;"></video>
+      <video id="local-video" autoplay playsinline muted onclick="toggleLocalVideoSize(this)" style="display:none;position:absolute;bottom:8px;right:8px;width:120px;height:90px;object-fit:cover;border-radius:10px;border:2px solid rgba(255,255,255,.3);box-shadow:0 4px 14px rgba(0,0,0,.6);cursor:pointer;z-index:2;transition:.3s;"></video>
+    </div>
+    <div style="display:flex;justify-content:center;align-items:center;gap:clamp(12px,4vw,28px);padding:16px 20px 22px;flex-shrink:0;">
+      <button id="call-mute-btn" onclick="toggleCallMute()" style="width:clamp(48px,12vw,58px);height:clamp(48px,12vw,58px);border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:clamp(18px,5vw,22px);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">🎤</button>
+      <button onclick="endCall()" style="width:clamp(60px,15vw,70px);height:clamp(60px,15vw,70px);border-radius:50%;background:linear-gradient(135deg,#c62828,#e53935);border:none;color:#fff;font-size:clamp(22px,6vw,28px);cursor:pointer;box-shadow:0 4px 20px rgba(198,40,40,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">📵</button>
+      <button id="call-cam-btn" onclick="toggleCallCam()" style="width:clamp(48px,12vw,58px);height:clamp(48px,12vw,58px);border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:clamp(18px,5vw,22px);cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0;">📷</button>
     </div>
   </div>
 </div>
 
 <!-- INCOMING CALL -->
-<div id="incoming-call" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:9998;background:#0d1117;border:1px solid rgba(0,191,255,.3);border-radius:18px;padding:16px 20px;text-align:center;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
-  <div id="inc-name" style="font-size:15px;font-weight:700;color:#00bfff;margin-bottom:4px;"></div>
-  <div id="inc-type" style="font-size:12px;color:#888;margin-bottom:14px;">يتصل بك...</div>
-  <div style="display:flex;gap:12px;justify-content:center;">
-    <button onclick="acceptCall()" style="background:linear-gradient(135deg,#2e7d32,#43a047);border:none;color:#fff;border-radius:12px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;">📞 قبول</button>
-    <button onclick="rejectCall()" style="background:linear-gradient(135deg,#c62828,#e53935);border:none;color:#fff;border-radius:12px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;">❌ رفض</button>
+<div id="incoming-call" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9998;background:#0d1117;border:1px solid rgba(0,191,255,.35);border-radius:20px;padding:18px 24px;text-align:center;width:min(320px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.6);">
+  <div id="inc-name" style="font-size:16px;font-weight:700;color:#00bfff;margin-bottom:4px;"></div>
+  <div id="inc-type" style="font-size:12px;color:#888;margin-bottom:16px;">يتصل بك...</div>
+  <div style="display:flex;gap:14px;justify-content:center;">
+    <button onclick="acceptCall()" style="background:linear-gradient(135deg,#2e7d32,#43a047);border:none;color:#fff;border-radius:14px;padding:13px 0;cursor:pointer;font-size:15px;font-weight:700;font-family:'Cairo',sans-serif;flex:1;">📞 قبول</button>
+    <button onclick="rejectCall()" style="background:linear-gradient(135deg,#c62828,#e53935);border:none;color:#fff;border-radius:14px;padding:13px 0;cursor:pointer;font-size:15px;font-weight:700;font-family:'Cairo',sans-serif;flex:1;">❌ رفض</button>
   </div>
 </div>
 

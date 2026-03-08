@@ -1765,180 +1765,345 @@ function upOC(n){document.getElementById('oc').textContent=n;document.getElement
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ===== PROFILE SYSTEM =====
+// ===== PROFILE SYSTEM - LUXURY DESIGN =====
+let _profMusicPlaying = false;
+let _profMusicUrl = '';
+
 function openProfile(username) {
   if (!username) return;
   const modal = document.getElementById('profile-modal');
   if (!modal) return;
-  modal.style.display='flex';
-  // Reset
-  document.getElementById('prof-avatar-img').style.display='none';
-  document.getElementById('prof-edit').style.display='none';
-  document.getElementById('prof-actions').innerHTML='';
-  document.getElementById('prof-music-row').style.display='none';
+  modal.style.display = 'flex';
 
-  fetch('/api/profile/'+encodeURIComponent(username))
-    .then(r=>r.json())
-    .then(d=>{
-      if(!d.ok){toast('❌ لم يتم العثور على الملف','e');closeProfile();return;}
-      const p=d.profile;
-      const nc=RK_COLOR[p.rank]||'#b0bec5';
-      const rkl=RK_LABEL[p.rank]||'👁️ زائر';
-      const glow=RK_GLOW[p.rank]?`text-shadow:${RK_GLOW[p.rank]};`:'';
-      const col=AVC[(p.username||'?').charCodeAt(0)%AVC.length];
-      // Cover gradient
-      document.getElementById('prof-cover').style.background=`linear-gradient(135deg,${nc}44,#0d1117,${nc}11)`;
+  // Stop old music
+  _stopProfMusic();
+
+  // Reset UI
+  document.getElementById('prof-avatar-img').style.display = 'none';
+  document.getElementById('prof-initials').style.display = 'flex';
+  document.getElementById('prof-edit').style.display = 'none';
+  document.getElementById('prof-actions').innerHTML = '';
+  document.getElementById('prof-music-bar').style.display = 'none';
+  document.getElementById('prof-points').textContent = '0';
+  document.getElementById('prof-bio').textContent = '';
+  document.getElementById('prof-crown').style.display = 'none';
+
+  fetch('/api/profile/' + encodeURIComponent(username))
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { toast('❌ لم يتم العثور على الملف', 'e'); closeProfile(); return; }
+      const p = d.profile;
+      const nc = RK_COLOR[p.rank] || '#b0bec5';
+      const rkl = RK_LABEL[p.rank] || '👁️ زائر';
+      const glow = RK_GLOW[p.rank] ? `text-shadow:${RK_GLOW[p.rank]};` : '';
+      const col = AVC[(p.username || '?').charCodeAt(0) % AVC.length];
+      const isTop = ['owner','owner_admin','owner_vip','super_admin'].includes(p.rank);
+
+      // Cover with rank color
+      document.getElementById('prof-cover').style.background =
+        `linear-gradient(160deg, ${nc}55 0%, #0d1117 60%, ${nc}11 100%)`;
+
+      // Animated ring color
+      document.getElementById('prof-ring1').style.borderColor = nc;
+      document.getElementById('prof-ring1').style.boxShadow = `0 0 12px ${nc}66`;
+      document.getElementById('prof-ring2').style.borderColor = nc + '55';
+
+      // Crown for top ranks
+      if (isTop) document.getElementById('prof-crown').style.display = 'block';
+
       // Avatar
-      document.getElementById('prof-initials').textContent=(p.username||'?').charAt(0).toUpperCase();
-      document.getElementById('prof-initials').style.background=`linear-gradient(135deg,${col},${col}99)`;
-      document.getElementById('prof-avatar-wrap').style.borderColor=nc;
-      if(p.avatar){
-        document.getElementById('prof-avatar-img').src=p.avatar;
-        document.getElementById('prof-avatar-img').style.display='block';
-        document.getElementById('prof-initials').style.display='none';
-      } else {
-        document.getElementById('prof-avatar-img').style.display='none';
-        document.getElementById('prof-initials').style.display='flex';
+      const initEl = document.getElementById('prof-initials');
+      initEl.textContent = (p.username || '?').charAt(0).toUpperCase();
+      initEl.style.background = `linear-gradient(135deg,${col},${col}88)`;
+      document.getElementById('prof-av-inner').style.borderColor = nc;
+      document.getElementById('prof-av-inner').style.boxShadow = `0 0 16px ${nc}44`;
+
+      if (p.avatar) {
+        document.getElementById('prof-avatar-img').src = p.avatar;
+        document.getElementById('prof-avatar-img').style.display = 'block';
+        initEl.style.display = 'none';
       }
+
+      // Show edit pencil only for own profile
+      document.getElementById('prof-edit-av').style.display =
+        p.username === cu?.username ? 'flex' : 'none';
+
       // Name & rank
-      document.getElementById('prof-name').textContent=p.username;
-      document.getElementById('prof-name').style.cssText=`font-size:18px;font-weight:700;color:${nc};${glow}`;
-      document.getElementById('prof-badge').textContent=rkl;
-      document.getElementById('prof-badge').style.cssText=`font-size:12px;padding:2px 10px;border-radius:12px;display:inline-block;background:${nc}22;color:${nc};border:1px solid ${nc}44;`;
-      // Bio & stats
-      document.getElementById('prof-bio').textContent=p.bio||'';
-      document.getElementById('prof-points').textContent=(p.points||0).toLocaleString();
+      document.getElementById('prof-name').textContent = p.username;
+      document.getElementById('prof-name').style.cssText =
+        `font-size:20px;font-weight:800;color:${nc};${glow}margin-bottom:4px;`;
+      const badge = document.getElementById('prof-badge');
+      badge.textContent = rkl;
+      badge.style.cssText = `font-size:12px;padding:3px 12px;border-radius:20px;display:inline-block;background:${nc}22;color:${nc};border:1px solid ${nc}55;`;
+
+      // Bio
+      document.getElementById('prof-bio').textContent = p.bio || '';
+
+      // Stats
+      document.getElementById('prof-points').textContent = (p.points || 0).toLocaleString();
+
+      // Live user data (gender/age)
+      const live = window._liveUsers ? window._liveUsers[username] : null;
+      document.getElementById('prof-gender-val').textContent = live?.gender || '—';
+      document.getElementById('prof-age-val').textContent = live?.age || '—';
+
       // Music
-      if(p.music_url){
-        document.getElementById('prof-music-row').style.display='flex';
-        document.getElementById('prof-music-name').textContent=p.music_name||'موسيقى';
+      if (p.music_url) {
+        _profMusicUrl = p.music_url;
+        document.getElementById('prof-music-bar').style.display = 'flex';
+        document.getElementById('prof-music-title').textContent = p.music_name || '🎵 موسيقى';
+        _playProfMusic();
       }
+
       // Actions
-      const acts=document.getElementById('prof-actions');
-      if(p.username!==cu?.username){
-        acts.innerHTML=`<button onclick="closeProfile();openPM('${p.username}')" style="background:#1565c0;color:#fff;border:none;border-radius:20px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;">💌 رسالة خاصة</button>`;
-        if(ADMIN_RANKS.includes(cu?.rank)){
-          acts.innerHTML+=`<button onclick="socket.emit('admin-mute',{username:'${p.username}'});closeProfile();" style="background:#e65100;color:#fff;border:none;border-radius:20px;padding:8px 16px;cursor:pointer;font-size:13px;">🔇 كتم</button>`;
-          acts.innerHTML+=`<button onclick="socket.emit('admin-kick',{username:'${p.username}'});closeProfile();" style="background:#c62828;color:#fff;border:none;border-radius:20px;padding:8px 16px;cursor:pointer;font-size:13px;">🚫 طرد</button>`;
+      const acts = document.getElementById('prof-actions');
+      if (p.username !== cu?.username) {
+        acts.innerHTML = `
+          <button class="prof-act-btn" onclick="closeProfile();openPM('${p.username}')"
+            style="background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;">💌 رسالة خاصة</button>`;
+        if (ADMIN_RANKS.includes(cu?.rank)) {
+          acts.innerHTML += `
+            <button class="prof-act-btn" onclick="socket.emit('admin-mute',{username:'${p.username}'});closeProfile();"
+              style="background:linear-gradient(135deg,#e65100,#f57c00);color:#fff;">🔇 كتم</button>
+            <button class="prof-act-btn" onclick="socket.emit('admin-kick',{username:'${p.username}'});closeProfile();"
+              style="background:linear-gradient(135deg,#c62828,#e53935);color:#fff;">🚫 طرد</button>`;
         }
       } else {
-        document.getElementById('prof-edit').style.display='block';
-        document.getElementById('prof-bio-in').value=p.bio||'';
-        document.getElementById('prof-music-in').value=p.music_url||'';
-        document.getElementById('prof-mname-in').value=p.music_name||'';
+        document.getElementById('prof-edit').style.display = 'block';
+        document.getElementById('prof-bio-in').value = p.bio || '';
+        document.getElementById('prof-music-in').value = p.music_url || '';
+        document.getElementById('prof-mname-in').value = p.music_name || '';
       }
-    }).catch(()=>{toast('❌ خطأ في تحميل الملف','e');closeProfile();});
+    }).catch(() => { toast('❌ خطأ في تحميل الملف', 'e'); closeProfile(); });
 }
 
-function closeProfile(){
-  const m=document.getElementById('profile-modal');
-  if(m) m.style.display='none';
+function closeProfile() {
+  const m = document.getElementById('profile-modal');
+  if (m) m.style.display = 'none';
+  _stopProfMusic();
 }
 
-function handleAvatarUpload(e){
-  const f=e.target.files[0]; if(!f) return;
-  if(f.size>2*1024*1024){toast('❌ الصورة كبيرة جداً (حد 2MB)','e');return;}
-  const r=new FileReader();
-  r.onload=ev=>{
-    window._pendingAvatar=ev.target.result;
-    document.getElementById('prof-avatar-img').src=ev.target.result;
-    document.getElementById('prof-avatar-img').style.display='block';
-    document.getElementById('prof-initials').style.display='none';
-    toast('✅ تم اختيار الصورة، اضغط حفظ','k');
+function _playProfMusic() {
+  if (!_profMusicUrl) return;
+  const audio = document.getElementById('profile-audio');
+  audio.src = _profMusicUrl;
+  audio.play().then(() => {
+    _profMusicPlaying = true;
+    document.getElementById('prof-disc').classList.add('spinning');
+    document.getElementById('prof-play-icon').textContent = '⏸';
+  }).catch(() => {
+    document.getElementById('prof-music-sub').textContent = 'تعذر التشغيل التلقائي - اضغط ▶';
+  });
+}
+
+function _stopProfMusic() {
+  const audio = document.getElementById('profile-audio');
+  audio.pause();
+  audio.src = '';
+  _profMusicPlaying = false;
+  _profMusicUrl = '';
+  const disc = document.getElementById('prof-disc');
+  if (disc) disc.classList.remove('spinning');
+}
+
+function toggleProfMusic() {
+  const audio = document.getElementById('profile-audio');
+  if (_profMusicPlaying) {
+    audio.pause();
+    _profMusicPlaying = false;
+    document.getElementById('prof-disc').classList.remove('spinning');
+    document.getElementById('prof-play-icon').textContent = '▶';
+  } else {
+    audio.play().then(() => {
+      _profMusicPlaying = true;
+      document.getElementById('prof-disc').classList.add('spinning');
+      document.getElementById('prof-play-icon').textContent = '⏸';
+    });
+  }
+}
+
+function profAvatarClick() {
+  const name = document.getElementById('prof-name').textContent;
+  if (name === cu?.username) document.getElementById('prof-avatar-file').click();
+}
+
+function handleAvatarUpload(e) {
+  const f = e.target.files[0]; if (!f) return;
+  if (f.size > 2 * 1024 * 1024) { toast('❌ الصورة كبيرة جداً (حد 2MB)', 'e'); return; }
+  const r = new FileReader();
+  r.onload = ev => {
+    window._pendingAvatar = ev.target.result;
+    document.getElementById('prof-avatar-img').src = ev.target.result;
+    document.getElementById('prof-avatar-img').style.display = 'block';
+    document.getElementById('prof-initials').style.display = 'none';
+    toast('✅ تم اختيار الصورة، اضغط حفظ', 'k');
   };
   r.readAsDataURL(f);
 }
 
-function saveProfile(){
-  const bio=document.getElementById('prof-bio-in').value.trim();
-  const music_url=document.getElementById('prof-music-in').value.trim();
-  const music_name=document.getElementById('prof-mname-in').value.trim();
-  const avatar=window._pendingAvatar||null;
-  fetch('/api/profile/update',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({username:cu.username,bio,music_url,music_name,avatar})
-  }).then(r=>r.json()).then(d=>{
-    if(d.ok){toast('✅ تم حفظ الملف الشخصي','k');window._pendingAvatar=null;closeProfile();}
-    else toast('❌ '+d.msg,'e');
-  }).catch(()=>toast('❌ خطأ في الحفظ','e'));
+function saveProfile() {
+  const bio = document.getElementById('prof-bio-in').value.trim();
+  const music_url = document.getElementById('prof-music-in').value.trim();
+  const music_name = document.getElementById('prof-mname-in').value.trim();
+  const avatar = window._pendingAvatar || null;
+  fetch('/api/profile/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: cu.username, bio, music_url, music_name, avatar })
+  }).then(r => r.json()).then(d => {
+    if (d.ok) { toast('✅ تم حفظ الملف الشخصي', 'k'); window._pendingAvatar = null; closeProfile(); }
+    else toast('❌ ' + d.msg, 'e');
+  }).catch(() => toast('❌ خطأ في الحفظ', 'e'));
 }
 
-async function showLeaderboard(){
-  try{
-    const r=await fetch('/api/leaderboard');
-    const d=await r.json();
-    if(!d.ok) return;
-    let html=`<div style="background:#0d1117;border:1px solid #333;border-radius:12px;padding:20px;max-width:400px;width:90%;"><h3 style="text-align:center;color:#ffd700;margin:0 0 16px">🏆 لوحة الصدارة</h3>`;
-    d.users.forEach((u,i)=>{
-      const nc=RK_COLOR[u.rank]||'#fff';
-      const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
-      html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #222;"><span style="font-size:16px;min-width:26px">${m}</span><span style="color:${nc};font-weight:600;flex:1">${u.username}</span><span style="color:#ffd700;font-weight:700">${u.points} نقطة</span></div>`;
+async function showLeaderboard() {
+  try {
+    const r = await fetch('/api/leaderboard');
+    const d = await r.json();
+    if (!d.ok) return;
+    let html = `<div style="background:#0d1117;border:1px solid #333;border-radius:16px;padding:20px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto;">
+      <h3 style="text-align:center;color:#ffd700;margin:0 0 16px;font-size:18px;">🏆 لوحة الصدارة</h3>`;
+    d.users.forEach((u, i) => {
+      const nc = RK_COLOR[u.rank] || '#fff';
+      const m = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:9px;border-bottom:1px solid #1a1a2e;">
+        <span style="font-size:16px;min-width:28px">${m}</span>
+        <span style="color:${nc};font-weight:700;flex:1">${u.username}</span>
+        <span style="color:#ffd700;font-weight:700">${u.points} نقطة</span></div>`;
     });
-    html+=`</div>`;
-    const overlay=document.createElement('div');
-    overlay.style.cssText='position:fixed;inset:0;background:#000c;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;';
-    overlay.innerHTML=html;
-    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
-    const closeBtn=document.createElement('button');
-    closeBtn.textContent='✕ إغلاق';
-    closeBtn.style.cssText='position:absolute;top:16px;right:16px;background:#c62828;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;';
-    closeBtn.onclick=()=>overlay.remove();
-    overlay.appendChild(closeBtn);
+    html += `</div>`;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000c;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;';
+    overlay.innerHTML = html;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'position:absolute;top:14px;left:14px;background:#c62828;color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:14px;';
+    closeBtn.onclick = () => overlay.remove();
+    overlay.querySelector('div').style.position = 'relative';
+    overlay.querySelector('div').appendChild(closeBtn);
     document.body.appendChild(overlay);
-  }catch(e){}
+  } catch (e) { }
 }
 
-socket.on('rank-changed',d=>{
-  cu.rank=d.rank;
-  toast('🎉 تم تغيير رتبتك إلى '+RK_LABEL[d.rank],'k');
-  const b=document.getElementById('my-badge');
-  if(b){b.textContent=RK_LABEL[d.rank];b.style.color=RK_COLOR[d.rank];b.style.borderColor=RK_COLOR[d.rank]+'55';b.style.background=RK_COLOR[d.rank]+'15';}
+socket.on('rank-changed', d => {
+  cu.rank = d.rank;
+  toast('🎉 تم تغيير رتبتك إلى ' + RK_LABEL[d.rank], 'k');
+  const b = document.getElementById('my-badge');
+  if (b) { b.textContent = RK_LABEL[d.rank]; b.style.color = RK_COLOR[d.rank]; b.style.borderColor = RK_COLOR[d.rank] + '55'; b.style.background = RK_COLOR[d.rank] + '15'; }
 });
 
 </script>
 
-<!-- PROFILE MODAL -->
-<div id="profile-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:250;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#0d1117;border:1px solid #333;border-radius:20px;width:100%;max-width:440px;overflow:hidden;position:relative;">
-    <div id="prof-cover" style="height:110px;background:linear-gradient(135deg,#1a1a2e,#16213e);position:relative;">
-      <div id="prof-music-row" style="display:none;position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);border-radius:20px;padding:3px 10px;font-size:11px;color:#ffd700;align-items:center;gap:5px;">
-        🎵 <span id="prof-music-name">موسيقى</span>
+<!-- ===== PROFILE MODAL ===== -->
+<style>
+@keyframes spinDisc{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes ringRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes floatBubble{0%{opacity:0;transform:translateY(10px)}30%{opacity:1}100%{opacity:0;transform:translateY(-80px)}}
+.prof-ring{position:absolute;inset:-5px;border-radius:50%;border:2px solid;animation:ringRotate 6s linear infinite}
+.prof-ring2{position:absolute;inset:-9px;border-radius:50%;border:1px dashed;animation:ringRotate 10s linear infinite reverse;opacity:.5}
+#prof-disc.spinning{animation:spinDisc 2s linear infinite}
+.prof-act-btn{padding:9px 16px;border:none;border-radius:22px;cursor:pointer;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;transition:transform .15s}
+.prof-act-btn:hover{transform:scale(1.05)}
+.prof-input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:9px 12px;font-size:13px;font-family:'Cairo',sans-serif;box-sizing:border-box;margin-bottom:9px}
+.prof-input:focus{outline:none;border-color:rgba(255,215,0,.5)}
+textarea.prof-input{resize:none;height:58px}
+</style>
+
+<div id="profile-modal" onclick="if(event.target===this)closeProfile()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:250;align-items:center;justify-content:center;padding:12px;">
+  <div style="background:linear-gradient(180deg,#12082a 0%,#0d1117 100%);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;max-width:460px;overflow:hidden;position:relative;max-height:92vh;overflow-y:auto;">
+
+    <!-- Cover -->
+    <div id="prof-cover" style="height:120px;position:relative;overflow:hidden;">
+      <!-- Floating particles in cover -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:20px;opacity:.3;font-size:22px;pointer-events:none">
+        🦋 ✨ 🌙 ✨ 🦋
       </div>
     </div>
-    <div style="padding:0 18px 18px;position:relative;">
-      <div style="display:flex;align-items:flex-end;gap:12px;margin-top:-38px;margin-bottom:10px;">
-        <div id="prof-avatar-wrap" style="width:76px;height:76px;border-radius:50%;border:3px solid #333;overflow:hidden;background:#1a1a2e;flex-shrink:0;cursor:pointer;" onclick="document.getElementById('prof-avatar-file').click()">
+
+    <!-- Close -->
+    <button onclick="closeProfile()" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;z-index:5;backdrop-filter:blur(4px);">✕</button>
+
+    <!-- Avatar + Info -->
+    <div style="display:flex;align-items:flex-end;gap:14px;padding:0 20px;margin-top:-52px;margin-bottom:14px;position:relative;z-index:2;">
+
+      <!-- Avatar Frame -->
+      <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
+        <div class="prof-ring" id="prof-ring1" style="border-color:#ffd700;box-shadow:0 0 10px #ffd70066;"></div>
+        <div class="prof-ring2" id="prof-ring2" style="border-color:#ffd700;"></div>
+        <!-- Crown -->
+        <div id="prof-crown" style="display:none;position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:26px;filter:drop-shadow(0 0 8px gold);z-index:3;">👑</div>
+        <!-- Avatar circle -->
+        <div id="prof-av-inner" onclick="profAvatarClick()"
+          style="width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #ffd700;background:#1a1a2e;cursor:pointer;position:relative;z-index:1;box-shadow:0 0 20px rgba(255,215,0,.3);">
           <img id="prof-avatar-img" style="width:100%;height:100%;object-fit:cover;display:none">
-          <div id="prof-initials" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;"></div>
+          <div id="prof-initials" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:900;color:#fff;"></div>
         </div>
-        <div style="flex:1;padding-bottom:4px;">
-          <div id="prof-name" style="font-size:18px;font-weight:700;color:#fff;"></div>
-          <div id="prof-badge" style="font-size:12px;margin-top:4px;"></div>
-        </div>
-        <button onclick="closeProfile()" style="background:#333;color:#fff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;align-self:flex-start;margin-top:8px;">✕</button>
+        <!-- Edit pencil (own profile) -->
+        <div id="prof-edit-av" onclick="document.getElementById('prof-avatar-file').click()"
+          style="display:none;position:absolute;bottom:3px;right:3px;background:#ffd700;border-radius:50%;width:24px;height:24px;align-items:center;justify-content:center;cursor:pointer;font-size:12px;z-index:4;border:2px solid #0d1117;box-shadow:0 2px 6px rgba(0,0,0,.5);">✏️</div>
       </div>
-      <div id="prof-bio" style="font-size:13px;color:#aaa;margin-bottom:12px;"></div>
-      <div style="display:flex;gap:10px;margin-bottom:14px;">
-        <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:8px 14px;flex:1;text-align:center;">
-          <div id="prof-points" style="font-size:20px;font-weight:700;color:#ffd700;"></div>
-          <div style="font-size:11px;color:#555;">نقطة</div>
-        </div>
-      </div>
-      <div id="prof-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
-      <div id="prof-edit" style="display:none;border-top:1px solid #222;padding-top:12px;">
-        <div style="font-size:12px;color:#666;margin-bottom:8px;">✏️ تعديل ملفك الشخصي</div>
-        <textarea id="prof-bio-in" placeholder="نبذة عنك..." maxlength="200" style="width:100%;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-size:13px;resize:none;height:55px;margin-bottom:8px;font-family:'Cairo',sans-serif;box-sizing:border-box;"></textarea>
-        <input id="prof-music-in" type="url" placeholder="رابط أغنية (MP3 مباشر)" style="width:100%;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
-        <input id="prof-mname-in" type="text" placeholder="اسم الأغنية" maxlength="60" style="width:100%;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:8px;padding:8px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
-        <input type="file" id="prof-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
-        <div style="display:flex;gap:8px;">
-          <button onclick="document.getElementById('prof-avatar-file').click()" style="flex:1;background:#1565c0;color:#fff;border:none;border-radius:8px;padding:9px;cursor:pointer;font-size:13px;">🖼️ تغيير الصورة</button>
-          <button onclick="saveProfile()" style="flex:1;background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:9px;cursor:pointer;font-size:13px;font-weight:700;">💾 حفظ</button>
-        </div>
+
+      <!-- Name / Badge / Bio -->
+      <div style="flex:1;padding-bottom:6px;">
+        <div id="prof-name" style="font-size:20px;font-weight:800;color:#fff;margin-bottom:5px;"></div>
+        <div id="prof-badge" style="font-size:12px;margin-bottom:6px;"></div>
+        <div id="prof-bio" style="font-size:12px;color:#888;line-height:1.5;"></div>
       </div>
     </div>
+
+    <!-- Music Bar -->
+    <div id="prof-music-bar" onclick="toggleProfMusic()" style="display:none;margin:0 18px 14px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.2);border-radius:14px;padding:10px 14px;align-items:center;gap:11px;cursor:pointer;">
+      <div id="prof-disc" style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#ff6b6b,#ffd700,#a855f7);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(255,215,0,.4);">🎵</div>
+      <div style="flex:1;min-width:0;">
+        <div id="prof-music-title" style="font-size:13px;font-weight:700;color:#ffd700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        <div id="prof-music-sub" style="font-size:11px;color:#666;margin-top:2px;">يشغل تلقائياً</div>
+      </div>
+      <div id="prof-play-icon" style="background:rgba(255,215,0,.2);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#ffd700;border:1px solid rgba(255,215,0,.3);">▶</div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;gap:10px;margin:0 18px 14px;">
+      <div style="flex:1;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.12);border-radius:12px;padding:10px;text-align:center;">
+        <div id="prof-points" style="font-size:22px;font-weight:900;color:#ffd700;">0</div>
+        <div style="font-size:11px;color:#555;margin-top:2px;">🏆 نقطة</div>
+      </div>
+      <div style="flex:1;background:rgba(144,202,249,.06);border:1px solid rgba(144,202,249,.12);border-radius:12px;padding:10px;text-align:center;">
+        <div id="prof-gender-val" style="font-size:18px;font-weight:700;color:#90caf9;">—</div>
+        <div style="font-size:11px;color:#555;margin-top:2px;">الجنس</div>
+      </div>
+      <div style="flex:1;background:rgba(206,147,216,.06);border:1px solid rgba(206,147,216,.12);border-radius:12px;padding:10px;text-align:center;">
+        <div id="prof-age-val" style="font-size:18px;font-weight:700;color:#ce93d8;">—</div>
+        <div style="font-size:11px;color:#555;margin-top:2px;">العمر</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div id="prof-actions" style="display:flex;gap:8px;padding:0 18px 14px;flex-wrap:wrap;"></div>
+
+    <!-- Edit Section -->
+    <div id="prof-edit" style="display:none;border-top:1px solid rgba(255,255,255,.06);padding:14px 18px 18px;">
+      <div style="font-size:12px;color:#ffd70088;margin-bottom:10px;font-weight:600;">✏️ تعديل ملفك الشخصي</div>
+      <textarea class="prof-input" id="prof-bio-in" placeholder="اكتب نبذة عنك..." maxlength="200"></textarea>
+      <input class="prof-input" id="prof-music-in" type="url" placeholder="🎵 رابط أغنية MP3 مباشر (https://...)">
+      <input class="prof-input" id="prof-mname-in" type="text" placeholder="اسم الأغنية" maxlength="60">
+      <input type="file" id="prof-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button onclick="document.getElementById('prof-avatar-file').click()"
+          style="flex:1;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:12px;padding:10px;cursor:pointer;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;">
+          🖼️ تغيير الصورة
+        </button>
+        <button onclick="saveProfile()"
+          style="flex:1;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border:none;border-radius:12px;padding:10px;cursor:pointer;font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;">
+          💾 حفظ التعديلات
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
-</body>
 
+<audio id="profile-audio" preload="none"></audio>
+</body>
 </html>

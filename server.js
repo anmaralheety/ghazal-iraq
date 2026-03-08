@@ -317,6 +317,33 @@ app.get('/api/leaderboard', async (req,res) => {
   else { const users=Object.values(memUsers).map(u=>({username:u.username,rank:u.rank,points:u.points||0})).sort((a,b)=>b.points-a.points).slice(0,20); res.json({ok:true,users}); }
 });
 
+// ===== ADMIN QUIZ QUESTIONS MANAGEMENT =====
+let adminQuizQuestions = []; // custom questions added by admin at runtime
+
+app.get('/api/admin/quiz-questions', adminAuth, (req,res) => {
+  res.json({ ok:true, questions: adminQuizQuestions });
+});
+
+app.post('/api/admin/quiz-questions/add', adminAuth, (req,res) => {
+  const { q, a, hint, points } = req.body;
+  if (!q || !a) return res.json({ ok:false, msg:'السؤال والإجابة مطلوبان' });
+  const newQ = { q: q.trim(), a: a.trim(), hint: hint||'', points: parseInt(points)||50 };
+  adminQuizQuestions.push(newQ);
+  // Inject into active quiz pools immediately
+  Object.keys(quizState).forEach(roomId => {
+    if (quizState[roomId]) quizState[roomId].pool.push({...newQ});
+  });
+  res.json({ ok:true, questions: adminQuizQuestions });
+});
+
+app.post('/api/admin/quiz-questions/remove', adminAuth, (req,res) => {
+  const { idx } = req.body;
+  if (idx === undefined || idx < 0 || idx >= adminQuizQuestions.length)
+    return res.json({ ok:false, msg:'السؤال غير موجود' });
+  adminQuizQuestions.splice(idx, 1);
+  res.json({ ok:true, questions: adminQuizQuestions });
+});
+
 // ===== PROFILE API =====
 // Get profile
 app.get('/api/profile/:username', async (req,res) => {
@@ -570,10 +597,12 @@ io.on('connection', (socket) => {
         await addPoints(user.name,pts);
         user.points=(user.points||0)+pts;
         const rankInfo=RANKS[user.rank]||RANKS['visitor'];
-        const successMsg=await saveMessage(user.room,'مسابقات',`أحسنت ${user.name} إجآبتك صحيحه ${text} : لقد حصلت على ${pts} نقطة وأصبح المجموع ${user.points} نقطة`,'quiz');
-        io.to(user.room).emit('message',{...successMsg,user:{name:'مسابقات',rank:'owner',color:'#ffd700',label:'🏆 مسابقات'},isBot:true});
+        // أولاً: رسالة العضو تظهر
         const uMsg=await saveMessage(user.room,user.name,text);
         io.to(user.room).emit('message',{...uMsg,user:{name:user.name,gender:user.gender,age:user.age,rank:user.rank,...rankInfo}});
+        // ثانياً: رسالة الروبوت "أحسنت" بعدها مباشرة
+        const successMsg=await saveMessage(user.room,'مسابقات',`🎉 أحسنت ${user.name}! الإجابة الصحيحة هي: ${correct.a} — حصلت على ${pts} نقطة 🏆 المجموع: ${user.points} نقطة`,'quiz');
+        io.to(user.room).emit('message',{...successMsg,user:{name:'مسابقات',rank:'owner',color:'#ffd700',label:'🏆 مسابقات'},isBot:true});
         nextQuestion(user.room); return;
       }
     }
@@ -627,6 +656,19 @@ io.on('connection', (socket) => {
   });
 
   // PRIVATE MESSAGES
+  // Admin adds quiz question via socket (fallback)
+  socket.on('admin-add-quiz-q', (data) => {
+    const user = chatUsers[socket.id];
+    if (!user || !['owner','owner_admin','super_admin','admin'].includes(user.rank)) return;
+    if (!data.q || !data.a) return;
+    const newQ = { q: data.q.trim(), a: data.a.trim(), hint: data.hint||'', points: parseInt(data.points)||50 };
+    adminQuizQuestions.push(newQ);
+    Object.keys(quizState).forEach(roomId => {
+      if (quizState[roomId]) quizState[roomId].pool.push({...newQ});
+    });
+    socket.emit('quiz-q-added', { ok:true, count: adminQuizQuestions.length });
+  });
+
   socket.on('private-message',(data)=>{
     const sender=chatUsers[socket.id]; if (!sender) return;
     const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===data.to); if (!sid) return;

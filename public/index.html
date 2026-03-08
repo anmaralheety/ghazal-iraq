@@ -874,6 +874,29 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 
     <!-- ROOMS LIST -->
     <div id="rooms-tbl"></div>
+
+    <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🏆 إدارة أسئلة المسابقات</h3>
+    <div style="background:rgba(10,22,40,.8);border:1px solid rgba(245,166,35,.3);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <p style="font-size:12px;color:var(--mut);margin-bottom:14px;">أضف أسئلة خاصة للمسابقة — تُضاف فوراً لبنك الأسئلة</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <input type="text" id="qz-q" class="fi" placeholder="✍️ نص السؤال..." maxlength="200">
+        <input type="text" id="qz-a" class="fi" placeholder="✅ الإجابة الصحيحة..." maxlength="100">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:10px;">
+        <input type="text" id="qz-hint" class="fi" placeholder="💡 تلميح (اختياري)..." maxlength="80">
+        <select id="qz-pts" style="background:#0d1f3c;color:white;border:1px solid rgba(245,166,35,.3);border-radius:10px;padding:10px;font-family:'Cairo',sans-serif;font-size:13px;">
+          <option value="20">20 نقطة - سهل</option>
+          <option value="40">40 نقطة</option>
+          <option value="50" selected>50 نقطة - متوسط</option>
+          <option value="70">70 نقطة</option>
+          <option value="100">100 نقطة - صعب</option>
+        </select>
+        <button class="btn btn-p" style="padding:10px;font-size:13px;" onclick="addQuizQ()">➕ إضافة</button>
+      </div>
+      <div class="fmsg" id="qz-msg" style="margin-bottom:12px;"></div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:8px;">📋 الأسئلة المضافة من الأدمن: <span id="qz-count" style="color:#ffd700;font-weight:700;">0</span></div>
+      <div id="qz-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;"></div>
+    </div>
   </div>
 </div>
 
@@ -1158,7 +1181,15 @@ function renderUsers(users){
   document.getElementById('uc').textContent=users.length;
   const g={owner:[],owner_admin:[],owner_vip:[],super_admin:[],admin:[],premium:[],vip:[],gold:[],member:[],visitor:[]};
   users.forEach(u=>{(g[u.rank]||g.visitor).push(u);});
-  if(g.owner.length)addSec(c,'👑 المالك',g.owner);
+
+  // إذا المالك غير متصل في الغرفة، أضفه كمعروض دائماً (من الأعضاء المسجلين)
+  if(g.owner.length===0 && window._ownerName){
+    const fakeOwner={name:window._ownerName,rank:'owner',gender:'',age:'',offline:true};
+    addSec(c,'👑 المالك',[fakeOwner]);
+  } else if(g.owner.length){
+    addSec(c,'👑 المالك',g.owner);
+  }
+
   if(g.owner_admin.length)addSec(c,'💼 أونر إداري',g.owner_admin);
   if(g.owner_vip.length)addSec(c,'⭐ أونر',g.owner_vip);
   if(g.super_admin.length)addSec(c,'🔱 سوبر أدمن',g.super_admin);
@@ -1180,10 +1211,16 @@ function addSec(c,t,users){
     const fw=RK_WEIGHT[u.rank]||'400';
     const glow=RK_GLOW[u.rank]?`text-shadow:${RK_GLOW[u.rank]};`:'';
     const d=document.createElement('div');d.className='ui';
-    d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}44">${(u.name||'?').charAt(0)}<div class="udot"></div></div>
-      <div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
-    d.addEventListener('contextmenu',e=>{e.preventDefault();openCtx(e,u.name);});
-    d.onclick=()=>openProfile(u.name);
+    if(u.offline){
+      d.style.cssText='opacity:0.5;cursor:default;';
+      d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;filter:grayscale(0.5)">${(u.name||'?').charAt(0)}<div class="udot" style="background:#555!important;box-shadow:none!important;"></div></div>
+        <div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}">${u.name}</div><div class="um" style="color:#666;">⚫ غير متصل</div></div>`;
+    } else {
+      d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}44">${(u.name||'?').charAt(0)}<div class="udot"></div></div>
+        <div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
+      d.addEventListener('contextmenu',e=>{e.preventDefault();openCtx(e,u.name);});
+      d.onclick=()=>openProfile(u.name);
+    }
     c.appendChild(d);
   });
 }
@@ -1278,7 +1315,105 @@ function closePM(){document.getElementById('pm').classList.remove('on');pmt3=nul
 function spm(){const i=document.getElementById('pmi');const t=i.value.trim();if(!t||!pmt3)return;socket.emit('private-message',{to:pmt3,text:t});i.value='';}
 function hpk(e){if(e.key==='Enter')spm();}
 
-async function openAdmin(){document.getElementById('ap').classList.add('on');await refAdmin();}
+// ===== OWNER NAME (always shown in user list) =====
+window._ownerName = null;
+async function loadOwnerName(){
+  try{
+    const r=await fetch('/api/admin/users',{headers:{'x-admin-token':AK}});
+    const d=await r.json();
+    if(d.ok && d.users){
+      const own=d.users.find(u=>u.rank==='owner');
+      if(own) window._ownerName=own.username;
+    }
+  }catch(e){}
+}
+// Load owner name on startup
+setTimeout(loadOwnerName, 2000);
+
+// ===== QUIZ ADMIN FUNCTIONS =====
+let _adminQuizQ = []; // custom questions added by admin
+
+async function loadAdminQuizQuestions(){
+  try{
+    const r=await fetch('/api/admin/quiz-questions',{headers:{'x-admin-token':AK}});
+    const d=await r.json();
+    if(d.ok){ _adminQuizQ=d.questions||[]; renderAdminQuizList(); }
+  }catch(e){ /* server may not have this route yet */ }
+}
+
+function renderAdminQuizList(){
+  const el=document.getElementById('qz-list');
+  const cnt=document.getElementById('qz-count');
+  if(!el) return;
+  cnt.textContent=_adminQuizQ.length;
+  if(!_adminQuizQ.length){
+    el.innerHTML='<p style="color:var(--mut);font-size:12px;text-align:center;padding:12px;">لا توجد أسئلة مضافة بعد</p>';
+    return;
+  }
+  el.innerHTML=_adminQuizQ.map((q,i)=>`
+    <div style="background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;color:#fff;margin-bottom:4px;">❓ ${q.q}</div>
+        <div style="font-size:12px;color:#4caf50;">✅ ${q.a}  <span style="color:var(--mut);margin-right:8px;">${q.hint?'💡 '+q.hint:''}</span>  <span style="color:#ffd700;">${q.points} نقطة</span></div>
+      </div>
+      <button onclick="deleteAdminQuizQ(${i})" style="background:rgba(255,60,60,.15);border:1px solid rgba(255,60,60,.3);color:#ff6b6b;border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12px;flex-shrink:0;">🗑️ حذف</button>
+    </div>
+  `).join('');
+}
+
+async function addQuizQ(){
+  const q=document.getElementById('qz-q').value.trim();
+  const a=document.getElementById('qz-a').value.trim();
+  const hint=document.getElementById('qz-hint').value.trim();
+  const pts=parseInt(document.getElementById('qz-pts').value)||50;
+  if(!q||!a){ setMsg('qz-msg','يجب كتابة السؤال والإجابة','e'); return; }
+  // Try server route first
+  try{
+    const r=await fetch('/api/admin/quiz-questions/add',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':AK},
+      body:JSON.stringify({q,a,hint,points:pts})
+    });
+    const d=await r.json();
+    if(d.ok){
+      _adminQuizQ=d.questions||[..._adminQuizQ,{q,a,hint,points:pts}];
+      renderAdminQuizList();
+      document.getElementById('qz-q').value='';
+      document.getElementById('qz-a').value='';
+      document.getElementById('qz-hint').value='';
+      setMsg('qz-msg','✅ تمت إضافة السؤال للمسابقة','s');
+      setTimeout(()=>setMsg('qz-msg','',''),3000);
+      return;
+    }
+  }catch(e){}
+  // Fallback: add locally (will reset on server restart)
+  _adminQuizQ.push({q,a,hint,points:pts});
+  socket.emit('admin-add-quiz-q',{q,a,hint,points:pts,token:AK});
+  renderAdminQuizList();
+  document.getElementById('qz-q').value='';
+  document.getElementById('qz-a').value='';
+  document.getElementById('qz-hint').value='';
+  setMsg('qz-msg','✅ تمت إضافة السؤال','s');
+  setTimeout(()=>setMsg('qz-msg','',''),3000);
+}
+
+async function deleteAdminQuizQ(idx){
+  const q=_adminQuizQ[idx];
+  if(!q) return;
+  try{
+    const r=await fetch('/api/admin/quiz-questions/remove',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':AK},
+      body:JSON.stringify({idx})
+    });
+    const d=await r.json();
+    if(d.ok){ _adminQuizQ=d.questions||[]; renderAdminQuizList(); return; }
+  }catch(e){}
+  _adminQuizQ.splice(idx,1);
+  renderAdminQuizList();
+}
+
+async function openAdmin(){document.getElementById('ap').classList.add('on');await refAdmin();loadAdminQuizQuestions();}
 function closeAdmin(){document.getElementById('ap').classList.remove('on');}
 
 async function refAdmin(){

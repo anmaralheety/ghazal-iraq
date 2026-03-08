@@ -195,18 +195,20 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 .ctx-i.d{color:#ef9a9a;}.ctx-i.d:hover{background:rgba(239,83,80,.15);}
 
 /* PM */
-.pm{position:fixed;bottom:16px;left:16px;width:290px;background:linear-gradient(145deg,#0d1f3c,#0a1628);border:1px solid rgba(245,166,35,.3);border-radius:15px;z-index:200;box-shadow:0 15px 50px rgba(0,0,0,.6);display:none;flex-direction:column;}
+.pm{position:fixed;bottom:16px;left:16px;width:340px;height:440px;background:linear-gradient(145deg,#0d1f3c,#0a1628);border:1px solid rgba(245,166,35,.3);border-radius:15px;z-index:200;box-shadow:0 15px 50px rgba(0,0,0,.6);display:none;flex-direction:column;resize:both;overflow:hidden;min-width:260px;min-height:300px;max-width:600px;max-height:80vh;}
 .pm.on{display:flex;}
-.pmh{padding:11px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);}
+.pmh{padding:11px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);cursor:move;user-select:none;flex-shrink:0;}
 .pmt{font-size:12px;font-weight:700;color:var(--gl);}
 .pmc{background:transparent;border:none;color:var(--mut);font-size:15px;cursor:pointer;}
-.pmm{height:180px;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;}
+.pmm{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:0;}
 .pmmsg{font-size:12px;padding:6px 10px;border-radius:8px;max-width:85%;}
 .pms{background:rgba(245,166,35,.15);color:var(--gl);align-self:flex-start;}
 .pmr{background:rgba(255,255,255,.06);align-self:flex-end;}
-.pmir{display:flex;gap:6px;padding:8px;border-top:1px solid rgba(255,255,255,.06);}
+.pmir{display:flex;gap:6px;padding:8px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;}
 .pmin{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:white;font-family:'Cairo',sans-serif;font-size:12px;outline:none;direction:rtl;}
 .pmse{background:linear-gradient(135deg,var(--gold),var(--gd));border:none;border-radius:8px;padding:6px 12px;color:white;cursor:pointer;}
+.pm-maximize-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#aaa;border-radius:6px;padding:2px 7px;cursor:pointer;font-size:12px;}
+.pm-maximize-btn:hover{background:rgba(255,255,255,.15);}
 
 /* ADMIN */
 .apanel{position:fixed;inset:0;z-index:200;background:rgba(5,13,26,.97);backdrop-filter:blur(20px);display:none;flex-direction:column;}
@@ -797,26 +799,26 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:
 
 <!-- PM BOX -->
 <div class="pm" id="pm">
-  <div class="pmh">
+  <div class="pmh" id="pm-drag-handle">
     <span class="pmt">💌 <span id="pmt2"></span></span>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <button onclick="startPMCall('audio')" title="مكالمة صوتية" style="background:rgba(0,191,255,.15);border:1px solid rgba(0,191,255,.3);color:#00bfff;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:15px;">📞</button>
-      <button onclick="startPMCall('video')" title="مكالمة فيديو" style="background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.3);color:#00e676;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:15px;">📹</button>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <button onclick="startPMCall('audio')" title="مكالمة صوتية" style="background:rgba(0,191,255,.15);border:1px solid rgba(0,191,255,.3);color:#00bfff;border-radius:7px;padding:3px 7px;cursor:pointer;font-size:14px;">📞</button>
+      <button onclick="startPMCall('video')" title="مكالمة فيديو" style="background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.3);color:#00e676;border-radius:7px;padding:3px 7px;cursor:pointer;font-size:14px;">📹</button>
+      <button class="pm-maximize-btn" onclick="togglePMSize()" id="pm-max-btn" title="تكبير/تصغير">⛶</button>
       <button class="pmc" onclick="closePM()">✕</button>
     </div>
   </div>
   <div class="pmm" id="pmm"></div>
-  <div class="pmir">
-    <button onclick="togglePMVoiceRec()" id="pm-voice-btn" title="رسالة صوتية" style="background:none;border:none;cursor:pointer;font-size:18px;color:#b0bec5;padding:0 4px;transition:color .2s;">🎤</button>
-    <input type="text" class="pmin" id="pmi" placeholder="اكتب رسالة..." onkeypress="hpk(event)">
-    <button class="pmse" onclick="spm()">إرسال</button>
-  </div>
-  <!-- PM voice rec bar -->
-  <div id="pm-voice-bar" style="display:none;align-items:center;gap:8px;padding:5px 10px;background:rgba(255,60,60,.1);border-top:1px solid rgba(255,60,60,.2);">
+  <div id="pm-voice-bar" style="display:none;align-items:center;gap:8px;padding:5px 10px;background:rgba(255,60,60,.1);border-top:1px solid rgba(255,60,60,.2);flex-shrink:0;">
     <div style="width:8px;height:8px;border-radius:50%;background:#ff4444;animation:pulse 1s infinite;"></div>
     <span style="font-size:11px;color:#ff6b6b;flex:1;">تسجيل... <span id="pm-rec-time">0:00</span></span>
     <button onclick="cancelPMVoice()" style="background:rgba(255,60,60,.15);border:1px solid rgba(255,60,60,.3);color:#ff6b6b;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">❌</button>
     <button onclick="sendPMVoice()" style="background:#2e7d32;border:none;color:#fff;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">✅ إرسال</button>
+  </div>
+  <div class="pmir">
+    <button onclick="togglePMVoiceRec()" id="pm-voice-btn" title="رسالة صوتية" style="background:none;border:none;cursor:pointer;font-size:18px;color:#b0bec5;padding:0 4px;transition:color .2s;flex-shrink:0;">🎤</button>
+    <input type="text" class="pmin" id="pmi" placeholder="اكتب رسالة..." onkeypress="hpk(event)">
+    <button class="pmse" onclick="spm()">إرسال</button>
   </div>
 </div>
 
@@ -2303,9 +2305,84 @@ socket.on('pm-voice-message', d => {
   if (d.from === pmt3 || d.to === pmt3) appendPMVoiceMsg(d.data, d.duration, d.from, false);
 });
 
-// ===== WebRTC CALLS =====
-let _pc = null, _localStream = null, _callTarget = null, _callType = null, _callTimer = null, _callSecs = 0, _isCaller = false, _pendingOffer = null, _callMuted = false, _camOff = false;
-const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302'] }] };
+// ===== PM DRAG & RESIZE =====
+(function(){
+  const pm = document.getElementById('pm');
+  const handle = document.getElementById('pm-drag-handle');
+  let dragging = false, ox = 0, oy = 0;
+  handle.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    ox = e.clientX - pm.getBoundingClientRect().left;
+    oy = e.clientY - pm.getBoundingClientRect().top;
+    pm.style.transition = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    let x = e.clientX - ox, y = e.clientY - oy;
+    x = Math.max(0, Math.min(window.innerWidth - pm.offsetWidth, x));
+    y = Math.max(0, Math.min(window.innerHeight - pm.offsetHeight, y));
+    pm.style.left = x + 'px';
+    pm.style.top = y + 'px';
+    pm.style.bottom = 'auto';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+  // Touch support
+  handle.addEventListener('touchstart', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    const t = e.touches[0];
+    dragging = true;
+    ox = t.clientX - pm.getBoundingClientRect().left;
+    oy = t.clientY - pm.getBoundingClientRect().top;
+  }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    pm.style.left = Math.max(0, t.clientX - ox) + 'px';
+    pm.style.top = Math.max(0, t.clientY - oy) + 'px';
+    pm.style.bottom = 'auto';
+  }, {passive:true});
+  document.addEventListener('touchend', () => { dragging = false; });
+})();
+
+let _pmMaximized = false;
+function togglePMSize() {
+  const pm = document.getElementById('pm');
+  const btn = document.getElementById('pm-max-btn');
+  if (_pmMaximized) {
+    pm.style.width = '340px';
+    pm.style.height = '440px';
+    pm.style.top = '';
+    pm.style.left = '16px';
+    pm.style.bottom = '16px';
+    btn.textContent = '⛶';
+    _pmMaximized = false;
+  } else {
+    pm.style.width = '520px';
+    pm.style.height = '600px';
+    pm.style.top = '50%';
+    pm.style.left = '50%';
+    pm.style.bottom = 'auto';
+    pm.style.transform = 'translate(-50%,-50%)';
+    btn.textContent = '⊡';
+    _pmMaximized = true;
+    setTimeout(() => { pm.style.transform = ''; }, 10);
+    pm.style.left = (window.innerWidth/2 - 260) + 'px';
+    pm.style.top = (window.innerHeight/2 - 300) + 'px';
+  }
+}
+
+// ===== WebRTC CALLS (FIXED) =====
+let _pc = null, _localStream = null, _callTarget = null, _callType = null;
+let _callTimer = null, _callSecs = 0, _isCaller = false;
+let _pendingOffer = null, _callMuted = false, _camOff = false, _callEnding = false;
+
+const ICE = { iceServers: [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' }
+]};
 
 function _callTimerStart() {
   _callSecs = 0;
@@ -2325,67 +2402,118 @@ function showCallModal(name, type, status) {
   document.getElementById('call-status').textContent = status;
   document.getElementById('call-avatar').textContent = (name||'?').charAt(0).toUpperCase();
   document.getElementById('call-timer-disp').textContent = '00:00';
-  document.getElementById('call-cam-btn').style.display = type === 'video' ? 'flex' : 'none';
-  document.getElementById('remote-video').style.display = type === 'video' ? 'block' : 'none';
-  document.getElementById('local-video').style.display = type === 'video' ? 'block' : 'none';
+  const isVideo = type === 'video';
+  document.getElementById('call-cam-btn').style.display = isVideo ? 'flex' : 'none';
+  document.getElementById('remote-video').style.display = isVideo ? 'block' : 'none';
+  document.getElementById('local-video').style.display = isVideo ? 'block' : 'none';
 }
 
 async function startPMCall(type) {
   if (!pmt3) return;
-  _callTarget = pmt3; _callType = type; _isCaller = true;
+  if (_pc) { toast('يوجد مكالمة نشطة بالفعل', 'e'); return; }
+  _callTarget = pmt3; _callType = type; _isCaller = true; _callEnding = false;
   showCallModal(pmt3, type, '🔔 جارٍ الاتصال...');
   try {
-    _localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type==='video' });
-    if (type === 'video') document.getElementById('local-video').srcObject = _localStream;
+    _localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true, video: type === 'video'
+    });
+    if (type === 'video') {
+      const lv = document.getElementById('local-video');
+      lv.srcObject = _localStream;
+    }
     _pc = new RTCPeerConnection(ICE);
     _localStream.getTracks().forEach(t => _pc.addTrack(t, _localStream));
-    _pc.onicecandidate = e => { if (e.candidate) socket.emit('call-ice', { to: _callTarget, candidate: e.candidate }); };
+    _pc.onicecandidate = e => {
+      if (e.candidate && _callTarget)
+        socket.emit('call-ice', { to: _callTarget, candidate: e.candidate });
+    };
     _pc.ontrack = e => {
       const rv = document.getElementById('remote-video');
-      if (!rv.srcObject) rv.srcObject = e.streams[0];
+      if (e.streams && e.streams[0]) rv.srcObject = e.streams[0];
     };
-    const offer = await _pc.createOffer();
+    _pc.onconnectionstatechange = () => {
+      const st = _pc?.connectionState;
+      if (st === 'connected') {
+        document.getElementById('call-status').textContent = '🟢 متصل';
+        _callTimerStart();
+      } else if (st === 'disconnected' || st === 'failed') {
+        if (!_callEnding) { toast('📵 انقطع الاتصال', 'k'); endCall(); }
+      }
+    };
+    const offer = await _pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: type === 'video' });
     await _pc.setLocalDescription(offer);
-    socket.emit('call-offer', { to: _callTarget, offer, type, from: cu?.name||cu?.username });
-  } catch(e) { toast('❌ لا يمكن الوصول للكاميرا/الميكروفون', 'e'); endCall(); }
+    socket.emit('call-offer', { to: _callTarget, offer: _pc.localDescription, type, from: cu?.name||cu?.username });
+  } catch(err) {
+    console.error('Call error:', err);
+    toast('❌ ' + (err.message || 'لا يمكن الوصول للميكروفون/الكاميرا'), 'e');
+    endCall();
+  }
 }
 
 async function acceptCall() {
+  if (!_pendingOffer || !_callTarget) return;
   document.getElementById('incoming-call').style.display = 'none';
-  showCallModal(_callTarget, _callType, '🟢 متصل');
-  _callTimerStart();
+  _callEnding = false;
+  showCallModal(_callTarget, _callType, '⏳ جارٍ الاتصال...');
   try {
-    _localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: _callType==='video' });
-    if (_callType === 'video') document.getElementById('local-video').srcObject = _localStream;
+    _localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true, video: _callType === 'video'
+    });
+    if (_callType === 'video') {
+      const lv = document.getElementById('local-video');
+      lv.srcObject = _localStream;
+    }
     _pc = new RTCPeerConnection(ICE);
     _localStream.getTracks().forEach(t => _pc.addTrack(t, _localStream));
-    _pc.onicecandidate = e => { if (e.candidate) socket.emit('call-ice', { to: _callTarget, candidate: e.candidate }); };
+    _pc.onicecandidate = e => {
+      if (e.candidate && _callTarget)
+        socket.emit('call-ice', { to: _callTarget, candidate: e.candidate });
+    };
     _pc.ontrack = e => {
       const rv = document.getElementById('remote-video');
-      if (!rv.srcObject) rv.srcObject = e.streams[0];
+      if (e.streams && e.streams[0]) rv.srcObject = e.streams[0];
     };
-    await _pc.setRemoteDescription(_pendingOffer);
+    _pc.onconnectionstatechange = () => {
+      const st = _pc?.connectionState;
+      if (st === 'connected') {
+        document.getElementById('call-status').textContent = '🟢 متصل';
+        _callTimerStart();
+      } else if (st === 'disconnected' || st === 'failed') {
+        if (!_callEnding) { toast('📵 انقطع الاتصال', 'k'); endCall(); }
+      }
+    };
+    await _pc.setRemoteDescription(new RTCSessionDescription(_pendingOffer));
     const answer = await _pc.createAnswer();
     await _pc.setLocalDescription(answer);
-    socket.emit('call-answer', { to: _callTarget, answer });
-  } catch(e) { toast('❌ فشل قبول المكالمة', 'e'); endCall(); }
+    socket.emit('call-answer', { to: _callTarget, answer: _pc.localDescription });
+    _pendingOffer = null;
+  } catch(err) {
+    console.error('Accept call error:', err);
+    toast('❌ فشل قبول المكالمة: ' + (err.message||''), 'e');
+    endCall();
+  }
 }
 
 function rejectCall() {
-  socket.emit('call-reject', { to: _callTarget });
+  if (_callTarget) socket.emit('call-reject', { to: _callTarget });
   document.getElementById('incoming-call').style.display = 'none';
-  _callTarget = null; _pendingOffer = null;
+  _callTarget = null; _pendingOffer = null; _callType = null;
 }
 
 function endCall() {
+  _callEnding = true;
   clearInterval(_callTimer);
+  const target = _callTarget;
+  _callTarget = null; _callType = null; _isCaller = false; _pendingOffer = null;
   if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
   if (_pc) { _pc.close(); _pc = null; }
-  if (_callTarget) socket.emit('call-end', { to: _callTarget });
-  document.getElementById('call-modal').style.display = 'none';
-  document.getElementById('remote-video').srcObject = null;
-  document.getElementById('local-video').srcObject = null;
-  _callTarget = null; _callType = null; _isCaller = false;
+  if (target) socket.emit('call-end', { to: target });
+  const modal = document.getElementById('call-modal');
+  if (modal) modal.style.display = 'none';
+  const rv = document.getElementById('remote-video');
+  const lv = document.getElementById('local-video');
+  if (rv) rv.srcObject = null;
+  if (lv) lv.srcObject = null;
 }
 
 function toggleCallMute() {
@@ -2400,20 +2528,27 @@ function toggleCallCam() {
 }
 
 // Call socket events
-socket.on('call-offer', async d => {
-  _callTarget = d.from; _callType = d.type; _pendingOffer = new RTCSessionDescription(d.offer); _isCaller = false;
+socket.on('call-offer', d => {
+  if (_pc) { socket.emit('call-reject', { to: d.from }); return; } // مشغول
+  _callTarget = d.from; _callType = d.type; _pendingOffer = d.offer; _isCaller = false;
   document.getElementById('inc-name').textContent = '📞 ' + d.from;
   document.getElementById('inc-type').textContent = d.type === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية';
   document.getElementById('incoming-call').style.display = 'block';
 });
 socket.on('call-answer', async d => {
-  if (_pc) { await _pc.setRemoteDescription(new RTCSessionDescription(d.answer)); _callTimerStart(); document.getElementById('call-status').textContent = '🟢 متصل'; }
+  try {
+    if (_pc && _pc.signalingState !== 'closed')
+      await _pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+  } catch(e) { console.error('set answer error:', e); }
 });
 socket.on('call-ice', async d => {
-  if (_pc && d.candidate) try { await _pc.addIceCandidate(new RTCIceCandidate(d.candidate)); } catch(e){}
+  try {
+    if (_pc && _pc.remoteDescription && d.candidate)
+      await _pc.addIceCandidate(new RTCIceCandidate(d.candidate));
+  } catch(e) {}
 });
-socket.on('call-reject', () => { toast('❌ لم يقبل المكالمة', 'e'); endCall(); });
-socket.on('call-end', () => { toast('📵 انتهت المكالمة', 'k'); endCall(); });
+socket.on('call-reject', () => { toast('❌ رفض المكالمة', 'e'); endCall(); });
+socket.on('call-end', () => { if (!_callEnding) { toast('📵 انتهت المكالمة', 'k'); endCall(); } });
 
 async function showLeaderboard() {
   try {

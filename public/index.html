@@ -1960,8 +1960,9 @@ function openProfile(username) {
       }
 
       // Show edit pencil only for own profile
+      const myName2 = cu?.username || cu?.name;
       document.getElementById('prof-edit-av').style.display =
-        p.username === cu?.username ? 'flex' : 'none';
+        p.username === myName2 ? 'flex' : 'none';
 
       // Name & rank
       document.getElementById('prof-name').textContent = p.username;
@@ -1992,7 +1993,8 @@ function openProfile(username) {
 
       // Actions
       const acts = document.getElementById('prof-actions');
-      if (p.username !== cu?.username) {
+      const myName = cu?.username || cu?.name;
+      if (p.username !== myName) {
         acts.innerHTML = `
           <button class="prof-act-btn" onclick="closeProfile();openPM('${p.username}')"
             style="background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;">💌 رسالة خاصة</button>`;
@@ -2059,7 +2061,8 @@ function toggleProfMusic() {
 
 function profAvatarClick() {
   const name = document.getElementById('prof-name').textContent;
-  if (name === cu?.username) document.getElementById('prof-avatar-file').click();
+  const myName = cu?.username || cu?.name;
+  if (name === myName) document.getElementById('prof-avatar-file').click();
 }
 
 function handleAvatarUpload(e) {
@@ -2081,10 +2084,12 @@ function saveProfile() {
   const music_url = document.getElementById('prof-music-in').value.trim();
   const music_name = document.getElementById('prof-mname-in').value.trim();
   const avatar = window._pendingAvatar || null;
+  const username = cu?.username || cu?.name;
+  if (!username) { toast('❌ يجب تسجيل الدخول أولاً', 'e'); return; }
   fetch('/api/profile/update', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: cu.username, bio, music_url, music_name, avatar })
+    body: JSON.stringify({ username, bio, music_url, music_name, avatar })
   }).then(r => r.json()).then(d => {
     if (d.ok) { toast('✅ تم حفظ الملف الشخصي', 'k'); window._pendingAvatar = null; closeProfile(); }
     else toast('❌ ' + d.msg, 'e');

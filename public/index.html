@@ -63,51 +63,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 .btn-g{background:transparent;color:var(--gl);border:2px solid rgba(245,166,35,.4);}
 
 /* FEATURES STRIP */
-.feats-strip{
-  display:flex;align-items:center;justify-content:center;
-  gap:0;padding:0 24px 20px;
-  flex-wrap:wrap;
-  animation:fadeInUp .8s ease .4s both;
-}
-.fs-item{
-  display:flex;align-items:center;gap:12px;
-  padding:14px 22px;position:relative;
-  cursor:default;transition:.3s;
-  border-radius:14px;
-  flex-shrink:0;
-}
-.fs-item:hover{background:rgba(255,255,255,.04);}
-.fs-glow{
-  position:absolute;inset:0;border-radius:14px;
-  background:radial-gradient(circle at center, rgba(var(--gc-r,100),var(--gc-g,100),var(--gc-b,255),.15), transparent 70%);
-  opacity:0;transition:.3s;pointer-events:none;
-}
-.fs-item:hover .fs-glow{opacity:1;}
-.fs-icon{
-  width:46px;height:46px;border-radius:13px;
-  background:rgba(255,255,255,.06);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  border:1px solid rgba(255,255,255,.08);
-  transition:.3s;
-}
-.fs-item:hover .fs-icon{transform:scale(1.1) rotate(-5deg);background:rgba(255,255,255,.1);}
-.fs-text{display:flex;flex-direction:column;gap:2px;}
-.fs-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);}
-.fs-sub{font-size:11px;color:var(--mut);}
-.fs-sep{
-  width:1px;height:36px;
-  background:linear-gradient(to bottom,transparent,rgba(255,255,255,.12),transparent);
-  flex-shrink:0;margin:0 2px;
-}
-@media(max-width:600px){
-  .feats-strip{gap:4px;padding:0 12px 16px;}
-  .fs-item{padding:10px 12px;gap:9px;}
-  .fs-sep{display:none;}
-  .fs-title{font-size:12px;}
-  .fs-sub{font-size:10px;}
-  .fs-icon{width:38px;height:38px;}
-}
+
 
 /* STATS BAR */
 .stats-bar{
@@ -715,62 +671,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 
   <!-- Feature Cards - New Design -->
   <!-- Features Strip -->
-  <div class="feats-strip">
-    <div class="fs-item">
-      <div class="fs-glow" style="--gc:#1976d2;"></div>
-      <div class="fs-icon" style="color:#64b5f6;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      </div>
-      <div class="fs-text">
-        <span class="fs-title">دردشة حية</span>
-        <span class="fs-sub">نص · صوت · فيديو</span>
-      </div>
-    </div>
-    <div class="fs-sep"></div>
-    <div class="fs-item">
-      <div class="fs-glow" style="--gc:#e91e8c;"></div>
-      <div class="fs-icon" style="color:#f48fb1;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </div>
-      <div class="fs-text">
-        <span class="fs-title">ملف شخصي فاخر</span>
-        <span class="fs-sub">صورة · موسيقى · بيو</span>
-      </div>
-    </div>
-    <div class="fs-sep"></div>
-    <div class="fs-item">
-      <div class="fs-glow" style="--gc:#ff8f00;"></div>
-      <div class="fs-icon" style="color:#ffcc80;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-      </div>
-      <div class="fs-text">
-        <span class="fs-title">10 رتب حصرية</span>
-        <span class="fs-sub">مالك · أدمن · VIP · ذهبي</span>
-      </div>
-    </div>
-    <div class="fs-sep"></div>
-    <div class="fs-item">
-      <div class="fs-glow" style="--gc:#43a047;"></div>
-      <div class="fs-icon" style="color:#a5d6a7;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div class="fs-text">
-        <span class="fs-title">أمان وخصوصية</span>
-        <span class="fs-sub">حماية كاملة للمستخدم</span>
-      </div>
-    </div>
-    <div class="fs-sep"></div>
-    <div class="fs-item">
-      <div class="fs-glow" style="--gc:#8e24aa;"></div>
-      <div class="fs-icon" style="color:#ce93d8;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      </div>
-      <div class="fs-text">
-        <span class="fs-title">مسابقات ونقاط</span>
-        <span class="fs-sub">ربوت · أسئلة · صدارة</span>
-      </div>
-    </div>
-  </div>
+
   <!-- SITE FOOTER -->
   <footer class="site-footer">
     <div class="footer-links">

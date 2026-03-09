@@ -1281,6 +1281,7 @@ function renderMsg(m){
 }
 
 function renderUsers(users){
+  window._lastUsers = users; // حفظ للموبايل
   const c=document.getElementById('ulist');c.innerHTML='';
   document.getElementById('uc').textContent=users.length;
   const g={owner:[],owner_admin:[],owner_vip:[],super_admin:[],admin:[],premium:[],vip:[],gold:[],member:[],visitor:[]};
@@ -1837,6 +1838,7 @@ async function resetPassInline(){
 const isMobile = () => window.innerWidth <= 768;
 
 function openMobDrawer(type) {
+  syncMobLists();
   document.getElementById('mob-' + type).classList.add('open');
 }
 function closeMobDrawer(type) {
@@ -1876,30 +1878,38 @@ function syncMobLists() {
     });
   }
 
-  // Sync users to mobile drawer - rebuild properly
+  // بناء قائمة المستخدمين مباشرة من البيانات
   const ulistMob = document.getElementById('ulist-mob');
-  if (ulistMob) {
+  if (ulistMob && window._lastUsers) {
     ulistMob.innerHTML = '';
-    // Get all user items from desktop list and clone with working onclick
-    const ulist = document.getElementById('ulist');
-    if (ulist) {
-      const sections = ulist.querySelectorAll('.usl');
-      const items = ulist.querySelectorAll('.ui');
-      // Clone sections and items
-      ulist.childNodes.forEach(node => {
-        const clone = node.cloneNode(true);
-        // Re-attach click handlers for profile opening
-        if (clone.classList && clone.classList.contains('ui')) {
-          const nameEl = clone.querySelector('.un');
-          if (nameEl) {
-            const uname = nameEl.textContent;
-            clone.style.cursor = 'pointer';
-            clone.onclick = () => { openProfile(uname); closeMobDrawer('users'); };
-          }
-        }
-        ulistMob.appendChild(clone);
-      });
+    const users = window._lastUsers;
+    const g={owner:[],owner_admin:[],owner_vip:[],super_admin:[],admin:[],premium:[],vip:[],gold:[],member:[],visitor:[]};
+    users.forEach(u=>{(g[u.rank]||g.visitor).push(u);});
+    const secs=[
+      ['👑 المالك','owner'],['💼 أونر إداري','owner_admin'],['⭐ أونر','owner_vip'],
+      ['🔱 سوبر أدمن','super_admin'],['⚙️ أدمن','admin'],['💎 بريميوم','premium'],
+      ['🌟 مميز','vip'],['🥇 ذهبي','gold'],['👥 أعضاء','member'],['👁️ زوار','visitor']
+    ];
+    // إضافة المالك غير المتصل
+    if(g.owner.length===0 && window._ownerName){
+      const lbl=document.createElement('div');lbl.className='usl';lbl.textContent='👑 المالك';ulistMob.appendChild(lbl);
+      const d=document.createElement('div');d.className='ui';d.style.cssText='opacity:0.5;padding:8px 10px;';
+      d.innerHTML=`<div class="uav" style="background:#333;border:2px solid #ff444433;"><span>${window._ownerName.charAt(0)}</span><div class="udot" style="background:#555!important;"></div></div><div style="flex:1;min-width:0;"><div class="un" style="color:#ff4444;font-size:22px;font-weight:700;">${window._ownerName}</div><div class="um" style="color:#666;">⚫ غير متصل</div></div>`;
+      ulistMob.appendChild(d);
     }
+    secs.forEach(([title,key])=>{
+      if(!g[key]||!g[key].length) return;
+      const lbl=document.createElement('div');lbl.className='usl';lbl.textContent=title;ulistMob.appendChild(lbl);
+      g[key].forEach(u=>{
+        const col=AVC[(u.name||'?').charCodeAt(0)%AVC.length];
+        const nc=RK_COLOR[u.rank]||'#fff';
+        const fs=RK_SIZE[u.rank]||'14px';
+        const d=document.createElement('div');d.className='ui';d.style.cursor='pointer';
+        d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}44;overflow:hidden;">${u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${(u.name||'?').charAt(0)}`}<div class="udot"></div></div><div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:700;">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
+        d.onclick=()=>{ openProfile(u.name); closeMobDrawer('users'); };
+        ulistMob.appendChild(d);
+      });
+    });
   }
 }
 

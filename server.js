@@ -47,6 +47,10 @@ async function initDB() {
           bio VARCHAR(200) DEFAULT NULL,
           updated_at TIMESTAMP DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS permissions (
+          rank VARCHAR(30) PRIMARY KEY,
+          perms JSONB NOT NULL DEFAULT '{}'
+        );
       `);
       const adminPass = hashPassword(process.env.ADMIN_PASSWORD || 'admin123');
       await db.query(`INSERT INTO users (username,password,rank) VALUES ('admin',$1,'owner') ON CONFLICT (username) DO NOTHING`, [adminPass]);
@@ -61,6 +65,25 @@ const memUsers = {
 };
 const memMessages = {};
 const memProfiles = {}; // { username: { avatar, music_url, music_name, bio } }
+
+// ===== DEFAULT PERMISSIONS =====
+const DEFAULT_PERMS = {
+  owner:       { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:true, reset_pass:true },
+  owner_admin: { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:true, reset_pass:true },
+  owner_vip:   { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:false, reset_pass:true },
+  super_admin: { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:false, announce:true, add_quiz:true, lock_room:false, reset_pass:false },
+  admin:       { ban:false, unban:false, mute:true, kick:true, clear_room:false, set_rank:false, announce:false, add_quiz:false, lock_room:false, reset_pass:false }
+};
+let memPerms = JSON.parse(JSON.stringify(DEFAULT_PERMS));
+
+async function getPerms() {
+  if (!useDB) return memPerms;
+  const rows = await db.query('SELECT rank, perms FROM permissions');
+  if (rows.rows.length === 0) return memPerms;
+  const result = JSON.parse(JSON.stringify(DEFAULT_PERMS));
+  rows.rows.forEach(r => { if (result[r.rank] !== undefined) result[r.rank] = r.perms; });
+  return result;
+}
 function hashPassword(p) { return crypto.createHash('sha256').update(p).digest('hex'); }
 
 // ===== ROOMS =====
@@ -416,7 +439,37 @@ app.post('/api/profile/update', async (req,res) => {
   res.json({ok:true});
 });
 
-// ===== QUIZ BOT =====
+// ===== PERMISSIONS API =====
+app.get('/api/admin/permissions', adminAuth, async (req,res) => {
+  try {
+    const perms = await getPerms();
+    res.json({ok:true, perms});
+  } catch(e) { res.json({ok:false,msg:e.message}); }
+});
+
+app.post('/api/admin/permissions', adminAuth, async (req,res) => {
+  const { rank, perms } = req.body;
+  const RANKS = ['owner','owner_admin','owner_vip','super_admin','admin'];
+  if (!RANKS.includes(rank)) return res.json({ok:false,msg:'رتبة غير صحيحة'});
+  // owner cannot be restricted
+  if (rank === 'owner') return res.json({ok:false,msg:'لا يمكن تغيير صلاحيات المالك'});
+  if (useDB) {
+    await db.query(`INSERT INTO permissions (rank,perms) VALUES ($1,$2) ON CONFLICT (rank) DO UPDATE SET perms=$2`, [rank, perms]);
+  } else {
+    memPerms[rank] = perms;
+  }
+  // broadcast updated perms to all connected clients
+  const allPerms = await getPerms();
+  io.emit('permissions-updated', allPerms);
+  res.json({ok:true});
+});
+
+app.get('/api/permissions', async (req,res) => {
+  try {
+    const perms = await getPerms();
+    res.json({ok:true, perms});
+  } catch(e) { res.json({ok:false}); }
+});
 const QUIZ_QUESTIONS = [
   {q:'ما اسم الحيوان الذي يستخرج منه المسك ذو الرائحة العطرة؟',a:'الغزال',hint:'ا _ غ _ ا _',points:50},
   {q:'ما هو أعلى جبل في أفريقيا؟',a:'كيليمانجارو',hint:'ك _ ل _ م _ ن _ ا _ و',points:100},
@@ -628,7 +681,13 @@ io.on('connection', (socket) => {
 
   const rankInfo = RANKS[user.rank] || RANKS['visitor'];
   const msg = await saveMessage(user.room, user.name, text);
-  io.to(user.room).emit('message',{...msg,user:{name:user.name,gender:user.gender,age:user.age,rank:user.rank,...rankInfo}});
+  // Pass textColor and nameFrame if provided (validated as safe strings)
+  const textColor = typeof data.textColor==='string' && /^#[0-9a-fA-F]{3,6}$/.test(data.textColor) ? data.textColor : null;
+  const nameFrame = typeof data.nameFrame==='string' && /^[a-z]{1,12}$/.test(data.nameFrame) ? data.nameFrame : null;
+  const userObj = {name:user.name,gender:user.gender,age:user.age,rank:user.rank,...rankInfo};
+  if(textColor) userObj.textColor=textColor;
+  if(nameFrame) userObj.nameFrame=nameFrame;
+  io.to(user.room).emit('message',{...msg,user:userObj});
   });
 
   // ADMIN ACTIONS

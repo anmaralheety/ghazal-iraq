@@ -180,6 +180,27 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 .msgs::-webkit-scrollbar{width:3px;}.msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
 .welcome{background:linear-gradient(135deg,rgba(245,166,35,.1),rgba(245,166,35,.05));border:1px solid rgba(245,166,35,.2);border-radius:11px;padding:11px 16px;margin-bottom:12px;text-align:center;font-size:12px;color:var(--gl);}
 .msg{display:flex;align-items:flex-start;gap:8px;padding:4px 3px;border-radius:8px;transition:.2s;animation:mi .25s ease;}
+/* Name Frames */
+.nf-gold{background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 2s linear infinite;}
+.nf-fire{background:linear-gradient(90deg,#ff4500,#ff8c00,#ffd700,#ff4500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 1.5s linear infinite;}
+.nf-ice{background:linear-gradient(90deg,#00cfff,#a8edff,#00cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 2s linear infinite;}
+.nf-galaxy{background:linear-gradient(90deg,#b044ff,#ff44aa,#44aaff,#b044ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:300%;animation:nf-shine 3s linear infinite;}
+.nf-rose{background:linear-gradient(90deg,#ff6b9d,#ff4081,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 2s linear infinite;}
+.nf-emerald{background:linear-gradient(90deg,#00e676,#69f0ae,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 2s linear infinite;}
+.nf-royal{background:linear-gradient(90deg,#ffd700,#fff,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 2.5s linear infinite;}
+.nf-neon{color:#39ff14!important;text-shadow:0 0 6px #39ff14,0 0 12px #39ff14;}
+.nf-plasma{background:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200%;animation:nf-shine 1.8s linear infinite;}
+@keyframes nf-shine{0%{background-position:0%}100%{background-position:200%}}
+/* Name frame border wrappers */
+.nfw-gold{border:1px solid #ffd70066;background:rgba(255,215,0,.06);border-radius:6px;padding:0 6px;}
+.nfw-fire{border:1px solid #ff450066;background:rgba(255,69,0,.06);border-radius:6px;padding:0 6px;}
+.nfw-ice{border:1px solid #00cfff66;background:rgba(0,207,255,.06);border-radius:6px;padding:0 6px;}
+.nfw-galaxy{border:1px solid #b044ff66;background:rgba(176,68,255,.06);border-radius:6px;padding:0 6px;}
+.nfw-rose{border:1px solid #ff408166;background:rgba(255,64,129,.06);border-radius:6px;padding:0 6px;}
+.nfw-emerald{border:1px solid #00e67666;background:rgba(0,230,118,.06);border-radius:6px;padding:0 6px;}
+.nfw-royal{border:1px solid #ffd70099;background:rgba(255,215,0,.1);border-radius:6px;padding:0 6px;box-shadow:0 0 8px rgba(255,215,0,.15);}
+.nfw-neon{border:1px solid #39ff1499;background:rgba(57,255,20,.06);border-radius:6px;padding:0 6px;box-shadow:0 0 6px rgba(57,255,20,.2);}
+.nfw-plasma{border:1px solid #ff00ff66;background:rgba(255,0,255,.06);border-radius:6px;padding:0 6px;}
 @keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .msg:hover{background:rgba(255,255,255,.03);}
 .av{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
@@ -796,9 +817,37 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       <div class="cin-area">
         <div class="cin-bar">
           <button id="voice-rec-btn" onclick="toggleVoiceRec()" title="رسالة صوتية" style="width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;transition:.2s;color:#b0bec5;">🎤</button>
+          <button id="txt-color-btn" onclick="toggleColorPicker()" title="لون الخط" style="display:none;width:36px;height:36px;border-radius:10px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);cursor:pointer;flex-shrink:0;transition:.2s;overflow:hidden;position:relative;">
+            <span id="txt-color-preview" style="position:absolute;inset:0;border-radius:8px;background:#b0bec5;"></span>
+            <span style="position:relative;z-index:1;font-size:13px;">A</span>
+          </button>
+          <button id="name-frame-btn" onclick="toggleFramePicker()" title="إطار الاسم" style="display:none;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.07);cursor:pointer;flex-shrink:0;font-size:16px;transition:.2s;">🖼️</button>
           <input type="text" class="cin" id="min" placeholder="اكتب رسالتك هنا..." onkeypress="hk(event)">
           <button class="ib ibe" onclick="te()">😊</button>
           <button class="ib ibs" onclick="sm()">➤</button>
+        </div>
+        <!-- Color Picker Popup -->
+        <div id="color-picker-popup" style="display:none;padding:14px 16px;background:rgba(10,22,40,.98);border-top:1px solid rgba(255,255,255,.08);border-radius:0 0 12px 12px;">
+          <div style="font-size:12px;color:var(--mut);margin-bottom:10px;">🎨 اختر لون نص رسائلك:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            ${['#ffffff','#ffd700','#ff4444','#ff8c00','#00bfff','#00e676','#b044ff','#ff69b4','#00ffff','#ff6b35','#a8edff','#f8f9fa'].map(c=>`
+            <div onclick="setTextColor('${c}')" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:.2s;flex-shrink:0;" title="${c}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`).join('')}
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="color" id="custom-color-in" value="#ffffff" style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0;" onchange="setTextColor(this.value)">
+              <span style="font-size:11px;color:var(--mut);">مخصص</span>
+            </div>
+          </div>
+          <button onclick="setTextColor(null)" style="font-size:11px;color:#f87171;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:4px 12px;cursor:pointer;">❌ إزالة اللون</button>
+        </div>
+        <!-- Frame Picker Popup -->
+        <div id="frame-picker-popup" style="display:none;padding:14px 16px;background:rgba(10,22,40,.98);border-top:1px solid rgba(255,255,255,.08);border-radius:0 0 12px 12px;">
+          <div style="font-size:12px;color:var(--mut);margin-bottom:10px;">🖼️ اختر إطار اسمك في الشات:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${NAME_FRAMES.map(f=>`
+            <div onclick="setNameFrame('${f.key}')" id="nfopt-${f.key}" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.2s;font-size:13px;" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+              <span class="${f.key!=='none'?'nf-'+f.key:''}" style="${f.key==='none'?'color:#b0bec5':''}">${f.label}</span>
+            </div>`).join('')}
+          </div>
         </div>
         <!-- Voice recording indicator -->
         <div id="voice-rec-bar" style="display:none;align-items:center;gap:10px;padding:6px 12px;background:rgba(255,60,60,.1);border-top:1px solid rgba(255,60,60,.2);border-radius:0 0 12px 12px;">
@@ -1031,6 +1080,37 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <p style="font-size:12px;color:var(--mut);margin-bottom:18px;line-height:1.7;">حدد صلاحيات كل رتبة بشكل مستقل. التغييرات تُحفظ فوراً وتنطبق على جميع أعضاء الرتبة.</p>
     <div id="perms-container"></div>
     <div class="fmsg" id="perms-msg" style="margin-top:16px;text-align:center;"></div>
+    <!-- CREATE RANK - Owner Only -->
+    <div id="create-rank-section" style="display:none;margin-top:24px;background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.2);border-radius:14px;padding:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <span style="font-size:16px;font-weight:800;color:#f87171;">⚡ إنشاء رتبة جديدة</span>
+        <span style="font-size:11px;background:rgba(255,68,68,.15);color:#f87171;border:1px solid rgba(255,68,68,.3);border-radius:4px;padding:2px 8px;">مالك فقط</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 100px;gap:10px;margin-bottom:10px;">
+        <input type="text" id="nr-key" class="fi" placeholder="مفتاح الرتبة (بالانجليزي)..." maxlength="20" style="direction:ltr;">
+        <input type="text" id="nr-label" class="fi" placeholder="اسم الرتبة بالعربي..." maxlength="20">
+        <input type="color" id="nr-color" value="#9c27b0" style="width:100%;height:44px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.04);cursor:pointer;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <input type="text" id="nr-emoji" class="fi" placeholder="إيموجي الرتبة مثل 🌟..." maxlength="4">
+        <select id="nr-size" style="background:#0d1f3c;color:white;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;font-family:'Cairo',sans-serif;font-size:13px;">
+          <option value="13px">13px - صغير</option>
+          <option value="14px">14px</option>
+          <option value="15px" selected>15px - متوسط</option>
+          <option value="16px">16px</option>
+          <option value="17px">17px - كبير</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#ccc;cursor:pointer;">
+          <input type="checkbox" id="nr-glow" style="accent-color:#ffd700;width:16px;height:16px;">
+          ✨ تأثير توهج للاسم
+        </label>
+        <div id="nr-preview" style="font-size:14px;color:#9c27b0;padding:4px 12px;background:rgba(156,39,176,.1);border-radius:8px;border:1px solid rgba(156,39,176,.3);">معاينة الرتبة</div>
+      </div>
+      <div class="fmsg" id="nr-msg" style="margin-bottom:10px;"></div>
+      <button class="btn btn-p" style="padding:10px 20px;font-size:13px;" onclick="createNewRank()">⚡ إنشاء الرتبة</button>
+    </div>
     </div>
 
   </div>
@@ -1069,20 +1149,23 @@ const ALL_PERMISSIONS = [
   {key:'can_view_admin_panel',label:'👁️ فتح لوحة التحكم',desc:'يستطيع الدخول للوحة التحكم'},
   {key:'can_send_broadcast',label:'📢 إرسال إعلان عام',desc:'يستطيع إرسال رسائل لجميع الغرف'},
   {key:'can_delete_messages',label:'🗑️ حذف رسائل الآخرين',desc:'يستطيع حذف رسائل أي عضو'},
+  {key:'can_custom_text_color',label:'🎨 تغيير لون الخط',desc:'يستطيع اختيار لون مخصص لنصوص رسائله'},
+  {key:'can_use_name_frame',label:'🖼️ إطار اسم مميز',desc:'يستطيع اختيار براويز جميلة لاسمه في الشات'},
+  {key:'can_create_rank',label:'⚡ إنشاء رتبة جديدة',desc:'صلاحية حصرية للمالك فقط — إنشاء رتب مخصصة'},
 ];
 
 // Default permissions per rank
 const DEFAULT_PERMS = {
-  owner:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true},
-  owner_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true},
-  owner_vip:   {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true},
-  super_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true},
-  admin:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true},
-  premium:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
-  vip:         {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
-  gold:        {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
-  member:      {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
-  visitor:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
+  owner:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:true},
+  owner_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
+  owner_vip:   {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
+  super_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
+  admin:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
+  premium:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
+  vip:         {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:true,can_create_rank:false},
+  gold:        {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_create_rank:false},
+  member:      {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_create_rank:false},
+  visitor:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_create_rank:false},
 };
 
 // Load saved permissions from localStorage or use defaults
@@ -1091,6 +1174,31 @@ let _rankPerms = JSON.parse(localStorage.getItem('ghazal_rank_perms')||'null') |
 function hasPerm(permKey){ return !!(_rankPerms[cu?.rank]?.[permKey]); }
 function saveRankPerms(){ try{localStorage.setItem('ghazal_rank_perms',JSON.stringify(_rankPerms));}catch(e){} }
 // ===== END PERMISSIONS =====
+
+// ===== NAME FRAMES & TEXT COLOR =====
+const NAME_FRAMES = [
+  {key:'none',   label:'بدون إطار', preview:'اسمك'},
+  {key:'gold',   label:'🥇 ذهبي',   preview:'اسمك'},
+  {key:'fire',   label:'🔥 ناري',    preview:'اسمك'},
+  {key:'ice',    label:'❄️ جليدي',  preview:'اسمك'},
+  {key:'galaxy', label:'🌌 مجرة',   preview:'اسمك'},
+  {key:'rose',   label:'🌹 وردي',   preview:'اسمك'},
+  {key:'emerald',label:'💚 زمردي',  preview:'اسمك'},
+  {key:'royal',  label:'👑 ملكي',   preview:'اسمك'},
+  {key:'neon',   label:'⚡ نيون',    preview:'اسمك'},
+  {key:'plasma', label:'🔮 بلازما', preview:'اسمك'},
+];
+
+// User display prefs (saved locally per user)
+let _userPrefs = JSON.parse(localStorage.getItem('ghazal_user_prefs')||'{}');
+// {textColor: '#ff0000', nameFrame: 'fire'}
+
+function getUserPref(k){ return _userPrefs[k]||null; }
+function setUserPref(k,v){ _userPrefs[k]=v; try{localStorage.setItem('ghazal_user_prefs',JSON.stringify(_userPrefs));}catch(e){} }
+
+function getNameFrameClass(frame){ return frame&&frame!=='none'?`nf-${frame}`:''; }
+function getNameFrameWrap(frame){ return frame&&frame!=='none'?`nfw-${frame}`:''; }
+// ===== END NAME FRAMES =====
 const RK_CLASS={};
 Object.keys(RK_COLOR).forEach(k=>RK_CLASS[k]='rk-'+k);
 
@@ -1165,6 +1273,16 @@ function enterChat(){
     document.getElementById('chpass-btn').style.display='flex';
   }
   showMobAdmin();
+  // Show text color button if permitted
+  if(hasPerm('can_custom_text_color')){
+    document.getElementById('txt-color-btn').style.display='flex';
+    const saved=getUserPref('textColor');
+    if(saved) document.getElementById('txt-color-preview').style.background=saved;
+  }
+  // Show name frame button if permitted
+  if(hasPerm('can_use_name_frame')){
+    document.getElementById('name-frame-btn').style.display='flex';
+  }
   const b=document.getElementById('my-badge');
   b.style.display='inline-flex';
   b.textContent=RK_LABEL[cu.rank]||'👁️ زائر';
@@ -1340,15 +1458,22 @@ function renderMsg(m){
   const fs=RK_SIZE[u.rank]||'14px';
   const fw=RK_WEIGHT[u.rank]||'400';
   const glow=RK_GLOW[u.rank]?`text-shadow:${RK_GLOW[u.rank]};`:'';
-  const nameStyle=`color:${nc};font-size:${fs};font-weight:${fw};${glow}cursor:pointer;`;
+  // Name frame
+  const nFrame = u.nameFrame||'none';
+  const nfClass = getNameFrameClass(nFrame);
+  const nfWrap = getNameFrameWrap(nFrame);
+  const nameInner = `<span class="${nfClass}" style="${nfClass?'':`color:${nc};font-size:${fs};font-weight:${fw};${glow}`}cursor:pointer;" onclick="openProfile('${esc(u.name)}')">${u.name}</span>`;
+  const nameHtml = nfWrap ? `<span class="${nfWrap}" style="font-size:${fs};font-weight:${fw};">${nameInner}</span>` : `<span class="mn" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}cursor:pointer;" onclick="openProfile('${esc(u.name)}')">${u.name}</span>`;
+  // Text color
+  const txColor = u.textColor ? `color:${u.textColor};` : '';
   const avHtml=u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${u.name.charAt(0)}`;
   const d=document.createElement('div');d.className='msg';
   d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;cursor:pointer;overflow:hidden;" onclick="openProfile('${esc(u.name)}')">${avHtml}</div>
     <div class="mc"><div class="mh">
-      <span class="mn" style="${nameStyle}" onclick="openProfile('${esc(u.name)}')">${u.name}</span>
+      ${nameHtml}
       <span class="mb" style="background:${nc}22;color:${nc};border:1px solid ${nc}44;border-radius:20px;padding:1px 8px;font-size:11px;">${rkl}</span>
       <span class="mt">${m.time||''}</span>
-    </div><div class="mx">${esc(m.text)}</div></div>`;
+    </div><div class="mx" style="${txColor}">${esc(m.text)}</div></div>`;
   c.appendChild(d);
   c.scrollTop=c.scrollHeight;
 }
@@ -1466,11 +1591,68 @@ function sm(){
     return;
   }
   lastSent={text:t,time:now};
-  socket.emit('chat-message',{text:t});
+  const msgData={text:t};
+  if(hasPerm('can_custom_text_color')&&getUserPref('textColor')) msgData.textColor=getUserPref('textColor');
+  if(hasPerm('can_use_name_frame')&&getUserPref('nameFrame')) msgData.nameFrame=getUserPref('nameFrame');
+  socket.emit('chat-message',msgData);
   i.value='';
   if(eo)te();
 }
 function hk(e){if(e.key==='Enter')sm();}
+
+// ===== TEXT COLOR PICKER =====
+let _colorPickerOpen=false, _framePickerOpen=false;
+function toggleColorPicker(){
+  _framePickerOpen=false;
+  document.getElementById('frame-picker-popup').style.display='none';
+  _colorPickerOpen=!_colorPickerOpen;
+  document.getElementById('color-picker-popup').style.display=_colorPickerOpen?'block':'none';
+}
+function toggleFramePicker(){
+  _colorPickerOpen=false;
+  document.getElementById('color-picker-popup').style.display='none';
+  _framePickerOpen=!_framePickerOpen;
+  document.getElementById('frame-picker-popup').style.display=_framePickerOpen?'block':'none';
+  if(_framePickerOpen) highlightActiveFrame();
+}
+function setTextColor(c){
+  if(!c){
+    setUserPref('textColor',null);
+    document.getElementById('txt-color-preview').style.background='#b0bec5';
+    document.getElementById('txt-color-btn').style.borderColor='rgba(255,255,255,.15)';
+  } else {
+    setUserPref('textColor',c);
+    document.getElementById('txt-color-preview').style.background=c;
+    document.getElementById('txt-color-btn').style.borderColor=c;
+  }
+  document.getElementById('color-picker-popup').style.display='none';
+  _colorPickerOpen=false;
+  toast('🎨 تم تغيير لون الخط','k');
+}
+function setNameFrame(key){
+  setUserPref('nameFrame',key==='none'?null:key);
+  highlightActiveFrame();
+  document.getElementById('frame-picker-popup').style.display='none';
+  _framePickerOpen=false;
+  const lbl=NAME_FRAMES.find(f=>f.key===key)?.label||'بدون إطار';
+  toast(`🖼️ تم اختيار إطار: ${lbl}`,'k');
+}
+function highlightActiveFrame(){
+  const cur=getUserPref('nameFrame')||'none';
+  NAME_FRAMES.forEach(f=>{
+    const el=document.getElementById('nfopt-'+f.key);
+    if(el) el.style.borderColor=(f.key===cur)?'#ffd700':'rgba(255,255,255,.1)';
+  });
+}
+document.addEventListener('click',e=>{
+  if(_colorPickerOpen&&!e.target.closest('#color-picker-popup')&&!e.target.closest('#txt-color-btn')){
+    _colorPickerOpen=false;document.getElementById('color-picker-popup').style.display='none';
+  }
+  if(_framePickerOpen&&!e.target.closest('#frame-picker-popup')&&!e.target.closest('#name-frame-btn')){
+    _framePickerOpen=false;document.getElementById('frame-picker-popup').style.display='none';
+  }
+});
+// ===== END COLOR/FRAME PICKERS =====
 // te() defined above
 function ae(e){
   document.getElementById('min').value += e;
@@ -1638,6 +1820,10 @@ const RANKS_ORDER = ['owner','owner_admin','owner_vip','super_admin','admin','pr
 function renderPermsUI(){
   const c = document.getElementById('perms-container');
   if(!c) return;
+  // Show create-rank section only for owner
+  const crs = document.getElementById('create-rank-section');
+  if(crs) crs.style.display = (cu?.rank==='owner') ? 'block' : 'none';
+  if(cu?.rank==='owner') setupCreateRankPreview();
   const isOwner = cu?.rank === 'owner';
   c.innerHTML = RANKS_ORDER.map(rk => {
     const rColor = RK_COLOR[rk]||'#b0bec5';
@@ -1645,6 +1831,7 @@ function renderPermsUI(){
     const perms = _rankPerms[rk]||{};
     const allOn = ALL_PERMISSIONS.every(p=>perms[p.key]);
     const locked = rk==='owner'; // owner always has all, can't be edited
+    const lockedPerms = ['can_create_rank']; // these perms are owner-only always
     return `
     <div class="perm-card" id="pcard-${rk}">
       <div class="perm-rank-hdr">
@@ -1657,13 +1844,16 @@ function renderPermsUI(){
       </div>
       <div class="perm-grid">
         ${ALL_PERMISSIONS.map(p=>{
-          const checked = locked ? true : !!perms[p.key];
+          const isOwnerOnly = p.key==='can_create_rank';
+          const isLocked = locked || (isOwnerOnly && rk!=='owner');
+          const checked = locked ? true : (isOwnerOnly && rk!=='owner') ? false : !!perms[p.key];
+          const ownerOnlyBadge = isOwnerOnly ? `<span style="font-size:10px;background:rgba(255,68,68,.15);color:#f87171;border:1px solid rgba(255,68,68,.3);border-radius:4px;padding:1px 6px;margin-right:4px;">مالك فقط</span>` : '';
           return `
-          <label class="perm-item${checked?' active':''}" id="pi-${rk}-${p.key}" ${locked?'style="opacity:.6;pointer-events:none;"':''}>
-            <input type="checkbox" class="perm-cb" ${checked?'checked':''} ${locked?'disabled':''}
+          <label class="perm-item${checked?' active':''}${isOwnerOnly?' perm-owner-only':''}" id="pi-${rk}-${p.key}" ${isLocked?'style="opacity:.5;pointer-events:none;"':''}>
+            <input type="checkbox" class="perm-cb" ${checked?'checked':''} ${isLocked?'disabled':''}
               onchange="togglePerm('${rk}','${p.key}',this.checked)">
             <div class="perm-lbl">
-              <strong>${p.label}</strong>
+              <strong>${p.label}${ownerOnlyBadge}</strong>
               ${p.desc}
             </div>
           </label>`;
@@ -1734,6 +1924,83 @@ function resetPermsToDefault(){
   renderPermsUI();
   toast('↩️ تم استعادة الصلاحيات الافتراضية','k');
 }
+
+// ===== CREATE NEW RANK (Owner Only) =====
+function setupCreateRankPreview(){
+  ['nr-key','nr-label','nr-emoji','nr-color','nr-size','nr-glow'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input',updateRankPreview);
+    if(el) el.addEventListener('change',updateRankPreview);
+  });
+}
+function updateRankPreview(){
+  const emoji=document.getElementById('nr-emoji')?.value||'🌟';
+  const label=document.getElementById('nr-label')?.value||'اسم الرتبة';
+  const color=document.getElementById('nr-color')?.value||'#9c27b0';
+  const size=document.getElementById('nr-size')?.value||'15px';
+  const glow=document.getElementById('nr-glow')?.checked;
+  const prev=document.getElementById('nr-preview');
+  if(!prev) return;
+  prev.textContent=`${emoji} ${label}`;
+  prev.style.color=color;
+  prev.style.fontSize=size;
+  prev.style.background=color+'15';
+  prev.style.borderColor=color+'44';
+  if(glow) prev.style.textShadow=`0 0 8px ${color}`;
+  else prev.style.textShadow='none';
+}
+function createNewRank(){
+  if(cu?.rank!=='owner'){toast('⛔ هذه الصلاحية للمالك فقط','e');return;}
+  const key=(document.getElementById('nr-key')?.value||'').trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const label=(document.getElementById('nr-label')?.value||'').trim();
+  const emoji=(document.getElementById('nr-emoji')?.value||'🌟').trim();
+  const color=document.getElementById('nr-color')?.value||'#9c27b0';
+  const size=document.getElementById('nr-size')?.value||'15px';
+  const glow=document.getElementById('nr-glow')?.checked;
+  const msg=document.getElementById('nr-msg');
+  if(!key){msg.style.color='#f87171';msg.textContent='❌ أدخل مفتاح الرتبة';return;}
+  if(!label){msg.style.color='#f87171';msg.textContent='❌ أدخل اسم الرتبة';return;}
+  if(RK_COLOR[key]){msg.style.color='#f87171';msg.textContent='❌ هذا المفتاح موجود مسبقاً';return;}
+  // Add to runtime rank data
+  RK_COLOR[key]=color;
+  RK_LABEL[key]=`${emoji} ${label}`;
+  RK_SIZE[key]=size;
+  RK_WEIGHT[key]='600';
+  if(glow) RK_GLOW[key]=`0 0 6px ${color}`;
+  // Add default perms (all false)
+  _rankPerms[key]={};
+  ALL_PERMISSIONS.forEach(p=>{ _rankPerms[key][p.key]=false; });
+  DEFAULT_PERMS[key]={};
+  ALL_PERMISSIONS.forEach(p=>{ DEFAULT_PERMS[key][p.key]=false; });
+  // Save custom ranks
+  try{
+    const customRanks=JSON.parse(localStorage.getItem('ghazal_custom_ranks')||'[]');
+    customRanks.push({key,label:`${emoji} ${label}`,color,size,glow});
+    localStorage.setItem('ghazal_custom_ranks',JSON.stringify(customRanks));
+  }catch(e){}
+  saveRankPerms();
+  msg.style.color='#4ade80';
+  msg.textContent=`✅ تم إنشاء رتبة "${emoji} ${label}" بنجاح!`;
+  // Clear inputs
+  ['nr-key','nr-label','nr-emoji'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  // Re-render perms to show new rank
+  setTimeout(()=>{renderPermsUI();msg.textContent='';},1500);
+  toast(`⚡ رتبة جديدة: ${emoji} ${label}`,'k');
+}
+// Load saved custom ranks on startup
+(function loadCustomRanks(){
+  try{
+    const cr=JSON.parse(localStorage.getItem('ghazal_custom_ranks')||'[]');
+    cr.forEach(({key,label,color,size,glow})=>{
+      if(!RK_COLOR[key]){
+        RK_COLOR[key]=color; RK_LABEL[key]=label; RK_SIZE[key]=size||'15px'; RK_WEIGHT[key]='600';
+        if(glow) RK_GLOW[key]=`0 0 6px ${color}`;
+        if(!_rankPerms[key]){_rankPerms[key]={};ALL_PERMISSIONS.forEach(p=>{_rankPerms[key][p.key]=false;});}
+      }
+    });
+  }catch(e){}
+})();
+// ===== END CREATE RANK =====
 
 async function refAdmin(){
   // Online users table

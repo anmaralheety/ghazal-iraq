@@ -669,7 +669,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <div class="stats-bar">
       <div class="stat-item"><span class="stat-num" id="oc2">0</span><span class="stat-lbl">متصل الآن</span></div>
       <div style="width:1px;height:32px;background:rgba(255,255,255,.1);"></div>
-      <div class="stat-item"><span class="stat-num">9</span><span class="stat-lbl">غرفة دردشة</span></div>
+      <div class="stat-item"><span class="stat-num">8</span><span class="stat-lbl">غرفة دردشة</span></div>
       <div style="width:1px;height:32px;background:rgba(255,255,255,.1);"></div>
       <div class="stat-item"><span class="stat-num">10</span><span class="stat-lbl">رتبة ومستوى</span></div>
     </div>
@@ -1040,6 +1040,17 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       <button class="btn btn-p" style="padding:10px 20px;font-size:13px;" onclick="addRoom()">➕ إضافة الغرفة</button>
     </div>
     <div id="rooms-tbl"></div>
+
+    <!-- PRIVATE ROOM ACCESS MANAGER -->
+    <div style="margin-top:24px;background:rgba(176,68,255,.06);border:1px solid rgba(176,68,255,.25);border-radius:14px;padding:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span style="font-size:15px;font-weight:800;color:#ce93d8;">🔐 صلاحيات الغرف الخاصة</span>
+        <span style="font-size:11px;background:rgba(176,68,255,.15);color:#ce93d8;border:1px solid rgba(176,68,255,.3);border-radius:4px;padding:2px 8px;">مالك فقط</span>
+      </div>
+      <p style="font-size:12px;color:var(--mut);margin-bottom:16px;">حدد الرتب التي يُسمح لها بدخول كل غرفة خاصة 🛡️</p>
+      <div id="room-access-list"></div>
+      <div class="fmsg" id="room-access-msg" style="margin-top:10px;"></div>
+    </div>
     </div>
 
     <!-- TAB: QUIZ -->
@@ -1124,7 +1135,7 @@ for(let i=0;i<90;i++){const s=document.createElement('div');s.className='star';c
 const socket=io();
 const AK='ghazal-admin-2024';
 const AVC=['#1565c0','#c62828','#6a1b9a','#2e7d32','#e65100','#00838f','#ad1457','#4527a0'];
-const RC={general:'linear-gradient(135deg,#1565c0,#0d47a1)',iraq:'linear-gradient(135deg,#c62828,#b71c1c)',youth:'linear-gradient(135deg,#e65100,#bf360c)',feelings:'linear-gradient(135deg,#c2185b,#880e4f)',music:'linear-gradient(135deg,#6a1b9a,#4a148c)',sports:'linear-gradient(135deg,#2e7d32,#1b5e20)',fun:'linear-gradient(135deg,#f57f17,#e65100)',elders:'linear-gradient(135deg,#37474f,#263238)',competitions:'linear-gradient(135deg,#f9a825,#e65100)'};
+const RC={general:'linear-gradient(135deg,#1565c0,#0d47a1)',iraq:'linear-gradient(135deg,#c62828,#b71c1c)',youth:'linear-gradient(135deg,#e65100,#bf360c)',feelings:'linear-gradient(135deg,#c2185b,#880e4f)',music:'linear-gradient(135deg,#6a1b9a,#4a148c)',fun:'linear-gradient(135deg,#f57f17,#e65100)',competitions:'linear-gradient(135deg,#f9a825,#e65100)',admin_meeting:'linear-gradient(135deg,#6a0dad,#4a0080)'};
 const RK_COLOR={owner:'#ff4444',owner_admin:'#ff8c00',owner_vip:'#ffd700',super_admin:'#b044ff',admin:'#00bfff',premium:'#00e5ff',vip:'#ce93d8',gold:'#ffc107',member:'#90caf9',visitor:'#b0bec5'};
 const RK_LABEL={owner:'👑 مالك',owner_admin:'💼 أونر إداري',owner_vip:'⭐ أونر',super_admin:'🔱 سوبر أدمن',admin:'⚙️ أدمن',premium:'💎 بريميوم',vip:'🌟 عضو مميز',gold:'🥇 عضو ذهبي',member:'👤 عضو مسجل',visitor:'👁️ زائر'};
 const RK_SIZE={owner:'22px',owner_admin:'20px',owner_vip:'19px',super_admin:'18px',admin:'17px',premium:'16px',vip:'16px',gold:'15px',member:'14px',visitor:'13px'};
@@ -1369,6 +1380,18 @@ socket.on('room-info-updated', (data) => {
 });
 
 socket.on('room-deleted', msg => { toast('🗑️ ' + msg, 'e'); });
+socket.on('room-access-denied', d => {
+  toast(`🔒 لا تملك صلاحية دخول "${d.roomName||d.room}"`, 'e');
+  // Snap back to current room visually
+  renderRooms();
+});
+socket.on('room-access-kicked', msg => {
+  toast('⚠️ ' + msg, 'e');
+  cr='general';
+  renderRooms();
+  document.getElementById('crn').textContent=rd['general']?.name||'الغرفة العامة';
+  document.getElementById('msgs').innerHTML='<div class="welcome">🌟 تم نقلك للغرفة العامة 🌟</div>';
+});
 
 socket.on('room-cleared',()=>{document.getElementById('msgs').innerHTML='<div class="welcome">🌟 تم مسح الغرفة 🌟</div>';});
 socket.on('muted',m=>{toast('🔇 '+m,'e');const i=document.getElementById('min');i.disabled=true;i.placeholder='أنت مكتوم...';});
@@ -1423,8 +1446,15 @@ socket.on('private-message',pm=>{
 function renderRooms(){
   const c=document.getElementById('rlist');c.innerHTML='';
   Object.entries(rd).forEach(([id,r])=>{
-    const d=document.createElement('div');d.className='ri'+(id===cr?' on':'');d.id='ri-'+id;
-    d.innerHTML=`<div class="r-ic" style="background:${RC[id]||'#333'}">${r.icon}</div><div style="flex:1;min-width:0;"><div class="r-nm">${r.name}</div><div class="r-cn" id="rc-${id}">0 متصل</div></div>`;
+    const isPrivate=r.isPrivate;
+    const allowed=!isPrivate||(r.allowedRanks&&r.allowedRanks.includes(cu?.rank));
+    const lockBadge=isPrivate?`<span style="font-size:10px;background:rgba(176,68,255,.2);color:#ce93d8;border:1px solid rgba(176,68,255,.3);border-radius:4px;padding:1px 5px;margin-right:4px;">🔒</span>`:'';
+    const d=document.createElement('div');
+    d.className='ri'+(id===cr?' on':'')+(isPrivate&&!allowed?' ri-locked':'');
+    d.id='ri-'+id;
+    d.style.opacity=isPrivate&&!allowed?'0.4':'1';
+    d.title=isPrivate&&!allowed?'هذه غرفة خاصة - لا تملك صلاحية الدخول':'';
+    d.innerHTML=`<div class="r-ic" style="background:${RC[id]||r.color||'#333'}">${r.icon}</div><div style="flex:1;min-width:0;"><div class="r-nm">${lockBadge}${r.name}</div><div class="r-cn" id="rc-${id}">0 متصل</div></div>`;
     d.onclick=()=>swRoom(id,r);c.appendChild(d);
   });
   syncMobLists();
@@ -1811,6 +1841,7 @@ function apTab(name){
     if(sec2) sec2.style.display = (name==='main')?'block':'none';
   });
   if(name==='perms') renderPermsUI();
+  if(name==='rooms') renderRoomAccessManager();
   if(name==='words') { loadBadWords && loadBadWords(); }
 }
 
@@ -2001,6 +2032,92 @@ function createNewRank(){
   }catch(e){}
 })();
 // ===== END CREATE RANK =====
+
+// ===== ROOM ACCESS MANAGER =====
+function renderRoomAccessManager(){
+  const c=document.getElementById('room-access-list');
+  if(!c) return;
+  // Only show for owner
+  if(cu?.rank!=='owner'){
+    c.innerHTML='<p style="color:var(--mut);font-size:13px;">هذا القسم متاح للمالك فقط.</p>';
+    return;
+  }
+  const privateRooms=Object.entries(rd).filter(([id,r])=>r.isPrivate);
+  if(!privateRooms.length){
+    c.innerHTML='<p style="color:var(--mut);font-size:13px;">لا توجد غرف خاصة حالياً.</p>';
+    return;
+  }
+  const allRanks=['owner','owner_admin','owner_vip','super_admin','admin','premium','vip','gold','member'];
+  c.innerHTML=privateRooms.map(([roomId,room])=>{
+    const allowed=room.allowedRanks||[];
+    return `
+    <div style="background:rgba(10,22,40,.8);border:1px solid rgba(176,68,255,.2);border-radius:12px;padding:16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:20px;">${room.icon}</span>
+        <span style="font-size:14px;font-weight:700;color:#ce93d8;">${room.name}</span>
+        <span style="font-size:11px;color:var(--mut);">(${roomId})</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        ${allRanks.map(rk=>{
+          const isChecked=allowed.includes(rk);
+          const rColor=RK_COLOR[rk]||'#b0bec5';
+          const rLabel=RK_LABEL[rk]||rk;
+          return `
+          <label id="ra-${roomId}-${rk}" style="display:flex;align-items:center;gap:7px;padding:7px 12px;background:${isChecked?rColor+'18':'rgba(255,255,255,.03)'};border:1px solid ${isChecked?rColor+'55':'rgba(255,255,255,.08)'};border-radius:10px;cursor:pointer;transition:.2s;min-width:140px;">
+            <input type="checkbox" ${isChecked?'checked':''} style="accent-color:${rColor};width:16px;height:16px;cursor:pointer;"
+              onchange="toggleRoomRank('${roomId}','${rk}',this.checked,this)">
+            <span style="font-size:12px;color:${rColor};font-weight:600;">${rLabel}</span>
+          </label>`;
+        }).join('')}
+      </div>
+      <button onclick="saveRoomAccess('${roomId}')" class="btn btn-p" style="padding:8px 18px;font-size:12px;">💾 حفظ صلاحيات ${room.name}</button>
+    </div>`;
+  }).join('');
+}
+
+// Pending changes per room
+let _roomAccessPending={};
+function toggleRoomRank(roomId, rank, val, el){
+  if(!_roomAccessPending[roomId]){
+    // Start from current allowed list
+    _roomAccessPending[roomId]=[...(rd[roomId]?.allowedRanks||[])];
+  }
+  if(val && !_roomAccessPending[roomId].includes(rank)) _roomAccessPending[roomId].push(rank);
+  if(!val) _roomAccessPending[roomId]=_roomAccessPending[roomId].filter(r=>r!==rank);
+  // Update label style
+  const lbl=document.getElementById(`ra-${roomId}-${rank}`);
+  if(lbl){
+    const rColor=RK_COLOR[rank]||'#b0bec5';
+    lbl.style.background=val?rColor+'18':'rgba(255,255,255,.03)';
+    lbl.style.borderColor=val?rColor+'55':'rgba(255,255,255,.08)';
+  }
+}
+
+async function saveRoomAccess(roomId){
+  if(cu?.rank!=='owner'){toast('⛔ للمالك فقط','e');return;}
+  const allowedRanks=_roomAccessPending[roomId]||(rd[roomId]?.allowedRanks||[]);
+  const msg=document.getElementById('room-access-msg');
+  try{
+    const r=await fetch('/api/admin/room-access',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':AK},
+      body:JSON.stringify({roomId,allowedRanks})
+    });
+    const d=await r.json();
+    if(d.ok){
+      if(rd[roomId]) rd[roomId].allowedRanks=allowedRanks;
+      delete _roomAccessPending[roomId];
+      if(msg){msg.style.color='#4ade80';msg.textContent=`✅ تم حفظ صلاحيات ${rd[roomId]?.name||roomId}`;setTimeout(()=>msg.textContent='',3000);}
+      toast('✅ تم حفظ صلاحيات الغرفة','k');
+      renderRooms();
+    } else {
+      if(msg){msg.style.color='#f87171';msg.textContent='❌ '+(d.msg||'خطأ');}
+    }
+  }catch(e){
+    if(msg){msg.style.color='#f87171';msg.textContent='❌ خطأ في الاتصال';}
+  }
+}
+// ===== END ROOM ACCESS MANAGER =====
 
 async function refAdmin(){
   // Online users table

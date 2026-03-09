@@ -1150,21 +1150,22 @@ const ALL_PERMISSIONS = [
   {key:'can_delete_messages',label:'🗑️ حذف رسائل الآخرين',desc:'يستطيع حذف رسائل أي عضو'},
   {key:'can_custom_text_color',label:'🎨 تغيير لون الخط',desc:'يستطيع اختيار لون مخصص لنصوص رسائله'},
   {key:'can_use_name_frame',label:'🖼️ إطار اسم مميز',desc:'يستطيع اختيار براويز جميلة لاسمه في الشات'},
+  {key:'can_change_username',label:'✏️ تغيير الاسم',desc:'يستطيع تغيير اسمه من الملف الشخصي أو لوحة التحكم'},
   {key:'can_create_rank',label:'⚡ إنشاء رتبة جديدة',desc:'صلاحية حصرية للمالك فقط — إنشاء رتب مخصصة'},
 ];
 
 // Default permissions per rank
 const DEFAULT_PERMS = {
-  owner:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:true},
-  owner_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
-  owner_vip:   {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
-  super_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
-  admin:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
-  premium:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:true,can_use_name_frame:true,can_create_rank:false},
-  vip:         {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:true,can_create_rank:false},
-  gold:        {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_create_rank:false},
-  member:      {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_create_rank:false},
-  visitor:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_create_rank:false},
+  owner:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:true},
+  owner_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
+  owner_vip:   {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
+  super_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
+  admin:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
+  premium:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
+  vip:         {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:true,can_change_username:false,can_create_rank:false},
+  gold:        {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_change_username:false,can_create_rank:false},
+  member:      {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_change_username:false,can_create_rank:false},
+  visitor:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false,can_custom_text_color:false,can_use_name_frame:false,can_change_username:false,can_create_rank:false},
 };
 
 // Load saved permissions from localStorage or use defaults
@@ -1368,6 +1369,13 @@ socket.on('room-info-updated', (data) => {
 });
 
 socket.on('room-deleted', msg => { toast('🗑️ ' + msg, 'e'); });
+socket.on('username-changed', d => {
+  toast('👤 ' + (d.msg||'تم تغيير اسمك') + ' → ' + d.newName, 'k');
+  if (cu) { cu.name = d.newName; if(cu.username) cu.username = d.newName; }
+  const saved = sessionStorage.getItem('ghazal_user');
+  if (saved) { const u=JSON.parse(saved); u.name=d.newName; if(u.username) u.username=d.newName; sessionStorage.setItem('ghazal_user',JSON.stringify(u)); }
+  setTimeout(() => logout(), 2500);
+});
 socket.on('room-access-denied', d => {
   toast(`🔒 لا تملك صلاحية دخول "${d.roomName||d.room}"`, 'e');
   // Snap back to current room visually
@@ -2173,6 +2181,7 @@ async function refAdmin(){
         <td>${u.is_banned?'<span class="tag-ban">🚫 محظور</span>':'<span class="tag-ok">✅ نشط</span>'}</td>
         <td>
           ${!u.is_banned?`<button class="aab ab-ban" onclick="aBan('${u.username}')">🚫 حظر</button>`:`<button class="aab ab-unban" onclick="aUnban('${u.username}')">✅ رفع</button>`}
+          ${hasPerm('can_change_username')?`<button class="aab" style="background:rgba(255,183,77,.15);color:#ffcc80;border:1px solid rgba(255,183,77,.3);" onclick="adminRenameUser('${u.username}')">✏️ اسم</button>`:''}
           <select onchange="aRank('${u.username}',this.value)" style="background:#0d1f3c;color:white;border:1px solid rgba(245,166,35,.3);border-radius:7px;padding:3px 7px;font-family:'Cairo',sans-serif;font-size:11px;margin:2px;">
             <option value="" disabled selected>تغيير الرتبة</option>
             <option value="visitor">👁️ زائر</option>
@@ -2767,6 +2776,9 @@ function openProfile(username) {
         if (hasPerm('can_ban')) acts.innerHTML += `<button class="prof-act-btn" onclick="socket.emit('admin-ban',{username:'${p.username}'});closeProfile();" style="background:linear-gradient(135deg,#880000,#b71c1c);color:#fff;">⛔ حظر</button>`;
       } else {
         document.getElementById('prof-edit').style.display = 'block';
+        // Show username change only if permitted
+        const nameSection = document.getElementById('prof-name-section');
+        if (nameSection) nameSection.style.display = hasPerm('can_change_username') ? 'block' : 'none';
         document.getElementById('prof-bio-in').value = p.bio || '';
         document.getElementById('prof-music-in').value = p.music_url || '';
         document.getElementById('prof-mname-in').value = p.music_name || '';
@@ -2928,6 +2940,58 @@ function saveProfile() {
     if (d.ok) { toast('✅ تم حفظ الملف الشخصي', 'k'); window._pendingAvatar = null; closeProfile(); }
     else toast('❌ ' + d.msg, 'e');
   }).catch(() => toast('❌ خطأ في الحفظ', 'e'));
+}
+
+async function changeUsername() {
+  if (!hasPerm('can_change_username')) { toast('⛔ لا تملك صلاحية تغيير الاسم', 'e'); return; }
+  const inp = document.getElementById('prof-newname-in');
+  const msg = document.getElementById('prof-name-msg');
+  const newName = inp?.value.trim();
+  if (!newName) { msg.style.color='#f87171'; msg.textContent='❌ أدخل الاسم الجديد'; return; }
+  if (newName.length < 2 || newName.length > 20) { msg.style.color='#f87171'; msg.textContent='❌ الاسم بين 2 و 20 حرف'; return; }
+  const oldName = cu?.username || cu?.name;
+  if (newName === oldName) { msg.style.color='#f87171'; msg.textContent='❌ الاسم نفسه الحالي'; return; }
+  msg.style.color='#888'; msg.textContent='جارٍ التغيير...';
+  try {
+    const r = await fetch('/api/change-username', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldName, newName })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      msg.style.color='#4ade80'; msg.textContent='✅ تم تغيير الاسم بنجاح! سيتم تسجيل الخروج...';
+      // Update local session
+      if (cu) { cu.name = newName; if(cu.username) cu.username = newName; }
+      const saved = sessionStorage.getItem('ghazal_user');
+      if (saved) {
+        const u = JSON.parse(saved); u.name = newName; if(u.username) u.username = newName;
+        sessionStorage.setItem('ghazal_user', JSON.stringify(u));
+      }
+      toast('✅ تم تغيير الاسم — أعد تسجيل الدخول', 'k');
+      setTimeout(() => { closeProfile(); logout(); }, 2000);
+    } else {
+      msg.style.color='#f87171'; msg.textContent='❌ ' + (d.msg || 'خطأ');
+    }
+  } catch(e) { msg.style.color='#f87171'; msg.textContent='❌ خطأ في الاتصال'; }
+}
+
+// Admin: rename any user (owner only) - called from admin panel
+async function adminRenameUser(oldName) {
+  const newName = prompt('الاسم الجديد لـ ' + oldName + ':', oldName);
+  if (!newName || newName.trim() === oldName) return;
+  const nm = newName.trim();
+  if (nm.length < 2 || nm.length > 20) { toast('❌ الاسم بين 2 و 20 حرف', 'e'); return; }
+  try {
+    const r = await fetch('/api/admin/rename-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': AK },
+      body: JSON.stringify({ oldName, newName: nm })
+    });
+    const d = await r.json();
+    if (d.ok) { toast('✅ تم تغيير اسم ' + oldName + ' إلى ' + nm, 'k'); refAdmin(); }
+    else toast('❌ ' + (d.msg || 'خطأ'), 'e');
+  } catch(e) { toast('❌ خطأ في الاتصال', 'e'); }
 }
 
 // ===== VOICE MESSAGES =====
@@ -3548,6 +3612,15 @@ textarea.prof-input{resize:none;height:58px}
     <!-- Edit Section -->
     <div id="prof-edit" style="display:none;border-top:1px solid rgba(255,255,255,.06);padding:14px 18px 18px;">
       <div style="font-size:12px;color:#ffd70088;margin-bottom:10px;font-weight:600;">✏️ تعديل ملفك الشخصي</div>
+      <!-- Change Username -->
+      <div id="prof-name-section" style="display:none;margin-bottom:10px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:11px;color:#ffd700;margin-bottom:6px;">👤 تغيير الاسم</div>
+        <div style="display:flex;gap:8px;">
+          <input class="prof-input" id="prof-newname-in" type="text" placeholder="الاسم الجديد..." maxlength="20" style="margin:0;flex:1;">
+          <button onclick="changeUsername()" style="background:linear-gradient(135deg,#f57f17,#ff8f00);color:#fff;border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:700;font-family:'Cairo',sans-serif;flex-shrink:0;">✅ تغيير</button>
+        </div>
+        <div id="prof-name-msg" style="font-size:11px;margin-top:5px;"></div>
+      </div>
       <textarea class="prof-input" id="prof-bio-in" placeholder="اكتب نبذة عنك..." maxlength="200"></textarea>
       <input class="prof-input" id="prof-music-in" type="url" placeholder="🎵 رابط أغنية MP3 مباشر (https://...)">
       <input class="prof-input" id="prof-mname-in" type="text" placeholder="اسم الأغنية" maxlength="60">

@@ -62,6 +62,46 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 .btn-s{background:rgba(255,255,255,.06);color:var(--w);border:1px solid rgba(255,255,255,.15);}
 .btn-g{background:transparent;color:var(--gl);border:2px solid rgba(245,166,35,.4);}
 
+/* FEATURES STRIP */
+.feats-strip{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;padding:0 24px 20px;
+  flex-wrap:wrap;
+  animation:fadeInUp .8s ease .4s both;
+}
+.fs-item{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 22px;position:relative;
+  cursor:default;transition:.3s;
+  border-radius:14px;
+  flex-shrink:0;
+}
+.fs-item:hover{background:rgba(255,255,255,.04);}
+.fs-glow{
+  position:absolute;inset:0;border-radius:14px;
+  background:radial-gradient(circle at center, rgba(var(--gc-r,100),var(--gc-g,100),var(--gc-b,255),.15), transparent 70%);
+  opacity:0;transition:.3s;pointer-events:none;
+}
+.fs-item:hover .fs-glow{opacity:1;}
+.fs-icon{
+  width:46px;height:46px;border-radius:13px;
+  background:rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  border:1px solid rgba(255,255,255,.08);
+  transition:.3s;
+}
+.fs-item:hover .fs-icon{transform:scale(1.1) rotate(-5deg);background:rgba(255,255,255,.1);}
+.fs-text{display:flex;flex-direction:column;gap:2px;}
+.fs-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);}
+.fs-sub{font-size:11px;color:var(--mut);}
+.fs-sep{
+  width:1px;height:36px;
+  background:linear-gradient(to bottom,transparent,rgba(255,255,255,.12),transparent);
+  flex-shrink:0;margin:0 2px;
+}
+@media(max-width:600px){
+  .feats-strip{gap:4px;padding:0 12px 16px;}
   .fs-item{padding:10px 12px;gap:9px;}
   .fs-sep{display:none;}
   .fs-title{font-size:12px;}
@@ -70,9 +110,12 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 }
 
 /* STATS BAR */
-.stats-bar{display:flex;flex-direction:row !important;gap:32px;justify-content:center;align-items:center;padding:10px 20px 0;}
+.stats-bar{
+  display:flex;gap:24px;justify-content:center;align-items:center;
+  padding:10px 20px 0;animation:fadeInUp .8s ease .35s both;flex-wrap:wrap;
+}
 .stat-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
-.stat-num{font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);}
+.stat-num{font-family:'Tajawal',sans-serif;font-size:22px;font-weight:900;color:var(--t-accent2);}
 .stat-lbl{font-size:10px;color:var(--mut);letter-spacing:1px;}
 
 /* Footer */
@@ -256,6 +299,19 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 .ahdr{padding:16px 26px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(245,166,35,.2);}
 .atit{font-family:'Tajawal',sans-serif;font-size:20px;font-weight:900;background:linear-gradient(135deg,var(--gl),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .abdy{flex:1;overflow-y:auto;padding:24px;}
+.ap-tab{padding:10px 18px;font-size:13px;font-family:'Cairo',sans-serif;background:transparent;border:none;border-bottom:3px solid transparent;color:var(--mut);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.ap-tab:hover{color:#fff;background:rgba(255,255,255,.05);}
+.ap-tab.on{color:#ffd700;border-bottom-color:#ffd700;background:rgba(255,215,0,.07);}
+.perm-card{background:rgba(10,22,40,.85);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;margin-bottom:16px;transition:border-color .2s;}
+.perm-card:hover{border-color:rgba(255,215,0,.25);}
+.perm-rank-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06);}
+.perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.perm-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:all .2s;}
+.perm-item:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.15);}
+.perm-item.active{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);}
+.perm-cb{width:20px;height:20px;min-width:20px;accent-color:#22c55e;cursor:pointer;margin-top:1px;}
+.perm-lbl{font-size:12px;color:#ccc;line-height:1.5;}
+.perm-lbl strong{display:block;font-size:13px;color:#fff;margin-bottom:2px;}
 .atbl{width:100%;border-collapse:collapse;}
 .atbl th{padding:10px 13px;text-align:right;font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;border-bottom:1px solid rgba(245,166,35,.2);}
 .atbl td{padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;vertical-align:middle;}
@@ -633,21 +689,12 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <p class="hero-p">تواصل مع أصدقاء جدد، شارك لحظاتك، وعش تجربة دردشة عراقية حقيقية بتصميم عصري وأمان تام 🌙</p>
 
     <!-- Stats bar -->
-    <div style="display:flex;flex-direction:row;gap:32px;justify-content:center;align-items:center;padding:10px 20px 0;margin-bottom:8px;">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-        <span style="font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);" id="oc2">0</span>
-        <span style="font-size:10px;color:var(--mut);letter-spacing:1px;">متصل الآن</span>
-      </div>
-      <div style="width:1px;height:32px;background:rgba(255,255,255,.15);"></div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-        <span style="font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);">9</span>
-        <span style="font-size:10px;color:var(--mut);letter-spacing:1px;">غرفة دردشة</span>
-      </div>
-      <div style="width:1px;height:32px;background:rgba(255,255,255,.15);"></div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-        <span style="font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);">10</span>
-        <span style="font-size:10px;color:var(--mut);letter-spacing:1px;">رتبة ومستوى</span>
-      </div>
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-num" id="oc2">0</span><span class="stat-lbl">متصل الآن</span></div>
+      <div style="width:1px;height:32px;background:rgba(255,255,255,.1);"></div>
+      <div class="stat-item"><span class="stat-num">9</span><span class="stat-lbl">غرفة دردشة</span></div>
+      <div style="width:1px;height:32px;background:rgba(255,255,255,.1);"></div>
+      <div class="stat-item"><span class="stat-num">10</span><span class="stat-lbl">رتبة ومستوى</span></div>
     </div>
 
     <div class="btn-grp" style="margin-top:28px;">
@@ -666,7 +713,64 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     </div>
   </section>
 
-
+  <!-- Feature Cards - New Design -->
+  <!-- Features Strip -->
+  <div class="feats-strip">
+    <div class="fs-item">
+      <div class="fs-glow" style="--gc:#1976d2;"></div>
+      <div class="fs-icon" style="color:#64b5f6;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="fs-text">
+        <span class="fs-title">دردشة حية</span>
+        <span class="fs-sub">نص · صوت · فيديو</span>
+      </div>
+    </div>
+    <div class="fs-sep"></div>
+    <div class="fs-item">
+      <div class="fs-glow" style="--gc:#e91e8c;"></div>
+      <div class="fs-icon" style="color:#f48fb1;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div class="fs-text">
+        <span class="fs-title">ملف شخصي فاخر</span>
+        <span class="fs-sub">صورة · موسيقى · بيو</span>
+      </div>
+    </div>
+    <div class="fs-sep"></div>
+    <div class="fs-item">
+      <div class="fs-glow" style="--gc:#ff8f00;"></div>
+      <div class="fs-icon" style="color:#ffcc80;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+      </div>
+      <div class="fs-text">
+        <span class="fs-title">10 رتب حصرية</span>
+        <span class="fs-sub">مالك · أدمن · VIP · ذهبي</span>
+      </div>
+    </div>
+    <div class="fs-sep"></div>
+    <div class="fs-item">
+      <div class="fs-glow" style="--gc:#43a047;"></div>
+      <div class="fs-icon" style="color:#a5d6a7;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="fs-text">
+        <span class="fs-title">أمان وخصوصية</span>
+        <span class="fs-sub">حماية كاملة للمستخدم</span>
+      </div>
+    </div>
+    <div class="fs-sep"></div>
+    <div class="fs-item">
+      <div class="fs-glow" style="--gc:#8e24aa;"></div>
+      <div class="fs-icon" style="color:#ce93d8;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="fs-text">
+        <span class="fs-title">مسابقات ونقاط</span>
+        <span class="fs-sub">ربوت · أسئلة · صدارة</span>
+      </div>
+    </div>
+  </div>
   <!-- SITE FOOTER -->
   <footer class="site-footer">
     <div class="footer-links">
@@ -906,35 +1010,44 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       <button class="btn btn-s" style="padding:6px 12px;font-size:12px;" onclick="closeAdmin()">✕ إغلاق</button>
     </div>
   </div>
+  <!-- Admin Panel Tabs -->
+  <div style="display:flex;gap:6px;padding:0 20px 0;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(5,15,30,.6);">
+    <button class="ap-tab on" id="apt-main" onclick="apTab('main')">👥 الأعضاء</button>
+    <button class="ap-tab" id="apt-rooms" onclick="apTab('rooms')">🏠 الغرف</button>
+    <button class="ap-tab" id="apt-words" onclick="apTab('words')">🚫 الكلمات</button>
+    <button class="ap-tab" id="apt-quiz" onclick="apTab('quiz')">🏆 المسابقات</button>
+    <button class="ap-tab" id="apt-perms" onclick="apTab('perms')" style="color:#ffd700;">🔐 الصلاحيات</button>
+  </div>
   <div class="abdy">
+    <!-- TAB: MAIN (Members) -->
+    <div id="ap-sec-main">
     <h3 style="color:var(--gl);margin-bottom:16px;font-size:14px;">🟢 المتصلون الآن</h3>
     <div id="online-tbl" style="margin-bottom:32px;"></div>
     <h3 style="color:var(--gl);margin-bottom:16px;font-size:14px;">🗄️ جميع الأعضاء</h3>
     <div id="atbl2"></div>
+    </div>
+
+    <!-- TAB: WORDS -->
+    <div id="ap-sec-words" style="display:none;">
     <h3 style="color:var(--gl);margin:0 0 16px;font-size:14px;">🚫 إدارة الكلمات الممنوعة</h3>
     <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:24px;">
-      
-      <!-- Add word -->
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
         <input type="text" id="new-bad-word" class="fi" placeholder="أضف كلمة ممنوعة جديدة..." style="flex:1;min-width:180px;" onkeypress="if(event.key==='Enter')addBadWord()">
         <button class="btn btn-p" style="padding:10px 18px;font-size:13px;flex-shrink:0;" onclick="addBadWord()">➕ إضافة</button>
       </div>
       <div class="fmsg" id="bw-msg" style="margin-bottom:12px;"></div>
-
-      <!-- Search -->
       <input type="text" id="bw-search" class="fi" placeholder="🔍 ابحث في الكلمات..." style="margin-bottom:14px;" oninput="filterBadWords()">
-
-      <!-- Tabs -->
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button id="bw-tab-custom" class="cnav-btn on" onclick="showBWTab('custom')" style="font-size:12px;">✏️ مضافة من الأدمن (<span id="custom-count">0</span>)</button>
         <button id="bw-tab-default" class="cnav-btn" onclick="showBWTab('default')" style="font-size:12px;">📋 القائمة الافتراضية (<span id="default-count">0</span>)</button>
       </div>
-
-      <!-- Words list -->
       <div id="bw-list" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding:4px;"></div>
     </div>
+    </div>
 
-    <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🔑 إعادة تعيين كلمة المرور</h3>
+    <!-- TAB: PASS RESET (moved inside main) -->
+    <div id="ap-sec-main2" style="display:none;">
+    <h3 style="color:var(--gl);margin:0 0 16px;font-size:14px;">🔑 إعادة تعيين كلمة المرور</h3>
     <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:24px;">
       <p style="font-size:13px;color:var(--mut);margin-bottom:14px;">إذا نسي عضو كلمة مروره، يمكنك إعادة تعيينها من هنا</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -944,9 +1057,11 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       </div>
       <div class="fmsg" id="rpi-msg" style="margin-top:10px;"></div>
     </div>
-    <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🏠 إدارة الغرف</h3>
+    </div>
 
-    <!-- ADD ROOM -->
+    <!-- TAB: ROOMS -->
+    <div id="ap-sec-rooms" style="display:none;">
+    <h3 style="color:var(--gl);margin:0 0 16px;font-size:14px;">🏠 إدارة الغرف</h3>
     <div style="background:rgba(10,22,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;margin-bottom:20px;">
       <div style="font-size:13px;font-weight:700;color:var(--gl);margin-bottom:14px;">➕ إضافة غرفة جديدة</div>
       <div style="display:grid;grid-template-columns:1fr 80px 120px;gap:10px;margin-bottom:10px;">
@@ -974,11 +1089,12 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       <div class="fmsg" id="add-room-msg" style="margin-bottom:10px;"></div>
       <button class="btn btn-p" style="padding:10px 20px;font-size:13px;" onclick="addRoom()">➕ إضافة الغرفة</button>
     </div>
-
-    <!-- ROOMS LIST -->
     <div id="rooms-tbl"></div>
+    </div>
 
-    <h3 style="color:var(--gl);margin:24px 0 16px;font-size:14px;">🏆 إدارة أسئلة المسابقات</h3>
+    <!-- TAB: QUIZ -->
+    <div id="ap-sec-quiz" style="display:none;">
+    <h3 style="color:var(--gl);margin:0 0 16px;font-size:14px;">🏆 إدارة أسئلة المسابقات</h3>
     <div style="background:rgba(10,22,40,.8);border:1px solid rgba(245,166,35,.3);border-radius:14px;padding:18px;margin-bottom:20px;">
       <p style="font-size:12px;color:var(--mut);margin-bottom:14px;">أضف أسئلة خاصة للمسابقة — تُضاف فوراً لبنك الأسئلة</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
@@ -1000,6 +1116,22 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       <div style="font-size:12px;color:var(--mut);margin-bottom:8px;">📋 الأسئلة المضافة من الأدمن: <span id="qz-count" style="color:#ffd700;font-weight:700;">0</span></div>
       <div id="qz-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;"></div>
     </div>
+    </div>
+
+    <!-- TAB: PERMISSIONS -->
+    <div id="ap-sec-perms" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <h3 style="color:#ffd700;font-size:15px;margin:0;">🔐 نظام الصلاحيات الديناميكي</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-g" style="padding:8px 14px;font-size:12px;" onclick="resetPermsToDefault()">↩️ استعادة الافتراضي</button>
+        <button class="btn btn-p" style="padding:8px 14px;font-size:12px;" onclick="savePermsAll()">💾 حفظ التغييرات</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--mut);margin-bottom:18px;line-height:1.7;">حدد صلاحيات كل رتبة بشكل مستقل. التغييرات تُحفظ فوراً وتنطبق على جميع أعضاء الرتبة.</p>
+    <div id="perms-container"></div>
+    <div class="fmsg" id="perms-msg" style="margin-top:16px;text-align:center;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -1018,6 +1150,46 @@ const RK_SIZE={owner:'22px',owner_admin:'20px',owner_vip:'19px',super_admin:'18p
 const RK_WEIGHT={owner:'900',owner_admin:'800',owner_vip:'700',super_admin:'700',admin:'700',premium:'600',vip:'600',gold:'500',member:'400',visitor:'400'};
 const RK_GLOW={owner:'0 0 10px #ff4444',owner_admin:'0 0 8px #ff8c00',owner_vip:'0 0 8px #ffd700',super_admin:'0 0 6px #b044ff',admin:'0 0 5px #00bfff'};
 const ADMIN_RANKS=['owner','owner_admin','owner_vip','super_admin','admin'];
+
+// ===== DYNAMIC PERMISSIONS SYSTEM =====
+const ALL_PERMISSIONS = [
+  {key:'can_mute',label:'🔇 كتم الأعضاء',desc:'يستطيع كتم أي عضو في الغرفة'},
+  {key:'can_unmute',label:'🔊 رفع الكتم',desc:'يستطيع رفع الكتم عن الأعضاء'},
+  {key:'can_kick',label:'🚫 طرد من الغرفة',desc:'يستطيع طرد عضو من الغرفة'},
+  {key:'can_ban',label:'⛔ حظر نهائي',desc:'يستطيع حظر عضو بشكل نهائي'},
+  {key:'can_unban',label:'✅ رفع الحظر',desc:'يستطيع رفع الحظر عن عضو'},
+  {key:'can_change_rank',label:'🏅 تغيير الرتب',desc:'يستطيع تغيير رتبة الأعضاء'},
+  {key:'can_clear_room',label:'🗑️ مسح الغرفة',desc:'يستطيع مسح رسائل الغرفة'},
+  {key:'can_add_room',label:'🏠 إضافة غرفة',desc:'يستطيع إضافة غرف جديدة'},
+  {key:'can_delete_room',label:'❌ حذف غرفة',desc:'يستطيع حذف الغرف'},
+  {key:'can_manage_words',label:'🚷 إدارة الكلمات',desc:'يستطيع إضافة/حذف الكلمات الممنوعة'},
+  {key:'can_reset_pass',label:'🔑 إعادة تعيين كلمة المرور',desc:'يستطيع إعادة تعيين كلمة مرور الأعضاء'},
+  {key:'can_manage_quiz',label:'🏆 إدارة المسابقات',desc:'يستطيع إضافة/حذف أسئلة المسابقات'},
+  {key:'can_view_admin_panel',label:'👁️ فتح لوحة التحكم',desc:'يستطيع الدخول للوحة التحكم'},
+  {key:'can_send_broadcast',label:'📢 إرسال إعلان عام',desc:'يستطيع إرسال رسائل لجميع الغرف'},
+  {key:'can_delete_messages',label:'🗑️ حذف رسائل الآخرين',desc:'يستطيع حذف رسائل أي عضو'},
+];
+
+// Default permissions per rank
+const DEFAULT_PERMS = {
+  owner:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true},
+  owner_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true},
+  owner_vip:   {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true},
+  super_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true},
+  admin:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true},
+  premium:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
+  vip:         {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
+  gold:        {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
+  member:      {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
+  visitor:     {can_mute:false,can_unmute:false,can_kick:false,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:false,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:false,can_send_broadcast:false,can_delete_messages:false},
+};
+
+// Load saved permissions from localStorage or use defaults
+let _rankPerms = JSON.parse(localStorage.getItem('ghazal_rank_perms')||'null') || JSON.parse(JSON.stringify(DEFAULT_PERMS));
+
+function hasPerm(permKey){ return !!(_rankPerms[cu?.rank]?.[permKey]); }
+function saveRankPerms(){ try{localStorage.setItem('ghazal_rank_perms',JSON.stringify(_rankPerms));}catch(e){} }
+// ===== END PERMISSIONS =====
 const RK_CLASS={};
 Object.keys(RK_COLOR).forEach(k=>RK_CLASS[k]='rk-'+k);
 
@@ -1084,7 +1256,7 @@ function enterChat(){
   document.getElementById('chat-page').style.display='flex';
   cr='general';
   socket.emit('join',cu);
-  if(ADMIN_RANKS.includes(cu.rank)){
+  if(hasPerm('can_view_admin_panel')){
     document.getElementById('admin-btn').style.display='flex';
   }
   // Show change password button only for registered members
@@ -1281,7 +1453,6 @@ function renderMsg(m){
 }
 
 function renderUsers(users){
-  window._lastUsers = users; // حفظ للموبايل
   const c=document.getElementById('ulist');c.innerHTML='';
   document.getElementById('uc').textContent=users.length;
   const g={owner:[],owner_admin:[],owner_vip:[],super_admin:[],admin:[],premium:[],vip:[],gold:[],member:[],visitor:[]};
@@ -1409,8 +1580,10 @@ document.addEventListener('click',e=>{if(eo&&!e.target.closest('#ep')&&!e.target
 
 function openCtx(e,n){
   cx3=n;const m=document.getElementById('ctx');
-  const isA=['owner','admin'].includes(cu?.rank)&&n!==cu?.name;
-  ['cx-mute','cx-unmute','cx-kick'].forEach(id=>document.getElementById(id).style.display=isA?'flex':'none');
+  const notSelf=n!==cu?.name;
+  document.getElementById('cx-mute').style.display=(notSelf&&hasPerm('can_mute'))?'flex':'none';
+  document.getElementById('cx-unmute').style.display=(notSelf&&hasPerm('can_unmute'))?'flex':'none';
+  document.getElementById('cx-kick').style.display=(notSelf&&hasPerm('can_kick'))?'flex':'none';
   m.style.top=e.clientY+'px';m.style.right=(window.innerWidth-e.clientX)+'px';m.classList.add('on');
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.ctx'))document.getElementById('ctx').classList.remove('on');});
@@ -1533,8 +1706,133 @@ async function deleteAdminQuizQ(idx){
   renderAdminQuizList();
 }
 
-async function openAdmin(){document.getElementById('ap').classList.add('on');await refAdmin();loadAdminQuizQuestions();}
+async function openAdmin(){
+  document.getElementById('ap').classList.add('on');
+  apTab('main');
+  await refAdmin();
+  loadAdminQuizQuestions();
+}
 function closeAdmin(){document.getElementById('ap').classList.remove('on');}
+
+// ===== ADMIN PANEL TABS =====
+let _currentApTab = 'main';
+function apTab(name){
+  _currentApTab = name;
+  ['main','rooms','words','quiz','perms'].forEach(t=>{
+    const btn=document.getElementById('apt-'+t);
+    const sec=document.getElementById('ap-sec-'+t);
+    const sec2=document.getElementById('ap-sec-main2');
+    if(btn) btn.classList.toggle('on', t===name);
+    if(sec) sec.style.display = (t===name)?'block':'none';
+    // reset pass is in main tab
+    if(sec2) sec2.style.display = (name==='main')?'block':'none';
+  });
+  if(name==='perms') renderPermsUI();
+  if(name==='words') { loadBadWords && loadBadWords(); }
+}
+
+// ===== PERMISSIONS UI =====
+const RANKS_ORDER = ['owner','owner_admin','owner_vip','super_admin','admin','premium','vip','gold','member','visitor'];
+
+function renderPermsUI(){
+  const c = document.getElementById('perms-container');
+  if(!c) return;
+  const isOwner = cu?.rank === 'owner';
+  c.innerHTML = RANKS_ORDER.map(rk => {
+    const rColor = RK_COLOR[rk]||'#b0bec5';
+    const rLabel = RK_LABEL[rk]||rk;
+    const perms = _rankPerms[rk]||{};
+    const allOn = ALL_PERMISSIONS.every(p=>perms[p.key]);
+    const locked = rk==='owner'; // owner always has all, can't be edited
+    return `
+    <div class="perm-card" id="pcard-${rk}">
+      <div class="perm-rank-hdr">
+        <span style="font-size:18px;font-weight:800;color:${rColor};text-shadow:0 0 8px ${rColor}44;">${rLabel}</span>
+        <span style="font-size:11px;color:var(--mut);flex:1;">(${rk})</span>
+        ${locked?'<span style="font-size:11px;color:#ffd700;background:rgba(255,215,0,.1);padding:3px 10px;border-radius:6px;">🔒 مثبت</span>':`
+        <button onclick="toggleAllPerms('${rk}',${!allOn})" style="font-size:11px;padding:4px 12px;background:${allOn?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)'};color:${allOn?'#f87171':'#4ade80'};border:1px solid ${allOn?'rgba(239,68,68,.3)':'rgba(34,197,94,.3)'};border-radius:6px;cursor:pointer;">
+          ${allOn?'❌ إلغاء الكل':'✅ تحديد الكل'}
+        </button>`}
+      </div>
+      <div class="perm-grid">
+        ${ALL_PERMISSIONS.map(p=>{
+          const checked = locked ? true : !!perms[p.key];
+          return `
+          <label class="perm-item${checked?' active':''}" id="pi-${rk}-${p.key}" ${locked?'style="opacity:.6;pointer-events:none;"':''}>
+            <input type="checkbox" class="perm-cb" ${checked?'checked':''} ${locked?'disabled':''}
+              onchange="togglePerm('${rk}','${p.key}',this.checked)">
+            <div class="perm-lbl">
+              <strong>${p.label}</strong>
+              ${p.desc}
+            </div>
+          </label>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePerm(rank, permKey, val){
+  if(!_rankPerms[rank]) _rankPerms[rank]={};
+  _rankPerms[rank][permKey] = val;
+  // Update item style
+  const item = document.getElementById(`pi-${rank}-${permKey}`);
+  if(item) item.classList.toggle('active', val);
+  // Update toggle-all button
+  renderPermsToggleBtn(rank);
+}
+
+function renderPermsToggleBtn(rank){
+  const card = document.getElementById('pcard-'+rank);
+  if(!card) return;
+  const perms = _rankPerms[rank]||{};
+  const allOn = ALL_PERMISSIONS.every(p=>perms[p.key]);
+  const btn = card.querySelector('button[onclick^="toggleAllPerms"]');
+  if(btn){
+    btn.textContent = allOn?'❌ إلغاء الكل':'✅ تحديد الكل';
+    btn.style.background = allOn?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)';
+    btn.style.color = allOn?'#f87171':'#4ade80';
+    btn.style.borderColor = allOn?'rgba(239,68,68,.3)':'rgba(34,197,94,.3)';
+    btn.setAttribute('onclick',`toggleAllPerms('${rank}',${!allOn})`);
+  }
+}
+
+function toggleAllPerms(rank, val){
+  if(!_rankPerms[rank]) _rankPerms[rank]={};
+  ALL_PERMISSIONS.forEach(p=>{
+    _rankPerms[rank][p.key]=val;
+    const item=document.getElementById(`pi-${rank}-${p.key}`);
+    if(item){
+      item.classList.toggle('active',val);
+      const cb=item.querySelector('.perm-cb');
+      if(cb) cb.checked=val;
+    }
+  });
+  renderPermsToggleBtn(rank);
+}
+
+function savePermsAll(){
+  saveRankPerms();
+  // Apply immediately to current user
+  const msg=document.getElementById('perms-msg');
+  if(msg){
+    msg.textContent='✅ تم حفظ الصلاحيات بنجاح! تنطبق فوراً على جميع الأعضاء.';
+    msg.style.color='#4ade80';
+    setTimeout(()=>{msg.textContent='';},3000);
+  }
+  // Refresh admin button visibility
+  const ab=document.getElementById('admin-btn');
+  if(ab) ab.style.display=hasPerm('can_view_admin_panel')?'flex':'none';
+  toast('✅ تم حفظ الصلاحيات','k');
+}
+
+function resetPermsToDefault(){
+  if(!confirm('هل تريد استعادة الصلاحيات الافتراضية لجميع الرتب؟')) return;
+  _rankPerms = JSON.parse(JSON.stringify(DEFAULT_PERMS));
+  saveRankPerms();
+  renderPermsUI();
+  toast('↩️ تم استعادة الصلاحيات الافتراضية','k');
+}
 
 async function refAdmin(){
   // Online users table
@@ -1838,7 +2136,6 @@ async function resetPassInline(){
 const isMobile = () => window.innerWidth <= 768;
 
 function openMobDrawer(type) {
-  syncMobLists();
   document.getElementById('mob-' + type).classList.add('open');
 }
 function closeMobDrawer(type) {
@@ -1878,38 +2175,30 @@ function syncMobLists() {
     });
   }
 
-  // بناء قائمة المستخدمين مباشرة من البيانات
+  // Sync users to mobile drawer - rebuild properly
   const ulistMob = document.getElementById('ulist-mob');
-  if (ulistMob && window._lastUsers) {
+  if (ulistMob) {
     ulistMob.innerHTML = '';
-    const users = window._lastUsers;
-    const g={owner:[],owner_admin:[],owner_vip:[],super_admin:[],admin:[],premium:[],vip:[],gold:[],member:[],visitor:[]};
-    users.forEach(u=>{(g[u.rank]||g.visitor).push(u);});
-    const secs=[
-      ['👑 المالك','owner'],['💼 أونر إداري','owner_admin'],['⭐ أونر','owner_vip'],
-      ['🔱 سوبر أدمن','super_admin'],['⚙️ أدمن','admin'],['💎 بريميوم','premium'],
-      ['🌟 مميز','vip'],['🥇 ذهبي','gold'],['👥 أعضاء','member'],['👁️ زوار','visitor']
-    ];
-    // إضافة المالك غير المتصل
-    if(g.owner.length===0 && window._ownerName){
-      const lbl=document.createElement('div');lbl.className='usl';lbl.textContent='👑 المالك';ulistMob.appendChild(lbl);
-      const d=document.createElement('div');d.className='ui';d.style.cssText='opacity:0.5;padding:8px 10px;';
-      d.innerHTML=`<div class="uav" style="background:#333;border:2px solid #ff444433;"><span>${window._ownerName.charAt(0)}</span><div class="udot" style="background:#555!important;"></div></div><div style="flex:1;min-width:0;"><div class="un" style="color:#ff4444;font-size:22px;font-weight:700;">${window._ownerName}</div><div class="um" style="color:#666;">⚫ غير متصل</div></div>`;
-      ulistMob.appendChild(d);
-    }
-    secs.forEach(([title,key])=>{
-      if(!g[key]||!g[key].length) return;
-      const lbl=document.createElement('div');lbl.className='usl';lbl.textContent=title;ulistMob.appendChild(lbl);
-      g[key].forEach(u=>{
-        const col=AVC[(u.name||'?').charCodeAt(0)%AVC.length];
-        const nc=RK_COLOR[u.rank]||'#fff';
-        const fs=RK_SIZE[u.rank]||'14px';
-        const d=document.createElement('div');d.className='ui';d.style.cursor='pointer';
-        d.innerHTML=`<div class="uav" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}44;overflow:hidden;">${u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${(u.name||'?').charAt(0)}`}<div class="udot"></div></div><div style="flex:1;min-width:0;"><div class="un" style="color:${nc};font-size:${fs};font-weight:700;">${u.name}</div><div class="um">${u.gender==='أنثى'?'👩':'👨'} ${u.gender||''} · ${u.age||''}</div></div>`;
-        d.onclick=()=>{ openProfile(u.name); closeMobDrawer('users'); };
-        ulistMob.appendChild(d);
+    // Get all user items from desktop list and clone with working onclick
+    const ulist = document.getElementById('ulist');
+    if (ulist) {
+      const sections = ulist.querySelectorAll('.usl');
+      const items = ulist.querySelectorAll('.ui');
+      // Clone sections and items
+      ulist.childNodes.forEach(node => {
+        const clone = node.cloneNode(true);
+        // Re-attach click handlers for profile opening
+        if (clone.classList && clone.classList.contains('ui')) {
+          const nameEl = clone.querySelector('.un');
+          if (nameEl) {
+            const uname = nameEl.textContent;
+            clone.style.cursor = 'pointer';
+            clone.onclick = () => { openProfile(uname); closeMobDrawer('users'); };
+          }
+        }
+        ulistMob.appendChild(clone);
       });
-    });
+    }
   }
 }
 
@@ -2152,13 +2441,9 @@ function openProfile(username) {
         acts.innerHTML = `
           <button class="prof-act-btn" onclick="closeProfile();openPM('${p.username}')"
             style="background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;">💌 رسالة خاصة</button>`;
-        if (ADMIN_RANKS.includes(cu?.rank)) {
-          acts.innerHTML += `
-            <button class="prof-act-btn" onclick="socket.emit('admin-mute',{username:'${p.username}'});closeProfile();"
-              style="background:linear-gradient(135deg,#e65100,#f57c00);color:#fff;">🔇 كتم</button>
-            <button class="prof-act-btn" onclick="socket.emit('admin-kick',{username:'${p.username}'});closeProfile();"
-              style="background:linear-gradient(135deg,#c62828,#e53935);color:#fff;">🚫 طرد</button>`;
-        }
+        if (hasPerm('can_mute')) acts.innerHTML += `<button class="prof-act-btn" onclick="socket.emit('admin-mute',{username:'${p.username}'});closeProfile();" style="background:linear-gradient(135deg,#e65100,#f57c00);color:#fff;">🔇 كتم</button>`;
+        if (hasPerm('can_kick')) acts.innerHTML += `<button class="prof-act-btn" onclick="socket.emit('admin-kick',{username:'${p.username}'});closeProfile();" style="background:linear-gradient(135deg,#c62828,#e53935);color:#fff;">🚫 طرد</button>`;
+        if (hasPerm('can_ban')) acts.innerHTML += `<button class="prof-act-btn" onclick="socket.emit('admin-ban',{username:'${p.username}'});closeProfile();" style="background:linear-gradient(135deg,#880000,#b71c1c);color:#fff;">⛔ حظر</button>`;
       } else {
         document.getElementById('prof-edit').style.display = 'block';
         document.getElementById('prof-bio-in').value = p.bio || '';

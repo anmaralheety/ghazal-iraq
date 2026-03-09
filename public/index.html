@@ -70,10 +70,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 }
 
 /* STATS BAR */
-.stats-bar{
-  display:flex;flex-direction:row;gap:32px;justify-content:center;align-items:center;
-  padding:10px 20px 0;animation:fadeInUp .8s ease .35s both;
-}
+.stats-bar{display:flex;flex-direction:row !important;gap:32px;justify-content:center;align-items:center;padding:10px 20px 0;}
 .stat-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .stat-num{font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);}
 .stat-lbl{font-size:10px;color:var(--mut);letter-spacing:1px;}
@@ -636,12 +633,21 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <p class="hero-p">تواصل مع أصدقاء جدد، شارك لحظاتك، وعش تجربة دردشة عراقية حقيقية بتصميم عصري وأمان تام 🌙</p>
 
     <!-- Stats bar -->
-    <div class="stats-bar">
-      <div class="stat-item"><span class="stat-num" id="oc2">0</span><span class="stat-lbl">متصل الآن</span></div>
-      <div style="width:1px;height:32px;background:rgba(255,255,255,.1);"></div>
-      <div class="stat-item"><span class="stat-num">9</span><span class="stat-lbl">غرفة دردشة</span></div>
-      <div style="width:1px;height:32px;background:rgba(255,255,255,.1);"></div>
-      <div class="stat-item"><span class="stat-num">10</span><span class="stat-lbl">رتبة ومستوى</span></div>
+    <div style="display:flex;flex-direction:row;gap:32px;justify-content:center;align-items:center;padding:10px 20px 0;margin-bottom:8px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);" id="oc2">0</span>
+        <span style="font-size:10px;color:var(--mut);letter-spacing:1px;">متصل الآن</span>
+      </div>
+      <div style="width:1px;height:32px;background:rgba(255,255,255,.15);"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);">9</span>
+        <span style="font-size:10px;color:var(--mut);letter-spacing:1px;">غرفة دردشة</span>
+      </div>
+      <div style="width:1px;height:32px;background:rgba(255,255,255,.15);"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--gl);">10</span>
+        <span style="font-size:10px;color:var(--mut);letter-spacing:1px;">رتبة ومستوى</span>
+      </div>
     </div>
 
     <div class="btn-grp" style="margin-top:28px;">

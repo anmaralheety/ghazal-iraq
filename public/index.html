@@ -829,25 +829,13 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
         <!-- Color Picker Popup -->
         <div id="color-picker-popup" style="display:none;padding:14px 16px;background:rgba(10,22,40,.98);border-top:1px solid rgba(255,255,255,.08);border-radius:0 0 12px 12px;">
           <div style="font-size:12px;color:var(--mut);margin-bottom:10px;">🎨 اختر لون نص رسائلك:</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-            ${['#ffffff','#ffd700','#ff4444','#ff8c00','#00bfff','#00e676','#b044ff','#ff69b4','#00ffff','#ff6b35','#a8edff','#f8f9fa'].map(c=>`
-            <div onclick="setTextColor('${c}')" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:.2s;flex-shrink:0;" title="${c}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`).join('')}
-            <div style="display:flex;align-items:center;gap:6px;">
-              <input type="color" id="custom-color-in" value="#ffffff" style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0;" onchange="setTextColor(this.value)">
-              <span style="font-size:11px;color:var(--mut);">مخصص</span>
-            </div>
-          </div>
+          <div id="color-swatches" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
           <button onclick="setTextColor(null)" style="font-size:11px;color:#f87171;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:4px 12px;cursor:pointer;">❌ إزالة اللون</button>
         </div>
         <!-- Frame Picker Popup -->
         <div id="frame-picker-popup" style="display:none;padding:14px 16px;background:rgba(10,22,40,.98);border-top:1px solid rgba(255,255,255,.08);border-radius:0 0 12px 12px;">
           <div style="font-size:12px;color:var(--mut);margin-bottom:10px;">🖼️ اختر إطار اسمك في الشات:</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            ${NAME_FRAMES.map(f=>`
-            <div onclick="setNameFrame('${f.key}')" id="nfopt-${f.key}" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.2s;font-size:13px;" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
-              <span class="${f.key!=='none'?'nf-'+f.key:''}" style="${f.key==='none'?'color:#b0bec5':''}">${f.label}</span>
-            </div>`).join('')}
-          </div>
+          <div id="frame-options" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
         </div>
         <!-- Voice recording indicator -->
         <div id="voice-rec-bar" style="display:none;align-items:center;gap:10px;padding:6px 12px;background:rgba(255,60,60,.1);border-top:1px solid rgba(255,60,60,.2);border-radius:0 0 12px 12px;">
@@ -1632,18 +1620,66 @@ function hk(e){if(e.key==='Enter')sm();}
 
 // ===== TEXT COLOR PICKER =====
 let _colorPickerOpen=false, _framePickerOpen=false;
+
+function buildColorSwatches(){
+  const sw=document.getElementById('color-swatches');
+  if(!sw||sw.children.length>0) return; // already built
+  const colors=['#ffffff','#ffd700','#ff4444','#ff8c00','#00bfff','#00e676','#b044ff','#ff69b4','#00ffff','#ff6b35','#a8edff','#f8f9fa'];
+  colors.forEach(c=>{
+    const d=document.createElement('div');
+    d.style.cssText='width:28px;height:28px;border-radius:50%;background:'+c+';cursor:pointer;border:2px solid transparent;transition:.2s;flex-shrink:0;';
+    d.title=c;
+    d.onmouseover=function(){this.style.transform='scale(1.2)';};
+    d.onmouseout=function(){this.style.transform='scale(1)';};
+    d.onclick=function(){setTextColor(c);};
+    sw.appendChild(d);
+  });
+  // Custom color input
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;align-items:center;gap:6px;';
+  const inp=document.createElement('input');
+  inp.type='color'; inp.value='#ffffff';
+  inp.style.cssText='width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0;';
+  inp.onchange=function(){setTextColor(this.value);};
+  const lbl=document.createElement('span');
+  lbl.style.cssText='font-size:11px;color:var(--mut);';
+  lbl.textContent='مخصص';
+  wrap.appendChild(inp); wrap.appendChild(lbl);
+  sw.appendChild(wrap);
+}
+
+function buildFrameOptions(){
+  const fo=document.getElementById('frame-options');
+  if(!fo||fo.children.length>0) return; // already built
+  NAME_FRAMES.forEach(f=>{
+    const d=document.createElement('div');
+    d.id='nfopt-'+f.key;
+    d.style.cssText='padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.2s;font-size:13px;';
+    d.onmouseover=function(){this.style.background='rgba(255,255,255,.1)';};
+    d.onmouseout=function(){this.style.background='rgba(255,255,255,.05)';};
+    d.onclick=function(){setNameFrame(f.key);};
+    const sp=document.createElement('span');
+    if(f.key!=='none') sp.className='nf-'+f.key;
+    else sp.style.color='#b0bec5';
+    sp.textContent=f.label;
+    d.appendChild(sp);
+    fo.appendChild(d);
+  });
+}
+
 function toggleColorPicker(){
   _framePickerOpen=false;
   document.getElementById('frame-picker-popup').style.display='none';
   _colorPickerOpen=!_colorPickerOpen;
+  if(_colorPickerOpen) buildColorSwatches();
   document.getElementById('color-picker-popup').style.display=_colorPickerOpen?'block':'none';
 }
 function toggleFramePicker(){
   _colorPickerOpen=false;
   document.getElementById('color-picker-popup').style.display='none';
   _framePickerOpen=!_framePickerOpen;
+  if(_framePickerOpen){ buildFrameOptions(); highlightActiveFrame(); }
   document.getElementById('frame-picker-popup').style.display=_framePickerOpen?'block':'none';
-  if(_framePickerOpen) highlightActiveFrame();
 }
 function setTextColor(c){
   if(!c){

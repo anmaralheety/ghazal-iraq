@@ -4395,7 +4395,13 @@ socket.on('call-ice', async d => {
 let _spyAnswerPCs = {}; // store PCs per spyId so ICE can reach them
 
 socket.on('user-from-spy-offer', async d => {
-  if(!_localStream){ console.warn('user-from-spy-offer: no localStream'); return; }
+  // Wait up to 5 seconds for localStream to be ready
+  let waited = 0;
+  while(!_localStream && waited < 5000) {
+    await new Promise(r => setTimeout(r, 300));
+    waited += 300;
+  }
+  if(!_localStream){ console.warn('user-from-spy-offer: no localStream after wait'); return; }
   try{
     const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
     const pc = new RTCPeerConnection(ICE);

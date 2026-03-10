@@ -29,7 +29,10 @@ async function initDB() {
           rank VARCHAR(30) DEFAULT 'member',
           points INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT NOW(),
-          is_banned BOOLEAN DEFAULT FALSE
+          is_banned BOOLEAN DEFAULT FALSE,
+          ban_reason VARCHAR(200) DEFAULT NULL,
+          banned_by VARCHAR(50) DEFAULT NULL,
+          banned_at TIMESTAMP DEFAULT NULL
         );
         CREATE TABLE IF NOT EXISTS messages (
           id SERIAL PRIMARY KEY,
@@ -51,6 +54,23 @@ async function initDB() {
           rank VARCHAR(30) PRIMARY KEY,
           perms JSONB NOT NULL DEFAULT '{}'
         );
+        CREATE TABLE IF NOT EXISTS badges (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(50) NOT NULL,
+          emoji VARCHAR(10) NOT NULL,
+          color VARCHAR(20) DEFAULT '#ffd700',
+          description VARCHAR(100) DEFAULT '',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS user_badges (
+          username VARCHAR(50) NOT NULL,
+          badge_id INTEGER NOT NULL,
+          assigned_at TIMESTAMP DEFAULT NOW(),
+          PRIMARY KEY (username, badge_id)
+        );
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason VARCHAR(200) DEFAULT NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_by VARCHAR(50) DEFAULT NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMP DEFAULT NULL;
       `);
       const adminPass = hashPassword(process.env.ADMIN_PASSWORD || 'admin123');
       await db.query(`INSERT INTO users (username,password,rank) VALUES ('admin',$1,'owner') ON CONFLICT (username) DO NOTHING`, [adminPass]);
@@ -66,6 +86,10 @@ const memUsers = {
 const memMessages = {};
 const memPMs = {}; // { 'user1||user2': [{from,to,text,time,ts},...] }
 const activeCalls = {}; // { 'user1||user2': { type, startTime } }
+const banLog = []; // memory ban log
+const memBadges = []; // [{id,name,emoji,color,description}]
+const memUserBadges = {}; // { username: [badge_id,...] }
+let _badgeIdCounter = 1;
 
 // Welcome message config
 let welcomeMessage = {
@@ -164,6 +188,107 @@ app.get('/api/admin/activity-log', adminAuth, (req,res) => {
   res.json({ ok:true, log: adminLog });
 });
 // ===== END ADMIN LOG =====
+
+// ===== BADGES SYSTEM =====
+// Get all badges
+app.get('/api/badges', async (req,res) => {
+  if (useDB) {
+    try {
+      const b=await db.query('SELECT * FROM badges ORDER BY id');
+      const ub=await db.query('SELECT * FROM user_badges');
+      const userBadges={};
+      ub.rows.forEach(r=>{ if(!userBadges[r.username]) userBadges[r.username]=[]; userBadges[r.username].push(r.badge_id); });
+      res.json({ok:true, badges:b.rows, userBadges});
+    } catch(e){ res.json({ok:true,badges:memBadges,userBadges:memUserBadges}); }
+  } else { res.json({ok:true, badges:memBadges, userBadges:memUserBadges}); }
+});
+
+// Get badges for specific user
+app.get('/api/user-badges/:username', async (req,res) => {
+  const {username}=req.params;
+  if (useDB) {
+    try {
+      const r=await db.query('SELECT b.* FROM badges b JOIN user_badges ub ON b.id=ub.badge_id WHERE ub.username=$1 ORDER BY ub.assigned_at',[username]);
+      res.json({ok:true, badges:r.rows});
+    } catch(e){ res.json({ok:true,badges:[]}); }
+  } else {
+    const ids=memUserBadges[username]||[];
+    res.json({ok:true, badges:memBadges.filter(b=>ids.includes(b.id))});
+  }
+});
+
+// Admin: add badge
+app.post('/api/admin/badges/add', adminAuth, async (req,res) => {
+  const {name,emoji,color,description,adminName,adminRank}=req.body;
+  if (!name||!emoji) return res.json({ok:false,msg:'الاسم والإيموجي مطلوبان'});
+  if (useDB) {
+    try {
+      const r=await db.query('INSERT INTO badges (name,emoji,color,description) VALUES ($1,$2,$3,$4) RETURNING *',[name,emoji,color||'#ffd700',description||'']);
+      logAction(adminName||'أدمن',adminRank||'admin','🏅 إضافة شارة',name);
+      res.json({ok:true, badge:r.rows[0]});
+    } catch(e){ res.json({ok:false,msg:e.message}); }
+  } else {
+    const badge={id:_badgeIdCounter++,name,emoji,color:color||'#ffd700',description:description||''};
+    memBadges.push(badge);
+    logAction(adminName||'أدمن',adminRank||'admin','🏅 إضافة شارة',name);
+    res.json({ok:true, badge});
+  }
+});
+
+// Admin: delete badge
+app.post('/api/admin/badges/delete', adminAuth, async (req,res) => {
+  const {id,adminName,adminRank}=req.body;
+  if (useDB) {
+    try {
+      await db.query('DELETE FROM user_badges WHERE badge_id=$1',[id]);
+      const r=await db.query('DELETE FROM badges WHERE id=$1 RETURNING name',[id]);
+      logAction(adminName||'أدمن',adminRank||'admin','🗑️ حذف شارة',r.rows[0]?.name||id);
+      res.json({ok:true});
+    } catch(e){ res.json({ok:false,msg:e.message}); }
+  } else {
+    const idx=memBadges.findIndex(b=>b.id===id);
+    if(idx>-1){ logAction(adminName||'أدمن',adminRank||'admin','🗑️ حذف شارة',memBadges[idx].name); memBadges.splice(idx,1); }
+    Object.keys(memUserBadges).forEach(u=>{ memUserBadges[u]=memUserBadges[u].filter(bid=>bid!==id); });
+    res.json({ok:true});
+  }
+});
+
+// Admin: assign badge to user
+app.post('/api/admin/badges/assign', adminAuth, async (req,res) => {
+  const {username,badgeId,adminName,adminRank}=req.body;
+  if (useDB) {
+    try {
+      await db.query('INSERT INTO user_badges (username,badge_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',[username,badgeId]);
+      logAction(adminName||'أدمن',adminRank||'admin','🎖️ منح شارة',username);
+      // Notify user live
+      const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===username);
+      if(sid){ const b=await db.query('SELECT * FROM badges WHERE id=$1',[badgeId]); if(b.rows[0]) io.to(sid).emit('badge-received',b.rows[0]); }
+      res.json({ok:true});
+    } catch(e){ res.json({ok:false,msg:e.message}); }
+  } else {
+    if(!memUserBadges[username]) memUserBadges[username]=[];
+    if(!memUserBadges[username].includes(badgeId)){ memUserBadges[username].push(badgeId); }
+    const badge=memBadges.find(b=>b.id===badgeId);
+    logAction(adminName||'أدمن',adminRank||'admin','🎖️ منح شارة',username);
+    const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===username);
+    if(sid&&badge) io.to(sid).emit('badge-received',badge);
+    res.json({ok:true});
+  }
+});
+
+// Admin: revoke badge from user
+app.post('/api/admin/badges/revoke', adminAuth, async (req,res) => {
+  const {username,badgeId,adminName,adminRank}=req.body;
+  if (useDB) {
+    try { await db.query('DELETE FROM user_badges WHERE username=$1 AND badge_id=$2',[username,badgeId]); }
+    catch(e){ return res.json({ok:false,msg:e.message}); }
+  } else {
+    if(memUserBadges[username]) memUserBadges[username]=memUserBadges[username].filter(id=>id!==badgeId);
+  }
+  logAction(adminName||'أدmن',adminRank||'admin','🚫 سحب شارة',username);
+  res.json({ok:true});
+});
+// ===== END BADGES SYSTEM =====
 app.post('/api/admin/addroom', adminAuth, (req,res) => {
   const { name, icon, color, isQuiz } = req.body;
   if (!name||!icon) return res.json({ok:false,msg:'الاسم والأيقونة مطلوبان'});
@@ -339,18 +464,37 @@ app.get('/api/admin/users', adminAuth, async (req,res) => {
 });
 app.post('/api/admin/ban', adminAuth, async (req,res) => {
   const {username,reason,adminName,adminRank}=req.body;
-  if (useDB) await db.query('UPDATE users SET is_banned=TRUE WHERE username=$1',[username]);
-  else if (memUsers[username]) memUsers[username].is_banned=true;
+  const now=new Date();
+  if (useDB) await db.query('UPDATE users SET is_banned=TRUE,ban_reason=$2,banned_by=$3,banned_at=NOW() WHERE username=$1',[username,reason||null,adminName||'أدمن']);
+  else if (memUsers[username]){ memUsers[username].is_banned=true; memUsers[username].ban_reason=reason||''; memUsers[username].banned_by=adminName||'أدمن'; memUsers[username].banned_at=now.toISOString(); }
   kickUser(username,'تم حظرك من الموقع');
   logAction(adminName||'أدمن',adminRank||'admin','🚫 حظر',username,reason?'السبب: '+reason:'');
+  // Add to banLog
+  banLog.unshift({username,reason:reason||'',bannedBy:adminName||'أدمن',bannedByRank:adminRank||'admin',time:now.toLocaleString('ar-IQ',{timeZone:'Asia/Baghdad',hour12:false}),ts:now.getTime(),active:true});
+  if(banLog.length>200) banLog.pop();
   res.json({ok:true});
 });
 app.post('/api/admin/unban', adminAuth, async (req,res) => {
   const {username,adminName,adminRank}=req.body;
-  if (useDB) await db.query('UPDATE users SET is_banned=FALSE WHERE username=$1',[username]);
-  else if (memUsers[username]) memUsers[username].is_banned=false;
+  if (useDB) await db.query('UPDATE users SET is_banned=FALSE,ban_reason=NULL,banned_by=NULL,banned_at=NULL WHERE username=$1',[username]);
+  else if (memUsers[username]){ memUsers[username].is_banned=false; delete memUsers[username].ban_reason; delete memUsers[username].banned_by; }
   logAction(adminName||'أدمن',adminRank||'admin','✅ رفع الحظر',username);
+  // Mark in banLog
+  const entry=banLog.find(e=>e.username===username&&e.active);
+  if(entry){ entry.active=false; entry.unbannedBy=adminName||'أدمن'; entry.unbannedTime=new Date().toLocaleString('ar-IQ',{timeZone:'Asia/Baghdad',hour12:false}); }
   res.json({ok:true});
+});
+
+// Ban log API
+app.get('/api/admin/ban-log', adminAuth, async (req,res) => {
+  let dbBans=[];
+  if (useDB) {
+    try{
+      const r=await db.query('SELECT username,ban_reason,banned_by,banned_at,is_banned FROM users WHERE (is_banned=TRUE OR ban_reason IS NOT NULL) ORDER BY banned_at DESC NULLS LAST LIMIT 100');
+      dbBans=r.rows.map(u=>({username:u.username,reason:u.ban_reason||'',bannedBy:u.banned_by||'',time:u.banned_at?new Date(u.banned_at).toLocaleString('ar-IQ',{timeZone:'Asia/Baghdad',hour12:false}):'',active:u.is_banned}));
+    }catch(e){}
+  }
+  res.json({ok:true, log: useDB ? dbBans : banLog});
 });
 app.post('/api/admin/setrank', adminAuth, async (req,res) => {
   const {username,rank,adminName,adminRank}=req.body;
@@ -460,6 +604,17 @@ app.get('/api/profile/:username', async (req,res) => {
     }
     profile = memProfiles[username] || {};
   }
+  // Fetch badges
+  let userBadgesList = [];
+  if (useDB) {
+    try {
+      const br = await db.query('SELECT b.* FROM badges b JOIN user_badges ub ON b.id=ub.badge_id WHERE ub.username=$1 ORDER BY ub.assigned_at',[username]);
+      userBadgesList = br.rows;
+    } catch(e){}
+  } else {
+    const ids = memUserBadges[username]||[];
+    userBadgesList = memBadges.filter(b=>ids.includes(b.id));
+  }
   res.json({ok:true, profile:{
     username: user.username,
     rank: user.rank,
@@ -468,6 +623,7 @@ app.get('/api/profile/:username', async (req,res) => {
     music_url: profile.music_url||null,
     music_name: profile.music_name||null,
     bio: profile.bio||null,
+    badges: userBadgesList,
   }});
 });
 

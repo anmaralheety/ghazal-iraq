@@ -208,6 +208,8 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 .mh{display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;}
 .mn{font-size:13px;font-weight:700;}
 .mb{font-size:9px;padding:2px 6px;border-radius:50px;font-weight:700;border:1px solid;}
+.msg-badge{display:inline-block;line-height:1;vertical-align:middle;filter:drop-shadow(0 0 3px rgba(255,215,0,.4));transition:transform .2s;}
+.msg-badge:hover{transform:scale(1.3);}
 .mt{font-size:10px;color:var(--mut);margin-right:auto;}
 .mx{font-size:13px;color:rgba(255,255,255,.85);line-height:1.6;word-break:break-word;}
 .sys{text-align:center;padding:5px;font-size:11px;color:var(--gold);background:rgba(245,166,35,.06);border-radius:8px;margin:3px 0;animation:mi .25s ease;}
@@ -961,6 +963,8 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <button class="ap-tab" id="apt-perms" onclick="apTab('perms')" style="color:#ffd700;">🔐 الصلاحيات</button>
     <button class="ap-tab" id="apt-spy" onclick="apTab('spy')" style="color:#f87171;">👁️ مراقبة الخاص</button>
     <button class="ap-tab" id="apt-log" onclick="apTab('log')" style="color:#a78bfa;">📋 سجل النشاط</button>
+    <button class="ap-tab" id="apt-bans" onclick="apTab('bans')" style="color:#f87171;">🚫 المحظورون</button>
+    <button class="ap-tab" id="apt-badges" onclick="apTab('badges')" style="color:#fbbf24;">🏅 الشارات</button>
   </div>
   <div class="abdy">
     <!-- TAB: MAIN (Members) -->
@@ -1182,6 +1186,55 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 
   </div>
 </div>
+
+    <!-- TAB: BAN LOG -->
+    <div id="ap-sec-bans" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h3 style="color:#f87171;font-size:15px;margin:0 0 4px;">🚫 سجل المحظورين</h3>
+          <p style="font-size:11px;color:var(--mut);margin:0;">قائمة بكل من تم حظره مع السبب ومن قام بالحظر</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="ban-filter" class="fi" placeholder="🔍 بحث..." style="width:130px;padding:7px 10px;font-size:12px;" oninput="filterBanLog()">
+          <button onclick="loadBanLog()" class="btn btn-g" style="padding:8px 14px;font-size:12px;">🔄 تحديث</button>
+        </div>
+      </div>
+      <div id="ban-log-list" style="display:flex;flex-direction:column;gap:8px;max-height:520px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- TAB: BADGES -->
+    <div id="ap-sec-badges" style="display:none;">
+      <h3 style="color:#fbbf24;font-size:15px;margin:0 0 16px;">🏅 إدارة الشارات المخصصة</h3>
+
+      <!-- Create badge -->
+      <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.15);border-radius:14px;padding:18px;margin-bottom:20px;">
+        <div style="font-size:13px;color:#fbbf24;font-weight:700;margin-bottom:14px;">➕ إنشاء شارة جديدة</div>
+        <div style="display:grid;grid-template-columns:1fr 80px 110px;gap:10px;margin-bottom:10px;">
+          <input type="text" id="badge-name" class="fi" placeholder="اسم الشارة..." maxlength="30">
+          <input type="text" id="badge-emoji" class="fi" placeholder="🏅" maxlength="4" style="text-align:center;font-size:22px;">
+          <input type="color" id="badge-color" value="#ffd700" style="width:100%;height:44px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.04);cursor:pointer;">
+        </div>
+        <input type="text" id="badge-desc" class="fi" placeholder="وصف الشارة (اختياري)..." maxlength="80" style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-g" style="padding:10px 20px;font-size:13px;" onclick="createBadge()">✨ إنشاء</button>
+          <div id="badge-create-msg" class="fmsg" style="margin:0;"></div>
+        </div>
+      </div>
+
+      <!-- Badges list -->
+      <div style="font-size:13px;color:var(--gl);margin-bottom:12px;font-weight:700;">📋 الشارات المتاحة</div>
+      <div id="badges-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:250px;overflow-y:auto;"></div>
+
+      <!-- Assign badge to user -->
+      <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.15);border-radius:14px;padding:18px;">
+        <div style="font-size:13px;color:#fbbf24;font-weight:700;margin-bottom:12px;">🎖️ منح / سحب شارة من عضو</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" id="badge-assign-user" class="fi" placeholder="اسم العضو..." style="flex:1;min-width:140px;">
+          <button class="btn btn-p" style="padding:10px 16px;font-size:12px;" onclick="loadUserBadgesAdmin()">🔍 عرض شاراته</button>
+        </div>
+        <div id="user-badges-admin" style="margin-top:10px;"></div>
+      </div>
+    </div>
 
 <!-- SPY WINDOW MODAL -->
 <div id="spy-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.85);align-items:center;justify-content:center;">
@@ -1603,12 +1656,19 @@ function renderMsg(m){
   const nameHtml = nfWrap ? `<span class="${nfWrap}" style="font-size:${fs};font-weight:${fw};">${nameInner}</span>` : `<span class="mn" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}cursor:pointer;" onclick="openProfile('${esc(u.name)}')">${u.name}</span>`;
   // Text color
   const txColor = u.textColor ? `color:${u.textColor};` : '';
+  // User badges (from global cache)
+  const userBadgeIds = _globalUserBadges[u.name] || [];
+  const badgesHtml = userBadgeIds.slice(0,3).map(bid => {
+    const b = _globalBadges[bid];
+    return b ? `<span title="${b.name}" style="font-size:14px;cursor:default;" class="msg-badge">${b.emoji}</span>` : '';
+  }).join('');
   const avHtml=u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${u.name.charAt(0)}`;
   const d=document.createElement('div');d.className='msg';
   d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;cursor:pointer;overflow:hidden;" onclick="openProfile('${esc(u.name)}')">${avHtml}</div>
     <div class="mc"><div class="mh">
       ${nameHtml}
       <span class="mb" style="background:${nc}22;color:${nc};border:1px solid ${nc}44;border-radius:20px;padding:1px 8px;font-size:11px;">${rkl}</span>
+      ${badgesHtml}
       <span class="mt">${m.time||''}</span>
     </div><div class="mx" style="${txColor}">${esc(m.text)}</div></div>`;
   c.appendChild(d);
@@ -2129,10 +2189,15 @@ async function openAdmin(){
   document.getElementById('ap').classList.add('on');
   // Only owner sees spy and log tabs
   const isOwner = cu?.rank === 'owner';
+  const isAdmin = ['owner','owner_admin','owner_vip','super_admin','admin'].includes(cu?.rank);
   const spyBtn = document.getElementById('apt-spy');
   const logBtn = document.getElementById('apt-log');
+  const bansBtn = document.getElementById('apt-bans');
+  const badgesBtn = document.getElementById('apt-badges');
   if (spyBtn) spyBtn.style.display = isOwner ? '' : 'none';
   if (logBtn) logBtn.style.display = isOwner ? '' : 'none';
+  if (bansBtn) bansBtn.style.display = isAdmin ? '' : 'none';
+  if (badgesBtn) badgesBtn.style.display = isOwner ? '' : 'none';
   apTab('main');
   await refAdmin();
   loadAdminQuizQuestions();
@@ -2144,7 +2209,7 @@ function closeAdmin(){document.getElementById('ap').classList.remove('on');}
 let _currentApTab = 'main';
 function apTab(name){
   _currentApTab = name;
-  ['main','rooms','words','quiz','perms','spy','log'].forEach(t=>{
+  ['main','rooms','words','quiz','perms','spy','log','bans','badges'].forEach(t=>{
     const btn=document.getElementById('apt-'+t);
     const sec=document.getElementById('ap-sec-'+t);
     const sec2=document.getElementById('ap-sec-main2');
@@ -2157,6 +2222,8 @@ function apTab(name){
   if(name==='words') { loadBadWords && loadBadWords(); }
   if(name==='spy') loadSpyConversations();
   if(name==='log') loadActivityLog();
+  if(name==='bans') loadBanLog();
+  if(name==='badges') loadBadgesAdmin();
 }
 
 // ===== PERMISSIONS UI =====
@@ -2581,6 +2648,170 @@ function filterLog() {
   renderLog(filtered);
 }
 // ===== END ACTIVITY LOG =====
+
+// ===== BAN LOG =====
+let _allBanEntries=[];
+async function loadBanLog(){
+  const c=document.getElementById('ban-log-list');
+  if(!c) return;
+  c.innerHTML='<p style="color:#888;font-size:12px;">جارٍ التحميل...</p>';
+  try{
+    const r=await fetch('/api/admin/ban-log',{headers:{'x-admin-token':AK}});
+    const d=await r.json();
+    if(!d.ok){ c.innerHTML='<p style="color:#f87171;">❌ خطأ</p>'; return; }
+    _allBanEntries=d.log;
+    renderBanLog(_allBanEntries);
+  }catch(e){ c.innerHTML='<p style="color:#f87171;font-size:12px;">❌ خطأ في التحميل</p>'; }
+}
+function renderBanLog(entries){
+  const c=document.getElementById('ban-log-list');
+  if(!c) return;
+  if(!entries.length){ c.innerHTML='<p style="color:var(--mut);font-size:12px;text-align:center;padding:20px;">لا يوجد سجل حظر.</p>'; return; }
+  c.innerHTML='';
+  entries.forEach(e=>{
+    const div=document.createElement('div');
+    const active=e.active!==false;
+    div.style.cssText='background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:12px 14px;';
+    div.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:20px;">${active?'🚫':'✅'}</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:${active?'#f87171':'#4ade80'};">${e.username}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px;">
+            ${e.reason?`السبب: <span style="color:#fbbf24;">${e.reason}</span> · `:''}
+            بواسطة: <span style="color:#a78bfa;">${e.bannedBy||''}</span>
+            ${e.time?' · '+e.time:''}
+          </div>
+          ${!active&&e.unbannedBy?`<div style="font-size:11px;color:#4ade80;margin-top:2px;">رُفع الحظر بواسطة: ${e.unbannedBy} ${e.unbannedTime?'· '+e.unbannedTime:''}</div>`:''}
+        </div>
+        <span style="font-size:11px;background:${active?'rgba(239,68,68,.15)':'rgba(74,222,128,.1)'};color:${active?'#f87171':'#4ade80'};border:1px solid ${active?'rgba(239,68,68,.3)':'rgba(74,222,128,.2)'};border-radius:6px;padding:3px 10px;flex-shrink:0;">${active?'محظور الآن':'رُفع الحظر'}</span>
+        ${active&&hasPerm('can_unban')?`<button onclick="aUnban('${e.username}')" class="aab ab-unban" style="flex-shrink:0;">✅ رفع</button>`:''}
+      </div>`;
+    c.appendChild(div);
+  });
+}
+function filterBanLog(){
+  const q=document.getElementById('ban-filter')?.value.toLowerCase().trim();
+  if(!q){ renderBanLog(_allBanEntries); return; }
+  renderBanLog(_allBanEntries.filter(e=>(e.username||'').toLowerCase().includes(q)||(e.reason||'').toLowerCase().includes(q)||(e.bannedBy||'').toLowerCase().includes(q)));
+}
+// ===== END BAN LOG =====
+
+// ===== BADGES SYSTEM =====
+let _allBadges=[], _allUserBadges={};
+
+async function loadBadgesAdmin(){
+  try{
+    const r=await fetch('/api/badges');
+    const d=await r.json();
+    if(!d.ok) return;
+    _allBadges=d.badges; _allUserBadges=d.userBadges||{};
+    renderBadgesAdmin();
+  }catch(e){}
+}
+
+function renderBadgesAdmin(){
+  const c=document.getElementById('badges-list');
+  if(!c) return;
+  if(!_allBadges.length){ c.innerHTML='<p style="color:var(--mut);font-size:12px;">لا توجد شارات بعد.</p>'; return; }
+  c.innerHTML='';
+  _allBadges.forEach(b=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.12);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;';
+    div.innerHTML=`
+      <span style="font-size:24px;">${b.emoji}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:${b.color||'#ffd700'};">${b.name}</div>
+        ${b.description?`<div style="font-size:11px;color:var(--mut);">${b.description}</div>`:''}
+      </div>
+      <button onclick="deleteBadge(${b.id},'${b.name}')" class="aab ab-ban" style="flex-shrink:0;font-size:11px;">🗑️ حذف</button>`;
+    c.appendChild(div);
+  });
+}
+
+async function createBadge(){
+  const name=document.getElementById('badge-name')?.value.trim();
+  const emoji=document.getElementById('badge-emoji')?.value.trim();
+  const color=document.getElementById('badge-color')?.value;
+  const desc=document.getElementById('badge-desc')?.value.trim();
+  const msg=document.getElementById('badge-create-msg');
+  if(!name||!emoji){ if(msg){msg.style.color='#f87171';msg.textContent='❌ الاسم والإيموجي مطلوبان';} return; }
+  try{
+    const r=await fetch('/api/admin/badges/add',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({name,emoji,color,description:desc,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});
+    const d=await r.json();
+    if(d.ok){ if(msg){msg.style.color='#4ade80';msg.textContent='✅ تم إنشاء الشارة';} loadBadgesAdmin(); document.getElementById('badge-name').value=''; document.getElementById('badge-emoji').value=''; document.getElementById('badge-desc').value=''; }
+    else{ if(msg){msg.style.color='#f87171';msg.textContent='❌ '+d.msg;} }
+  }catch(e){ if(msg){msg.style.color='#f87171';msg.textContent='❌ خطأ';} }
+}
+
+async function deleteBadge(id,name){
+  if(!confirm('حذف شارة "'+name+'"؟')) return;
+  const r=await fetch('/api/admin/badges/delete',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({id,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});
+  const d=await r.json();
+  if(d.ok){ toast('🗑️ تم حذف الشارة','k'); loadBadgesAdmin(); }
+  else toast('❌ '+d.msg,'e');
+}
+
+async function loadUserBadgesAdmin(){
+  const username=document.getElementById('badge-assign-user')?.value.trim();
+  if(!username){ toast('❌ أدخل اسم العضو','e'); return; }
+  const c=document.getElementById('user-badges-admin');
+  c.innerHTML='<p style="color:#888;font-size:12px;">جارٍ التحميل...</p>';
+  try{
+    const r=await fetch('/api/user-badges/'+encodeURIComponent(username));
+    const d=await r.json();
+    const userBadgeIds=(d.badges||[]).map(b=>b.id);
+    c.innerHTML='<div style="font-size:12px;color:#fbbf24;margin-bottom:10px;">اختر الشارات لـ '+username+':</div>';
+    if(!_allBadges.length){ c.innerHTML+='<p style="color:var(--mut);font-size:12px;">لا توجد شارات متاحة.</p>'; return; }
+    _allBadges.forEach(b=>{
+      const has=userBadgeIds.includes(b.id);
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:6px;';
+      row.innerHTML=`
+        <span style="font-size:20px;">${b.emoji}</span>
+        <span style="font-size:13px;color:${b.color||'#ffd700'};flex:1;">${b.name}</span>
+        ${has
+          ?`<button onclick="revokeBadge('${username}',${b.id},this)" class="aab ab-ban" style="font-size:11px;">🚫 سحب</button>`
+          :`<button onclick="assignBadge('${username}',${b.id},this)" class="aab ab-unban" style="font-size:11px;">🎖️ منح</button>`
+        }`;
+      c.appendChild(row);
+    });
+  }catch(e){ c.innerHTML='<p style="color:#f87171;font-size:12px;">❌ خطأ</p>'; }
+}
+
+async function assignBadge(username,badgeId,btn){
+  const r=await fetch('/api/admin/badges/assign',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username,badgeId,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});
+  const d=await r.json();
+  if(d.ok){ toast('🎖️ تم منح الشارة لـ '+username,'k'); loadUserBadgesAdmin(); }
+  else toast('❌ '+d.msg,'e');
+}
+
+async function revokeBadge(username,badgeId,btn){
+  const r=await fetch('/api/admin/badges/revoke',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username,badgeId,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});
+  const d=await r.json();
+  if(d.ok){ toast('✅ تم سحب الشارة','k'); loadUserBadgesAdmin(); }
+  else toast('❌ '+d.msg,'e');
+}
+
+// Load badges on startup for display in messages/profile
+let _globalBadges={}, _globalUserBadges={};
+async function loadGlobalBadges(){
+  try{
+    const r=await fetch('/api/badges');
+    const d=await r.json();
+    if(!d.ok) return;
+    _globalBadges={}; d.badges.forEach(b=>{ _globalBadges[b.id]=b; });
+    _globalUserBadges=d.userBadges||{};
+  }catch(e){}
+}
+setTimeout(loadGlobalBadges,2000);
+
+// Handle badge received notification
+socket.on('badge-received',b=>{
+  toast('🎖️ حصلت على شارة جديدة: '+b.emoji+' '+b.name,'k');
+  loadGlobalBadges(); // Refresh
+});
+// ===== END BADGES SYSTEM =====
 
 // ===== ROOM ACCESS MANAGER =====
 function renderRoomAccessManager(){
@@ -3200,6 +3431,8 @@ function openProfile(username) {
   document.getElementById('prof-points').textContent = '0';
   document.getElementById('prof-bio').textContent = '';
   document.getElementById('prof-crown').style.display = 'none';
+  document.getElementById('prof-badges-section').style.display = 'none';
+  document.getElementById('prof-badges-row').innerHTML = '';
 
   fetch('/api/profile/' + encodeURIComponent(username))
     .then(r => r.json())
@@ -3252,6 +3485,23 @@ function openProfile(username) {
 
       // Bio
       document.getElementById('prof-bio').textContent = p.bio || '';
+
+      // Badges
+      if (p.badges && p.badges.length > 0) {
+        const sec = document.getElementById('prof-badges-section');
+        const row = document.getElementById('prof-badges-row');
+        sec.style.display = 'block';
+        row.innerHTML = '';
+        p.badges.forEach(b => {
+          const span = document.createElement('span');
+          span.title = b.name + (b.description ? ' — ' + b.description : '');
+          span.style.cssText = `display:inline-flex;align-items:center;gap:4px;background:${b.color||'#ffd700'}18;border:1px solid ${b.color||'#ffd700'}44;border-radius:20px;padding:4px 10px;font-size:12px;cursor:default;transition:.2s;`;
+          span.innerHTML = `<span style="font-size:16px;">${b.emoji}</span><span style="color:${b.color||'#ffd700'};font-weight:600;">${b.name}</span>`;
+          span.onmouseover = function(){ this.style.background = `${b.color||'#ffd700'}30`; };
+          span.onmouseout  = function(){ this.style.background = `${b.color||'#ffd700'}18`; };
+          row.appendChild(span);
+        });
+      }
 
       // Stats
       document.getElementById('prof-points').textContent = (p.points || 0).toLocaleString();
@@ -4109,6 +4359,12 @@ textarea.prof-input{resize:none;height:58px}
         <div id="prof-age-val" style="font-size:18px;font-weight:700;color:#ce93d8;">—</div>
         <div style="font-size:11px;color:#555;margin-top:2px;">العمر</div>
       </div>
+    </div>
+
+    <!-- Badges -->
+    <div id="prof-badges-section" style="display:none;margin:0 18px 14px;">
+      <div style="font-size:11px;color:#888;margin-bottom:8px;font-weight:600;">🏅 الشارات</div>
+      <div id="prof-badges-row" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
 
     <!-- Actions -->

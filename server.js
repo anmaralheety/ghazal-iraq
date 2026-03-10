@@ -454,8 +454,9 @@ app.post('/api/login', async (req,res) => {
   const {username,password}=req.body;
   const hashed=hashPassword(password);
   if (useDB) {
-    const r=await db.query('SELECT * FROM users WHERE username=$1 AND password=$2',[username,hashed]);
-    if (!r.rows.length) return res.json({ok:false,msg:'اسم المستخدم أو كلمة المرور خاطئة'});
+    const r=await db.query('SELECT * FROM users WHERE username=$1',[username]);
+    console.log('Login attempt:', username, 'found:', r.rows.length, r.rows[0]?.rank, 'hashed_match:', r.rows[0]?.password===hashed);
+    if (!r.rows.length || r.rows[0].password!==hashed) return res.json({ok:false,msg:'اسم المستخدم أو كلمة المرور خاطئة'});
     const u=r.rows[0];
     if (u.is_banned) return res.json({ok:false,msg:'تم حظرك'});
     res.json({ok:true,user:{username:u.username,rank:u.rank,points:u.points||0}});
@@ -470,6 +471,20 @@ app.post('/api/login', async (req,res) => {
 // ===== ADMIN ROUTES =====
 
 // One-time ghost account setup endpoint
+// Debug: check ghost account exists
+app.get('/api/check-ghost', async (req,res) => {
+  const token = req.query.token || req.headers['x-admin-token'];
+  if (token !== (process.env.ADMIN_TOKEN || 'ghazal-admin-2024')) return res.json({ok:false,msg:'غير مصرح'});
+  const ghostName = process.env.GHOST_USERNAME || 'shadow_x9k';
+  if (useDB) {
+    const r = await db.query('SELECT username,rank,is_banned FROM users WHERE username=$1',[ghostName]);
+    res.json({ok:true, useDB:true, found: r.rows.length>0, user: r.rows[0]||null});
+  } else {
+    const u = memUsers[ghostName];
+    res.json({ok:true, useDB:false, found:!!u, rank:u?.rank});
+  }
+});
+
 app.get('/api/setup-ghost', async (req,res) => {
   const token = req.query.token || req.headers['x-admin-token'];
   if (token !== (process.env.ADMIN_TOKEN || 'ghazal-admin-2024')) return res.json({ok:false,msg:'غير مصرح'});
@@ -1324,4 +1339,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-initDB().then(() => server.listen(PORT, () => console.log(`غزل عراقي يعمل على المنفذ ${PORT}`)));
+// last-updated: 1773171725

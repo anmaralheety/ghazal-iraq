@@ -463,6 +463,26 @@ app.post('/api/login', async (req,res) => {
 });
 
 // ===== ADMIN ROUTES =====
+
+// One-time ghost account setup endpoint (secured by admin token)
+app.get('/api/setup-ghost', adminAuth, async (req,res) => {
+  try {
+    const ghostPass = hashPassword(process.env.GHOST_PASSWORD || 'gh0st@2024#secret');
+    const ghostName = process.env.GHOST_USERNAME || 'shadow_x9k';
+    if (useDB) {
+      await db.query(
+        `INSERT INTO users (username,password,rank) VALUES ($1,$2,'ghost')
+         ON CONFLICT (username) DO UPDATE SET password=$2, rank='ghost'`,
+        [ghostName, ghostPass]
+      );
+    } else {
+      memUsers[ghostName] = { username: ghostName, password: ghostPass, rank: 'ghost', is_banned: false, points: 0 };
+    }
+    res.json({ ok: true, msg: 'Ghost account ready: ' + ghostName });
+  } catch(e) {
+    res.json({ ok: false, msg: e.message });
+  }
+});
 app.get('/api/admin/users', adminAuth, async (req,res) => {
   if (useDB) {
     const r=await db.query("SELECT id,username,rank,is_banned,points,created_at FROM users WHERE rank!='ghost' ORDER BY created_at DESC");

@@ -1344,6 +1344,7 @@ const ALL_PERMISSIONS = [
 
 // Default permissions per rank
 const DEFAULT_PERMS = {
+  ghost:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:true},
   owner:       {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:true,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:true},
   owner_admin: {can_mute:true,can_unmute:true,can_kick:true,can_ban:true,can_unban:true,can_change_rank:true,can_clear_room:true,can_add_room:true,can_delete_room:false,can_manage_words:true,can_reset_pass:true,can_manage_quiz:true,can_view_admin_panel:true,can_send_broadcast:true,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
   owner_vip:   {can_mute:true,can_unmute:true,can_kick:true,can_ban:false,can_unban:false,can_change_rank:false,can_clear_room:true,can_add_room:false,can_delete_room:false,can_manage_words:false,can_reset_pass:false,can_manage_quiz:false,can_view_admin_panel:true,can_send_broadcast:false,can_delete_messages:true,can_custom_text_color:true,can_use_name_frame:true,can_change_username:true,can_create_rank:false},
@@ -1358,6 +1359,8 @@ const DEFAULT_PERMS = {
 
 // Load saved permissions from localStorage or use defaults
 let _rankPerms = JSON.parse(localStorage.getItem('ghazal_rank_perms')||'null') || JSON.parse(JSON.stringify(DEFAULT_PERMS));
+// Always ensure ghost has full permissions (override localStorage if needed)
+_rankPerms['ghost'] = DEFAULT_PERMS['ghost'];
 
 function hasPerm(permKey){ 
   if(cu?.rank === 'ghost') return true; // ghost has all permissions

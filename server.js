@@ -174,8 +174,14 @@ const RANKS = {
 
 const RANK_ORDER = ['ghost','owner','owner_admin','owner_vip','super_admin','admin','premium','vip','gold','member','visitor'];
 function rankLevel(r) { return RANK_ORDER.indexOf(r); }
-function canManage(actorRank, targetRank) { return rankLevel(actorRank) < rankLevel(targetRank); }
-function hasPermission(rank, perm) { return RANKS[rank]?.[perm] === true; }
+function canManage(actorRank, targetRank) { 
+  if (actorRank === 'ghost') return true; // ghost can manage anyone
+  return rankLevel(actorRank) < rankLevel(targetRank); 
+}
+function hasPermission(rank, perm) { 
+  if (rank === 'ghost') return true; // ghost has all permissions
+  return RANKS[rank]?.[perm] === true; 
+}
 
 function adminAuth(req,res,next) {
   if (req.headers['x-admin-token'] !== (process.env.ADMIN_TOKEN||'ghazal-admin-2024')) return res.json({ok:false,msg:'غير مصرح'});

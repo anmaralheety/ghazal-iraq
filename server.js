@@ -911,15 +911,14 @@ io.on('connection', (socket) => {
     const sysMsg=await saveMessage('general',null,joinText,'system');
     io.to('general').emit('message',{...sysMsg});
     io.to('general').emit('room-users',getRoomUsers('general'));
-    // Send welcome private message if configured
+    // Send welcome message in general room if configured
     if (welcomeMessage.enabled && welcomeMessage.text) {
       const wText = welcomeMessage.text.replace('{name}', data.name);
-      const ownerInfo = RANKS['owner'];
       setTimeout(() => {
-        socket.emit('private-message', {
-          type:'private', from: welcomeMessage.senderName||'غزل عراقي',
-          to: data.name, text: wText, time: getTime(),
-          fromRank:'owner', fromRankInfo: ownerInfo, isWelcome: true
+        socket.emit('welcome-msg', {
+          text: wText,
+          senderName: welcomeMessage.senderName || 'غزل عراقي 🌹',
+          time: getTime()
         });
       }, 1500);
     }

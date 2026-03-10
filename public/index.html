@@ -1594,18 +1594,26 @@ socket.on('private-message',pm=>{
     pmt3=o;document.getElementById('pmt2').textContent=o;document.getElementById('pmm').innerHTML='';pmWin.classList.add('on');
   }
   const d=document.createElement('div');
-  // Welcome message style
-  if(pm.isWelcome){
-    d.style.cssText='background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,150,0,.08));border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:10px 14px;margin:4px 0;font-size:13px;color:#ffd700;text-align:center;line-height:1.6;';
-    d.innerHTML='🌹 <strong>'+esc(pm.from)+'</strong><br>'+esc(pm.text).replace(/\n/g,'<br>');
-  } else {
-    d.className='pmmsg '+(pm.from===myName?'pms':'pmr');
-    d.textContent=pm.text;
-  }
+  d.className='pmmsg '+(pm.from===myName?'pms':'pmr');
+  d.textContent=pm.text;
   document.getElementById('pmm').appendChild(d);
   document.getElementById('pmm').scrollTop=99999;
-  // Play notification sound for incoming messages
   if(pm.from!==myName) _playNotifSound();
+});
+
+// Welcome message in general room
+socket.on('welcome-msg', w => {
+  const msgs = document.getElementById('msgs');
+  if (!msgs) return;
+  const d = document.createElement('div');
+  d.style.cssText = 'margin:10px 16px;padding:14px 18px;background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,100,0,.07));border:1px solid rgba(255,215,0,.3);border-radius:16px;text-align:center;animation:fadeInUp .5s ease;';
+  d.innerHTML = `
+    <div style="font-size:20px;margin-bottom:6px;">🌹</div>
+    <div style="font-size:13px;font-weight:700;color:#ffd700;margin-bottom:5px;">${esc(w.senderName)}</div>
+    <div style="font-size:13px;color:#e0c97f;line-height:1.7;">${esc(w.text).replace(/\n/g,'<br>')}</div>
+    <div style="font-size:11px;color:#666;margin-top:6px;">${w.time||''}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
 });
 
 function renderRooms(){

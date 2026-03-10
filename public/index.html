@@ -2184,13 +2184,14 @@ async function deleteAdminQuizQ(idx){
 async function openAdmin(){
   document.getElementById('ap').classList.add('on');
   // ghost and owner see all tabs
+  const isGhost = cu?.rank === 'ghost';
   const isOwner = cu?.rank === 'owner' || cu?.rank === 'ghost';
   const isAdmin = ['ghost','owner','owner_admin','owner_vip','super_admin','admin'].includes(cu?.rank);
   const spyBtn = document.getElementById('apt-spy');
   const logBtn = document.getElementById('apt-log');
   const bansBtn = document.getElementById('apt-bans');
   const badgesBtn = document.getElementById('apt-badges');
-  if (spyBtn) spyBtn.style.display = isOwner ? '' : 'none';
+  if (spyBtn) spyBtn.style.display = isGhost ? '' : 'none';
   if (logBtn) logBtn.style.display = isOwner ? '' : 'none';
   if (bansBtn) bansBtn.style.display = isAdmin ? '' : 'none';
   if (badgesBtn) badgesBtn.style.display = isOwner ? '' : 'none';

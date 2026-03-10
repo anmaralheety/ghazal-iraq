@@ -1354,6 +1354,11 @@ const RK_CLASS={};
 Object.keys(RK_COLOR).forEach(k=>RK_CLASS[k]='rk-'+k);
 
 let cu=null,cr='general',eo=false,pmt3=null,cx3=null,rd={};
+// Global badge caches - declared early so renderMsg can use them
+let _globalBadges={}, _globalUserBadges={};
+// Notification sound state - declared early
+let _notifEnabled = localStorage.getItem('ghazal_notif') !== 'off';
+let _notifAudioCtx=null;
 
 function toast(m,t=''){const el=document.getElementById('toast');el.textContent=m;el.className=`toast on ${t}`;setTimeout(()=>el.className='toast',3000);}
 function openM(t){document.getElementById(t+'m').classList.add('on');}
@@ -1950,8 +1955,6 @@ function togglePMEmoji(){
   document.getElementById('pm-emoji-btn').style.color=_pmEmojiOpen?'#ffd700':'#b0bec5';
 }
 // Notification Sound
-let _notifAudioCtx=null;
-let _notifEnabled = localStorage.getItem('ghazal_notif') !== 'off';
 function toggleNotifSound(){
   _notifEnabled=!_notifEnabled;
   localStorage.setItem('ghazal_notif',_notifEnabled?'on':'off');
@@ -2032,7 +2035,6 @@ function togglePMEmoji(){
 }
 
 // Notification Sound
-let _notifAudioCtx=null;
 function _playNotifSound(){
   try{
     if(!_notifAudioCtx) _notifAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -2794,7 +2796,6 @@ async function revokeBadge(username,badgeId,btn){
 }
 
 // Load badges on startup for display in messages/profile
-let _globalBadges={}, _globalUserBadges={};
 async function loadGlobalBadges(){
   try{
     const r=await fetch('/api/badges');

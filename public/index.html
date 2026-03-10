@@ -590,6 +590,16 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     transition: transform .3s cubic-bezier(.4,0,.2,1);
   }
   .mob-drawer.open { transform: translateX(0); }
+
+  /* Users drawer — drops from top, doesn't cover full screen */
+  #mob-users {
+    inset: 0 0 auto 0 !important;
+    max-height: 70vh;
+    border-radius: 0 0 20px 20px;
+    transform: translateY(-100%) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  }
+  #mob-users.open { transform: translateY(0) !important; }
   .mob-drawer-hdr {
     padding: 16px 18px;
     display: flex;

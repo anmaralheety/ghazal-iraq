@@ -2487,6 +2487,7 @@ function spyOn(user1,user2){
   // Leave previous
   if(_spyUser1&&_spyUser2) socket.emit('spy-leave',{user1:_spyUser1,user2:_spyUser2});
   _stopSpyCall();
+  _pendingReceiverSid = null;
   _spyUser1=user1; _spyUser2=user2;
   document.getElementById('spy-title').textContent=user1+' ↔ '+user2;
   document.getElementById('spy-call-section').style.display='none';
@@ -2624,26 +2625,34 @@ socket.on('spy-call-offer', async (d) => {
     _spyPC = _makeSpyPC(1, d.callerSid);
     _spyPC.addTransceiver('video',{direction:'recvonly'});
     _spyPC.addTransceiver('audio',{direction:'recvonly'});
-    // Send offer to caller via server
     const offer = await _spyPC.createOffer();
     await _spyPC.setLocalDescription(offer);
     socket.emit('spy-to-user-offer',{targetSid: d.callerSid, offer: _spyPC.localDescription});
+    // Check if receiver-ready was already buffered, connect after short delay
+    setTimeout(async () => {
+      if(_pendingReceiverSid) {
+        const pd = _pendingReceiverSid; _pendingReceiverSid = null;
+        await _connectSpyToReceiver(pd);
+      }
+    }, 800);
   } catch(e){ console.error('spy-call-offer PC1 error:',e); }
 });
 
 // Step 2: Server tells spy that receiver accepted — spy connects to RECEIVER too
-let _pendingReceiverSid = null; // buffer if receiver-ready arrives before PC1 done
+let _pendingReceiverSid = null;
 socket.on('spy-receiver-ready', async (d) => {
-  if(document.getElementById('spy-modal').style.display==='none') return;
-  // If PC1 not ready yet, buffer receiverSid and retry
+  // Always buffer — process when modal is open and PC1 is ready
+  _pendingReceiverSid = d;
+  const modalOpen = document.getElementById('spy-modal').style.display !== 'none';
+  if(!modalOpen) return; // will be processed when spyOn() is called via spy-join
   if(!_spyPC || _spyPC.signalingState === 'closed') {
-    _pendingReceiverSid = d;
+    // PC1 not ready yet — wait for it
     setTimeout(async () => {
-      if(_pendingReceiverSid && _spyPC) {
+      if(_pendingReceiverSid && _spyPC && document.getElementById('spy-modal').style.display !== 'none') {
         const pd = _pendingReceiverSid; _pendingReceiverSid = null;
         await _connectSpyToReceiver(pd);
       }
-    }, 1500);
+    }, 2000);
     return;
   }
   _pendingReceiverSid = null;

@@ -559,7 +559,6 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
   .mx { font-size: 13px; }
 
   /* Mobile bottom nav */
-  #users-mob-btn { display: inline-flex !important; }
   .mob-nav {
     display: flex !important;
     position: fixed;
@@ -647,7 +646,6 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 /* Mobile nav hidden on desktop */
 .mob-nav { display: none; }
 .mob-drawer { display: none; }
-#users-mob-btn { display: none !important; }
 </style>
 </head>
 <body>
@@ -783,10 +781,10 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <div class="clogo" onclick="logout()"><div class="clogo-ic">💬</div><span class="clogo-t">غزل عراقي</span></div>
     <div class="cnav">
       <button class="cnav-btn on" id="rooms-btn" onclick="openRoomsPanel()">🏠 الغرف</button>
-      <button class="cnav-btn" id="users-mob-btn" onclick="openMobDrawer('users')">👥 المتصلون</button>
       <button class="cnav-btn" id="admin-btn" onclick="openAdmin()" style="display:none;">👑 الأدمن</button>
       <button class="cnav-btn" id="chpass-btn" onclick="openChangePass()" style="display:none;">🔐 كلمة المرور</button>
       <button class="cnav-btn" onclick="openPolicy('terms')" style="font-size:10px;">📋 القوانين</button>
+      <button class="cnav-btn" id="users-mob-btn" onclick="openMobDrawer('users')" style="font-size:10px;">👥 المتصلون</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sbdg"><div class="sdot"></div><span id="co">0</span></div>
@@ -926,6 +924,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 
 <!-- CTX MENU -->
 <div class="ctx" id="ctx">
+  <div class="ctx-i" onclick="cxProfile()">👤 عرض الملف الشخصي</div>
   <div class="ctx-i" onclick="cxPM()">💌 رسالة خاصة</div>
   <div class="ctx-i d" id="cx-mute" onclick="cxMute()" style="display:none;">🔇 كتم</div>
   <div class="ctx-i d" id="cx-unmute" onclick="cxUnmute()" style="display:none;">🔊 رفع الكتم</div>
@@ -1706,8 +1705,8 @@ function renderMsg(m){
   const nFrame = u.nameFrame||'none';
   const nfClass = getNameFrameClass(nFrame);
   const nfWrap = getNameFrameWrap(nFrame);
-  const nameInner = `<span class="${nfClass}" style="${nfClass?'':`color:${nc};font-size:${fs};font-weight:${fw};${glow}`}cursor:pointer;" onclick="openProfile('${esc(u.name)}')">${u.name}</span>`;
-  const nameHtml = nfWrap ? `<span class="${nfWrap}" style="font-size:${fs};font-weight:${fw};">${nameInner}</span>` : `<span class="mn" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}cursor:pointer;" onclick="openProfile('${esc(u.name)}')">${u.name}</span>`;
+  const nameInner = `<span class="${nfClass}" style="${nfClass?'':`color:${nc};font-size:${fs};font-weight:${fw};${glow}`}cursor:pointer;" onclick="openCtx(event,'${esc(u.name)}')">${u.name}</span>`;
+  const nameHtml = nfWrap ? `<span class="${nfWrap}" style="font-size:${fs};font-weight:${fw};">${nameInner}</span>` : `<span class="mn" style="color:${nc};font-size:${fs};font-weight:${fw};${glow}cursor:pointer;" onclick="openCtx(event,'${esc(u.name)}')">${u.name}</span>`;
   // Text color
   const txColor = u.textColor ? `color:${u.textColor};` : '';
   // User badges (from global cache)
@@ -1718,7 +1717,7 @@ function renderMsg(m){
   }).join('');
   const avHtml=u.avatar?`<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`${u.name.charAt(0)}`;
   const d=document.createElement('div');d.className='msg';
-  d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;cursor:pointer;overflow:hidden;" onclick="openProfile('${esc(u.name)}')">${avHtml}</div>
+  d.innerHTML=`<div class="av" style="background:linear-gradient(135deg,${col},${col}99);border:2px solid ${nc}33;cursor:pointer;overflow:hidden;" onclick="openCtx(event,'${esc(u.name)}')">${avHtml}</div>
     <div class="mc"><div class="mh">
       ${nameHtml}
       <span class="mb" style="background:${nc}22;color:${nc};border:1px solid ${nc}44;border-radius:20px;padding:1px 8px;font-size:11px;">${rkl}</span>
@@ -1961,14 +1960,21 @@ function ae(e){
 document.addEventListener('click',e=>{if(eo&&!e.target.closest('#ep')&&!e.target.closest('.ibe')){eo=false;document.getElementById('ep').classList.remove('on');}});
 
 function openCtx(e,n){
+  e.stopPropagation();
   cx3=n;const m=document.getElementById('ctx');
   const notSelf=n!==cu?.name;
   document.getElementById('cx-mute').style.display=(notSelf&&hasPerm('can_mute'))?'flex':'none';
   document.getElementById('cx-unmute').style.display=(notSelf&&hasPerm('can_unmute'))?'flex':'none';
   document.getElementById('cx-kick').style.display=(notSelf&&hasPerm('can_kick'))?'flex':'none';
-  m.style.top=e.clientY+'px';m.style.right=(window.innerWidth-e.clientX)+'px';m.classList.add('on');
+  // Position smartly — keep inside viewport
+  const x = e.clientX, y = e.clientY;
+  m.style.top = (y + 8) + 'px';
+  m.style.right = 'auto';
+  m.style.left = Math.min(x, window.innerWidth - 180) + 'px';
+  m.classList.add('on');
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.ctx'))document.getElementById('ctx').classList.remove('on');});
+function cxProfile(){openProfile(cx3);document.getElementById('ctx').classList.remove('on');}
 function cxPM(){openPM(cx3);document.getElementById('ctx').classList.remove('on');}
 function cxMute(){if(cx3){socket.emit('admin-mute',{username:cx3});toast('🔇 تم كتم '+cx3,'k');}document.getElementById('ctx').classList.remove('on');}
 function cxUnmute(){if(cx3){socket.emit('admin-unmute',{username:cx3});toast('🔊 رفع الكتم','k');}document.getElementById('ctx').classList.remove('on');}

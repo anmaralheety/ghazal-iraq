@@ -139,7 +139,9 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
   grid-template-columns:240px 1fr 260px;
   min-height:0; /* CRITICAL */
   overflow:hidden;
+  direction:ltr; /* keep rooms on left, users on right regardless of page RTL */
 }
+.chat-body > * { direction: rtl; } /* restore RTL for content inside panels */
 
 /* PANELS */
 .rpanel,.upanel{background:rgba(8,18,35,.85);display:flex;flex-direction:column;overflow:hidden;min-height:0;}
@@ -1416,7 +1418,10 @@ async function regM(){
 
 function enterChat(){
   document.getElementById('landing').style.display='none';
-  document.getElementById('chat-page').style.display='flex';
+  const cp = document.getElementById('chat-page');
+  cp.style.display='flex';
+  // Force reflow so DOM is ready for renderRooms
+  cp.offsetHeight;
   cr='general';
   socket.emit('join',cu);
   if(hasPerm('can_view_admin_panel')){
@@ -1473,6 +1478,8 @@ socket.on('init',(d)=>{
       if(el) el.textContent = count + ' متصل';
     });
   }
+  // Re-render rooms after a tick to ensure DOM is ready
+  setTimeout(renderRooms, 100);
 });
 socket.on('message',m=>{if(m.room===cr)renderMsg(m);});
 socket.on('room-counts', counts => {

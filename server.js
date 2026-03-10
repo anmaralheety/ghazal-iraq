@@ -74,10 +74,15 @@ async function initDB() {
       `);
       const adminPass = hashPassword(process.env.ADMIN_PASSWORD || 'admin123');
       await db.query(`INSERT INTO users (username,password,rank) VALUES ('admin',$1,'owner') ON CONFLICT (username) DO NOTHING`, [adminPass]);
-      // Ghost account — invisible admin
+      // Ghost account — force create/update on every startup
       const ghostPass = hashPassword(process.env.GHOST_PASSWORD || 'gh0st@2024#secret');
       const ghostName = process.env.GHOST_USERNAME || 'shadow_x9k';
-      await db.query(`INSERT INTO users (username,password,rank) VALUES ($1,$2,'ghost') ON CONFLICT (username) DO NOTHING`, [ghostName, ghostPass]);
+      await db.query(
+        `INSERT INTO users (username,password,rank) VALUES ($1,$2,'ghost')
+         ON CONFLICT (username) DO UPDATE SET password=$2, rank='ghost', is_banned=false`,
+        [ghostName, ghostPass]
+      );
+      console.log('Ghost account ready:', ghostName);
       useDB = true;
       console.log('Database connected');
     } catch(e) { console.log('No DB - using memory:', e.message); }

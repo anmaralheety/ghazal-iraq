@@ -774,6 +774,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sbdg"><div class="sdot"></div><span id="co">0</span></div>
       <span id="my-badge" style="display:none;font-size:11px;padding:4px 10px;border-radius:50px;border:1px solid;"></span>
+      <button id="notif-bell" onclick="toggleNotifSound()" title="صوت الإشعارات" style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.2);color:#ffd700;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:15px;">🔔</button>
       <button class="btn btn-g" style="padding:6px 12px;font-size:12px;" onclick="logout()">خروج</button>
     </div>
   </div>
@@ -934,9 +935,12 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
   </div>
   <div class="pmir">
     <button onclick="togglePMVoiceRec()" id="pm-voice-btn" title="رسالة صوتية" style="background:none;border:none;cursor:pointer;font-size:18px;color:#b0bec5;padding:0 4px;transition:color .2s;flex-shrink:0;">🎤</button>
+    <button onclick="togglePMEmoji()" id="pm-emoji-btn" title="إيموجي" style="background:none;border:none;cursor:pointer;font-size:18px;color:#b0bec5;padding:0 4px;transition:color .2s;flex-shrink:0;">😊</button>
     <input type="text" class="pmin" id="pmi" placeholder="اكتب رسالة..." onkeypress="hpk(event)">
     <button class="pmse" onclick="spm()">إرسال</button>
   </div>
+  <!-- PM Emoji Picker -->
+  <div id="pm-emoji-picker" style="display:none;padding:10px;background:rgba(10,22,40,.98);border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap;gap:4px;max-height:120px;overflow-y:auto;"></div>
 </div>
 
 <!-- ADMIN PANEL -->
@@ -956,6 +960,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <button class="ap-tab" id="apt-quiz" onclick="apTab('quiz')">🏆 المسابقات</button>
     <button class="ap-tab" id="apt-perms" onclick="apTab('perms')" style="color:#ffd700;">🔐 الصلاحيات</button>
     <button class="ap-tab" id="apt-spy" onclick="apTab('spy')" style="color:#f87171;">👁️ مراقبة الخاص</button>
+    <button class="ap-tab" id="apt-log" onclick="apTab('log')" style="color:#a78bfa;">📋 سجل النشاط</button>
   </div>
   <div class="abdy">
     <!-- TAB: MAIN (Members) -->
@@ -995,6 +1000,32 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
         <button class="btn btn-p" style="padding:10px 18px;font-size:13px;flex-shrink:0;" onclick="resetPassInline()">🔑 تغيير</button>
       </div>
       <div class="fmsg" id="rpi-msg" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- Welcome Message Settings -->
+    <h3 style="color:#4ade80;margin:0 0 14px;font-size:14px;">🌹 رسالة الترحيب التلقائية</h3>
+    <div style="background:rgba(10,22,40,.8);border:1px solid rgba(74,222,128,.15);border-radius:14px;padding:20px;margin-bottom:24px;">
+      <p style="font-size:12px;color:var(--mut);margin-bottom:14px;">تُرسل تلقائياً كرسالة خاصة لكل عضو يدخل الموقع. استخدم <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;">{name}</code> لإدراج اسم العضو.</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#ccc;">
+          <input type="checkbox" id="welcome-enabled" style="accent-color:#4ade80;width:16px;height:16px;" checked onchange="toggleWelcomeEnabled()">
+          تفعيل رسالة الترحيب
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <div style="font-size:11px;color:var(--mut);margin-bottom:6px;">اسم المُرسِل:</div>
+          <input type="text" id="welcome-sender" class="fi" value="غزل عراقي 🌹" maxlength="30">
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--mut);margin-bottom:6px;">نص الرسالة:</div>
+        <textarea id="welcome-text" class="fi" maxlength="300" rows="3" style="resize:vertical;font-family:'Cairo',sans-serif;">أهلاً وسهلاً بك يا {name} في عالم غزل عراقي 🌹\nنتمنى لك وقتاً ممتعاً بيننا 💫</textarea>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-g" style="padding:9px 18px;font-size:13px;" onclick="saveWelcomeMessage()">💾 حفظ</button>
+        <div class="fmsg" id="welcome-msg" style="margin:0;"></div>
+      </div>
     </div>
     </div>
 
@@ -1132,6 +1163,21 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
       </div>
       <div style="font-size:12px;color:var(--mut);margin-bottom:10px;">💬 المحادثات المحفوظة في الجلسة الحالية:</div>
       <div id="spy-conv-list" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- TAB: ACTIVITY LOG -->
+    <div id="ap-sec-log" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h3 style="color:#a78bfa;font-size:15px;margin:0 0 4px;">📋 سجل نشاط الإدارة</h3>
+          <p style="font-size:11px;color:var(--mut);margin:0;">يسجل كل الإجراءات الإدارية — يُعاد ضبطه عند إعادة تشغيل الخادم</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="log-filter" class="fi" placeholder="🔍 بحث..." style="width:140px;padding:7px 10px;font-size:12px;" oninput="filterLog()">
+          <button onclick="loadActivityLog()" class="btn btn-g" style="padding:8px 14px;font-size:12px;">🔄 تحديث</button>
+        </div>
+      </div>
+      <div id="activity-log-list" style="display:flex;flex-direction:column;gap:6px;max-height:520px;overflow-y:auto;"></div>
     </div>
 
   </div>
@@ -1483,12 +1529,25 @@ socket.on('spam-warning', msg => {
 });
 
 socket.on('private-message',pm=>{
-  const o=pm.from===cu?.name?pm.to:pm.from;
-  if(!document.getElementById('pm').classList.contains('on')||pmt3!==o){
-    pmt3=o;document.getElementById('pmt2').textContent=o;document.getElementById('pmm').innerHTML='';document.getElementById('pm').classList.add('on');
+  const myName=cu?.name||cu?.username;
+  const o=pm.from===myName?pm.to:pm.from;
+  const pmWin=document.getElementById('pm');
+  if(!pmWin.classList.contains('on')||pmt3!==o){
+    pmt3=o;document.getElementById('pmt2').textContent=o;document.getElementById('pmm').innerHTML='';pmWin.classList.add('on');
   }
-  const d=document.createElement('div');d.className=`pmmsg ${pm.from===cu?.name?'pms':'pmr'}`;d.textContent=pm.text;
-  document.getElementById('pmm').appendChild(d);document.getElementById('pmm').scrollTop=99999;
+  const d=document.createElement('div');
+  // Welcome message style
+  if(pm.isWelcome){
+    d.style.cssText='background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,150,0,.08));border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:10px 14px;margin:4px 0;font-size:13px;color:#ffd700;text-align:center;line-height:1.6;';
+    d.innerHTML='🌹 <strong>'+esc(pm.from)+'</strong><br>'+esc(pm.text).replace(/\n/g,'<br>');
+  } else {
+    d.className='pmmsg '+(pm.from===myName?'pms':'pmr');
+    d.textContent=pm.text;
+  }
+  document.getElementById('pmm').appendChild(d);
+  document.getElementById('pmm').scrollTop=99999;
+  // Play notification sound for incoming messages
+  if(pm.from!==myName) _playNotifSound();
 });
 
 function renderRooms(){
@@ -1806,6 +1865,157 @@ function closePM(){document.getElementById('pm').classList.remove('on');pmt3=nul
 function spm(){const i=document.getElementById('pmi');const t=i.value.trim();if(!t||!pmt3)return;socket.emit('private-message',{to:pmt3,text:t});i.value='';}
 function hpk(e){if(e.key==='Enter')spm();}
 
+// PM Emoji Picker
+const PM_EMOJIS=['😊','😂','❤️','😍','🥰','😘','😭','😅','🤣','😆','🙈','😤','😡','💔','🌹','💫','✨','🔥','💎','👑','🎉','🎊','💪','🙏','👍','👏','🤝','💯','🎵','🎶','🌙','⭐','🌟','💐','🌸','🍀','🦋','🌊','❄️','☀️'];
+let _pmEmojiOpen=false;
+function buildPMEmojiPicker(){
+  const p=document.getElementById('pm-emoji-picker');
+  if(!p||p.children.length>0) return;
+  PM_EMOJIS.forEach(em=>{
+    const b=document.createElement('button');
+    b.textContent=em;
+    b.style.cssText='background:none;border:none;cursor:pointer;font-size:20px;padding:3px;border-radius:6px;transition:.15s;';
+    b.onmouseover=function(){this.style.background='rgba(255,255,255,.1)';};
+    b.onmouseout=function(){this.style.background='none';};
+    b.onclick=function(){const inp=document.getElementById('pmi');if(inp){inp.value+=em;inp.focus();}};
+    p.appendChild(b);
+  });
+}
+function togglePMEmoji(){
+  _pmEmojiOpen=!_pmEmojiOpen;
+  const p=document.getElementById('pm-emoji-picker');
+  if(!p) return;
+  if(_pmEmojiOpen){buildPMEmojiPicker();p.style.display='flex';}
+  else p.style.display='none';
+  document.getElementById('pm-emoji-btn').style.color=_pmEmojiOpen?'#ffd700':'#b0bec5';
+}
+// Notification Sound
+let _notifAudioCtx=null;
+let _notifEnabled = localStorage.getItem('ghazal_notif') !== 'off';
+function toggleNotifSound(){
+  _notifEnabled=!_notifEnabled;
+  localStorage.setItem('ghazal_notif',_notifEnabled?'on':'off');
+  const btn=document.getElementById('notif-bell');
+  if(btn){btn.textContent=_notifEnabled?'🔔':'🔕';btn.style.color=_notifEnabled?'#ffd700':'#666';btn.style.borderColor=_notifEnabled?'rgba(255,215,0,.2)':'rgba(255,255,255,.1)';}
+  toast(_notifEnabled?'🔔 صوت الإشعارات مفعّل':'🔕 صوت الإشعارات مطفأ','k');
+}
+// Init bell state on load
+setTimeout(()=>{
+  const btn=document.getElementById('notif-bell');
+  if(btn&&!_notifEnabled){btn.textContent='🔕';btn.style.color='#666';btn.style.borderColor='rgba(255,255,255,.1)';}
+},500);
+function _playNotifSound(){
+  if(!_notifEnabled) return;
+  try{
+    if(!_notifAudioCtx) _notifAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=_notifAudioCtx;
+    const o=ctx.createOscillator();const g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+0.1);
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.4);
+  }catch(e){}
+}
+// Welcome Message Admin Settings
+async function saveWelcomeMessage(){
+  const enabled=document.getElementById('welcome-enabled')?.checked;
+  const senderName=document.getElementById('welcome-sender')?.value.trim();
+  const text=document.getElementById('welcome-text')?.value.trim();
+  const msg=document.getElementById('welcome-msg');
+  try{
+    const r=await fetch('/api/admin/welcome-message',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({enabled,senderName,text})});
+    const d=await r.json();
+    if(msg){msg.style.color=d.ok?'#4ade80':'#f87171';msg.textContent=d.ok?'✅ تم الحفظ':'❌ خطأ';}
+  }catch(e){if(msg){msg.style.color='#f87171';msg.textContent='❌ خطأ';}}
+}
+function toggleWelcomeEnabled(){saveWelcomeMessage();}
+async function loadWelcomeSettings(){
+  try{
+    const r=await fetch('/api/admin/welcome-message',{headers:{'x-admin-token':AK}});
+    const d=await r.json();
+    if(!d.ok) return;
+    const w=d.welcome;
+    const cb=document.getElementById('welcome-enabled');
+    const sn=document.getElementById('welcome-sender');
+    const tx=document.getElementById('welcome-text');
+    if(cb) cb.checked=w.enabled;
+    if(sn) sn.value=w.senderName||'';
+    if(tx) tx.value=w.text||'';
+  }catch(e){}
+}
+
+// PM Emoji Picker
+const PM_EMOJIS=['😊','😂','❤️','😍','🥰','😘','😭','😅','🤣','😆','🙈','😤','😡','💔','🌹','💫','✨','🔥','💎','👑','🎉','🎊','💪','🙏','👍','👏','🤝','💯','🎵','🎶','🌙','⭐','🌟','💐','🌸','🍀','🦋','🌊','❄️','☀️'];
+let _pmEmojiOpen=false;
+function buildPMEmojiPicker(){
+  const p=document.getElementById('pm-emoji-picker');
+  if(!p||p.children.length>0) return;
+  PM_EMOJIS.forEach(em=>{
+    const b=document.createElement('button');
+    b.textContent=em;
+    b.style.cssText='background:none;border:none;cursor:pointer;font-size:20px;padding:3px;border-radius:6px;transition:.15s;';
+    b.onmouseover=function(){this.style.background='rgba(255,255,255,.1)';};
+    b.onmouseout=function(){this.style.background='none';};
+    b.onclick=function(){const inp=document.getElementById('pmi');if(inp){inp.value+=em;inp.focus();}};
+    p.appendChild(b);
+  });
+}
+function togglePMEmoji(){
+  _pmEmojiOpen=!_pmEmojiOpen;
+  const p=document.getElementById('pm-emoji-picker');
+  if(!p) return;
+  if(_pmEmojiOpen){buildPMEmojiPicker(); p.style.display='flex';}
+  else p.style.display='none';
+  document.getElementById('pm-emoji-btn').style.color=_pmEmojiOpen?'#ffd700':'#b0bec5';
+}
+
+// Notification Sound
+let _notifAudioCtx=null;
+function _playNotifSound(){
+  try{
+    if(!_notifAudioCtx) _notifAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=_notifAudioCtx;
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+0.1);
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime+0.4);
+  }catch(e){}
+}
+
+// Welcome Message Admin Settings
+async function saveWelcomeMessage(){
+  const enabled=document.getElementById('welcome-enabled')?.checked;
+  const senderName=document.getElementById('welcome-sender')?.value.trim();
+  const text=document.getElementById('welcome-text')?.value.trim();
+  const msg=document.getElementById('welcome-msg');
+  try{
+    const r=await fetch('/api/admin/welcome-message',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({enabled,senderName,text})});
+    const d=await r.json();
+    if(msg){msg.style.color=d.ok?'#4ade80':'#f87171';msg.textContent=d.ok?'✅ تم الحفظ':'❌ خطأ';}
+  }catch(e){if(msg){msg.style.color='#f87171';msg.textContent='❌ خطأ';}}
+}
+function toggleWelcomeEnabled(){saveWelcomeMessage();}
+async function loadWelcomeSettings(){
+  try{
+    const r=await fetch('/api/admin/welcome-message',{headers:{'x-admin-token':AK}});
+    const d=await r.json();
+    if(!d.ok) return;
+    const w=d.welcome;
+    const cb=document.getElementById('welcome-enabled');
+    const sn=document.getElementById('welcome-sender');
+    const tx=document.getElementById('welcome-text');
+    if(cb) cb.checked=w.enabled;
+    if(sn) sn.value=w.senderName||'';
+    if(tx) tx.value=w.text||'';
+  }catch(e){}
+}
+
 // ===== THEME SYSTEM (removed theme2) =====
 let _currentTheme = 'gold';
 function applyTheme(t) { _currentTheme = 'gold'; }
@@ -1917,9 +2127,16 @@ async function deleteAdminQuizQ(idx){
 
 async function openAdmin(){
   document.getElementById('ap').classList.add('on');
+  // Only owner sees spy and log tabs
+  const isOwner = cu?.rank === 'owner';
+  const spyBtn = document.getElementById('apt-spy');
+  const logBtn = document.getElementById('apt-log');
+  if (spyBtn) spyBtn.style.display = isOwner ? '' : 'none';
+  if (logBtn) logBtn.style.display = isOwner ? '' : 'none';
   apTab('main');
   await refAdmin();
   loadAdminQuizQuestions();
+  loadWelcomeSettings();
 }
 function closeAdmin(){document.getElementById('ap').classList.remove('on');}
 
@@ -1927,7 +2144,7 @@ function closeAdmin(){document.getElementById('ap').classList.remove('on');}
 let _currentApTab = 'main';
 function apTab(name){
   _currentApTab = name;
-  ['main','rooms','words','quiz','perms','spy'].forEach(t=>{
+  ['main','rooms','words','quiz','perms','spy','log'].forEach(t=>{
     const btn=document.getElementById('apt-'+t);
     const sec=document.getElementById('ap-sec-'+t);
     const sec2=document.getElementById('ap-sec-main2');
@@ -1939,6 +2156,7 @@ function apTab(name){
   if(name==='rooms') renderRoomAccessManager();
   if(name==='words') { loadBadWords && loadBadWords(); }
   if(name==='spy') loadSpyConversations();
+  if(name==='log') loadActivityLog();
 }
 
 // ===== PERMISSIONS UI =====
@@ -2297,6 +2515,73 @@ socket.on('spy-call-ended',()=>{
 });
 // ===== END SPY SYSTEM =====
 
+// ===== ACTIVITY LOG =====
+let _allLogEntries = [];
+const ACTION_COLORS = {
+  '🚫': '#f87171', '⛔': '#f87171', '✅': '#4ade80', '🏅': '#fbbf24',
+  '🔑': '#60a5fa', '🗑️': '#fb923c', '🏠': '#34d399', '✏️': '#a78bfa',
+  '🔇': '#fb923c', '🔊': '#34d399', '⚙️': '#94a3b8', '👑': '#ffd700'
+};
+
+async function loadActivityLog() {
+  if (cu?.rank !== 'owner') {
+    document.getElementById('activity-log-list').innerHTML = '<p style="color:#f87171;font-size:13px;">⛔ للمالك فقط.</p>';
+    return;
+  }
+  try {
+    const r = await fetch('/api/admin/activity-log', { headers: { 'x-admin-token': AK } });
+    const d = await r.json();
+    if (!d.ok) return;
+    _allLogEntries = d.log;
+    renderLog(_allLogEntries);
+  } catch(e) {
+    document.getElementById('activity-log-list').innerHTML = '<p style="color:#f87171;font-size:12px;">❌ خطأ في تحميل السجل</p>';
+  }
+}
+
+function renderLog(entries) {
+  const c = document.getElementById('activity-log-list');
+  if (!c) return;
+  if (!entries.length) {
+    c.innerHTML = '<p style="color:var(--mut);font-size:12px;text-align:center;padding:20px;">لا توجد إجراءات مسجلة بعد في هذه الجلسة.</p>';
+    return;
+  }
+  c.innerHTML = '';
+  entries.forEach(e => {
+    const div = document.createElement('div');
+    const rankColor = RK_COLOR[e.rank] || '#94a3b8';
+    const firstEmoji = e.action.charAt(0);
+    const acColor = ACTION_COLORS[firstEmoji] || '#94a3b8';
+    div.style.cssText = 'background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-right:3px solid '+acColor+';border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;';
+    div.innerHTML = `
+      <div style="font-size:20px;flex-shrink:0;">${firstEmoji}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:700;color:${rankColor};">${e.admin}</span>
+          <span style="font-size:10px;background:rgba(255,255,255,.06);border-radius:6px;padding:2px 7px;color:#888;">${RK_LABEL[e.rank]||e.rank}</span>
+          <span style="font-size:12px;color:${acColor};">${e.action}</span>
+          ${e.target?`<span style="font-size:12px;color:#fff;font-weight:600;">${e.target}</span>`:''}
+        </div>
+        ${e.details?`<div style="font-size:11px;color:#888;margin-top:3px;">${e.details}</div>`:''}
+      </div>
+      <div style="font-size:11px;color:#555;flex-shrink:0;text-align:left;">${e.time}</div>`;
+    c.appendChild(div);
+  });
+}
+
+function filterLog() {
+  const q = document.getElementById('log-filter')?.value.toLowerCase().trim();
+  if (!q) { renderLog(_allLogEntries); return; }
+  const filtered = _allLogEntries.filter(e =>
+    e.admin.toLowerCase().includes(q) ||
+    e.action.toLowerCase().includes(q) ||
+    (e.target||'').toLowerCase().includes(q) ||
+    (e.details||'').toLowerCase().includes(q)
+  );
+  renderLog(filtered);
+}
+// ===== END ACTIVITY LOG =====
+
 // ===== ROOM ACCESS MANAGER =====
 function renderRoomAccessManager(){
   const c=document.getElementById('room-access-list');
@@ -2445,10 +2730,10 @@ async function aResetWarn(n) {
   toast('✅ تم إعادة تعيين تحذيرات ' + n, 'k');
 }
 
-async function aBan(n){if(!confirm(`حظر ${n}؟`))return;const r=await fetch('/api/admin/ban',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n})});const d=await r.json();if(d.ok){toast('🚫 تم حظر '+n,'k');refAdmin();}}
-async function aUnban(n){const r=await fetch('/api/admin/unban',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n})});const d=await r.json();if(d.ok){toast('✅ رفع الحظر عن '+n,'k');refAdmin();}}
-async function aRank(n,rank){if(!rank)return;const r=await fetch('/api/admin/setrank',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n,rank})});const d=await r.json();if(d.ok){toast('✅ تم تغيير رتبة '+n,'k');refAdmin();}}
-async function clearRoom(id){if(!confirm(`مسح رسائل ${rd[id]?.name}؟`))return;const r=await fetch('/api/admin/clearroom',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({room:id})});const d=await r.json();if(d.ok)toast('🗑️ تم مسح الغرفة','k');}
+async function aBan(n){if(!confirm(`حظر ${n}؟`))return;const reason=prompt('سبب الحظر (اختياري):','')||'';const r=await fetch('/api/admin/ban',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n,reason,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});const d=await r.json();if(d.ok){toast('🚫 تم حظر '+n,'k');refAdmin();}}
+async function aUnban(n){const r=await fetch('/api/admin/unban',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});const d=await r.json();if(d.ok){toast('✅ رفع الحظر عن '+n,'k');refAdmin();}}
+async function aRank(n,rank){if(!rank)return;const r=await fetch('/api/admin/setrank',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({username:n,rank,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});const d=await r.json();if(d.ok){toast('✅ تم تغيير رتبة '+n,'k');refAdmin();}}
+async function clearRoom(id){if(!confirm(`مسح رسائل ${rd[id]?.name}؟`))return;const r=await fetch('/api/admin/clearroom',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({room:id,adminName:cu?.name||cu?.username,adminRank:cu?.rank})});const d=await r.json();if(d.ok)toast('🗑️ تم مسح الغرفة','k');}
 
 function logout(){
   sessionStorage.removeItem('ghazal_user');

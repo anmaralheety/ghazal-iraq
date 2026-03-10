@@ -66,6 +66,21 @@ const memUsers = {
 const memMessages = {};
 const memPMs = {}; // { 'user1||user2': [{from,to,text,time,ts},...] }
 const activeCalls = {}; // { 'user1||user2': { type, startTime } }
+
+// Welcome message config
+let welcomeMessage = {
+  enabled: true,
+  senderName: 'غزل عراقي 🌹',
+  text: 'أهلاً وسهلاً بك يا {name} في عالم غزل عراقي 🌹\nنتمنى لك وقتاً ممتعاً بيننا 💫'
+};
+app.get('/api/admin/welcome-message', adminAuth, (req,res) => res.json({ok:true, welcome: welcomeMessage}));
+app.post('/api/admin/welcome-message', adminAuth, (req,res) => {
+  const {enabled, senderName, text} = req.body;
+  welcomeMessage.enabled = !!enabled;
+  if (senderName !== undefined) welcomeMessage.senderName = senderName.substring(0,30);
+  if (text !== undefined) welcomeMessage.text = text.substring(0,300);
+  res.json({ok:true});
+});
 const memProfiles = {}; // { username: { avatar, music_url, music_name, bio } }
 
 // ===== DEFAULT PERMISSIONS =====
@@ -129,7 +144,26 @@ function adminAuth(req,res,next) {
   next();
 }
 
-// ===== ROOM MANAGEMENT =====
+// ===== ADMIN ACTIVITY LOG =====
+const adminLog = []; // max 500 entries in memory
+function logAction(adminName, adminRank, action, target, details='') {
+  const entry = {
+    id: Date.now(),
+    time: new Date().toLocaleString('ar-IQ',{timeZone:'Asia/Baghdad',hour12:false}),
+    ts: Date.now(),
+    admin: adminName,
+    rank: adminRank,
+    action,
+    target: target||'',
+    details: details||''
+  };
+  adminLog.unshift(entry);
+  if (adminLog.length > 500) adminLog.pop();
+}
+app.get('/api/admin/activity-log', adminAuth, (req,res) => {
+  res.json({ ok:true, log: adminLog });
+});
+// ===== END ADMIN LOG =====
 app.post('/api/admin/addroom', adminAuth, (req,res) => {
   const { name, icon, color, isQuiz } = req.body;
   if (!name||!icon) return res.json({ok:false,msg:'الاسم والأيقونة مطلوبان'});
@@ -138,6 +172,7 @@ app.post('/api/admin/addroom', adminAuth, (req,res) => {
   ROOMS[id] = { name, icon, color:color||'#1565c0', isQuiz:isQuiz||false };
   memMessages[id] = [];
   io.emit('rooms-updated', ROOMS);
+  logAction(req.body.adminName||'أدمن',req.body.adminRank||'admin','🏠 إضافة غرفة',name);
   res.json({ok:true,id});
 });
 app.post('/api/admin/editroom', adminAuth, (req,res) => {
@@ -147,6 +182,7 @@ app.post('/api/admin/editroom', adminAuth, (req,res) => {
   if (icon) ROOMS[id].icon=icon;
   if (color) ROOMS[id].color=color;
   io.emit('rooms-updated', ROOMS);
+  logAction(req.body.adminName||'أدمن',req.body.adminRank||'admin','✏️ تعديل غرفة',req.body.name||req.body.id);
   res.json({ok:true});
 });
 app.post('/api/admin/deleteroom', adminAuth, (req,res) => {
@@ -302,25 +338,29 @@ app.get('/api/admin/users', adminAuth, async (req,res) => {
   } else { res.json({ok:true,users:Object.values(memUsers).map(u=>({...u,password:undefined}))}); }
 });
 app.post('/api/admin/ban', adminAuth, async (req,res) => {
-  const {username}=req.body;
+  const {username,reason,adminName,adminRank}=req.body;
   if (useDB) await db.query('UPDATE users SET is_banned=TRUE WHERE username=$1',[username]);
   else if (memUsers[username]) memUsers[username].is_banned=true;
-  kickUser(username,'تم حظرك من الموقع'); res.json({ok:true});
+  kickUser(username,'تم حظرك من الموقع');
+  logAction(adminName||'أدمن',adminRank||'admin','🚫 حظر',username,reason?'السبب: '+reason:'');
+  res.json({ok:true});
 });
 app.post('/api/admin/unban', adminAuth, async (req,res) => {
-  const {username}=req.body;
+  const {username,adminName,adminRank}=req.body;
   if (useDB) await db.query('UPDATE users SET is_banned=FALSE WHERE username=$1',[username]);
   else if (memUsers[username]) memUsers[username].is_banned=false;
+  logAction(adminName||'أدمن',adminRank||'admin','✅ رفع الحظر',username);
   res.json({ok:true});
 });
 app.post('/api/admin/setrank', adminAuth, async (req,res) => {
-  const {username,rank}=req.body;
+  const {username,rank,adminName,adminRank}=req.body;
   if (!RANKS[rank]) return res.json({ok:false,msg:'رتبة غير صحيحة'});
   if (useDB) await db.query('UPDATE users SET rank=$1 WHERE username=$2',[rank,username]);
   else if (memUsers[username]) memUsers[username].rank=rank;
   const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===username);
   if (sid) { chatUsers[sid].rank=rank; io.to(sid).emit('rank-changed',{rank,rankInfo:RANKS[rank]}); }
   io.emit('user-rank-updated',{username,rank,rankInfo:RANKS[rank]});
+  logAction(adminName||'أدمن',adminRank||'admin','🏅 تغيير رتبة',username,'← '+rank);
   res.json({ok:true});
 });
 app.post('/api/changepass', async (req,res) => {
@@ -340,17 +380,20 @@ app.post('/api/changepass', async (req,res) => {
   res.json({ok:true});
 });
 app.post('/api/admin/resetpass', adminAuth, async (req,res) => {
-  const {username,newpassword}=req.body;
+  const {username,newpassword,adminName,adminRank}=req.body;
   if (!username||!newpassword||newpassword.length<4) return res.json({ok:false,msg:'كلمة المرور قصيرة'});
   const hashed=hashPassword(newpassword);
   if (useDB) { const r=await db.query('UPDATE users SET password=$1 WHERE username=$2',[hashed,username]); if (r.rowCount===0) return res.json({ok:false,msg:'المستخدم غير موجود'}); }
   else { if (!memUsers[username]) return res.json({ok:false,msg:'المستخدم غير موجود'}); memUsers[username].password=hashed; }
+  logAction(adminName||'أدمن',adminRank||'admin','🔑 إعادة تعيين كلمة المرور',username);
   res.json({ok:true});
 });
 app.post('/api/admin/clearroom', adminAuth, async (req,res) => {
-  const {room}=req.body;
+  const {room,adminName,adminRank}=req.body;
   if (useDB) await db.query('DELETE FROM messages WHERE room=$1',[room]);
-  memMessages[room]=[]; io.to(room).emit('room-cleared',room); res.json({ok:true});
+  memMessages[room]=[]; io.to(room).emit('room-cleared',room);
+  logAction(adminName||'أدمن',adminRank||'admin','🗑️ مسح رسائل الغرفة',ROOMS[room]?.name||room);
+  res.json({ok:true});
 });
 app.get('/api/messages/:room', async (req,res) => {
   const room=req.params.room;
@@ -712,6 +755,18 @@ io.on('connection', (socket) => {
     const sysMsg=await saveMessage('general',null,joinText,'system');
     io.to('general').emit('message',{...sysMsg});
     io.to('general').emit('room-users',getRoomUsers('general'));
+    // Send welcome private message if configured
+    if (welcomeMessage.enabled && welcomeMessage.text) {
+      const wText = welcomeMessage.text.replace('{name}', data.name);
+      const ownerInfo = RANKS['owner'];
+      setTimeout(() => {
+        socket.emit('private-message', {
+          type:'private', from: welcomeMessage.senderName||'غزل عراقي',
+          to: data.name, text: wText, time: getTime(),
+          fromRank:'owner', fromRankInfo: ownerInfo, isWelcome: true
+        });
+      }, 1500);
+    }
   });
 
   socket.on('switch-room', async (roomId) => {
@@ -811,17 +866,20 @@ io.on('connection', (socket) => {
     const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===data.username);
     if (sid) io.to(sid).emit('muted',`تم كتمك من قبل ${a.name}`);
     io.emit('system-notice',`🔇 تم كتم ${data.username}`);
+    logAction(a.name,a.rank,'🔇 كتم',data.username);
   });
   socket.on('admin-unmute',(data)=>{
     const a=chatUsers[socket.id]; if (!a||!hasPermission(a.rank,'canMute')) return;
     mutedUsers.delete(data.username);
     const sid=Object.keys(chatUsers).find(id=>chatUsers[id].name===data.username);
     if (sid) io.to(sid).emit('unmuted','تم رفع الكتم عنك');
+    logAction(a.name,a.rank,'🔊 رفع الكتم',data.username);
   });
   socket.on('admin-kick',(data)=>{
     const a=chatUsers[socket.id]; if (!a||!hasPermission(a.rank,'canKick')) return;
     const t=Object.values(chatUsers).find(u=>u.name===data.username); if (t&&!canManage(a.rank,t.rank)) return;
     kickUser(data.username,`تم طردك من قبل ${a.name}`); io.emit('system-notice',`🚫 تم طرد ${data.username}`);
+    logAction(a.name,a.rank,'🚫 طرد',data.username);
   });
   socket.on('admin-ban',async(data)=>{
     const a=chatUsers[socket.id]; if (!a||!hasPermission(a.rank,'canBan')) return;
@@ -829,6 +887,7 @@ io.on('connection', (socket) => {
     if (useDB) await db.query('UPDATE users SET is_banned=TRUE WHERE username=$1',[data.username]);
     else if (memUsers[data.username]) memUsers[data.username].is_banned=true;
     kickUser(data.username,`تم حظرك من قبل ${a.name}`); io.emit('system-notice',`🚫 تم حظر ${data.username}`);
+    logAction(a.name,a.rank,'⛔ حظر',data.username);
   });
   socket.on('admin-resetwarn',(data)=>{
     const a=chatUsers[socket.id]; if (!a||!hasPermission(a.rank,'canMute')) return;

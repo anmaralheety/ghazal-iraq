@@ -559,6 +559,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
   .mx { font-size: 13px; }
 
   /* Mobile bottom nav */
+  #users-mob-btn { display: inline-flex !important; }
   .mob-nav {
     display: flex !important;
     position: fixed;
@@ -646,6 +647,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
 /* Mobile nav hidden on desktop */
 .mob-nav { display: none; }
 .mob-drawer { display: none; }
+#users-mob-btn { display: none !important; }
 </style>
 </head>
 <body>
@@ -781,6 +783,7 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
     <div class="clogo" onclick="logout()"><div class="clogo-ic">💬</div><span class="clogo-t">غزل عراقي</span></div>
     <div class="cnav">
       <button class="cnav-btn on" id="rooms-btn" onclick="openRoomsPanel()">🏠 الغرف</button>
+      <button class="cnav-btn" id="users-mob-btn" onclick="openMobDrawer('users')" style="display:none;">👥 المتصلون</button>
       <button class="cnav-btn" id="admin-btn" onclick="openAdmin()" style="display:none;">👑 الأدمن</button>
       <button class="cnav-btn" id="chpass-btn" onclick="openChangePass()" style="display:none;">🔐 كلمة المرور</button>
       <button class="cnav-btn" onclick="openPolicy('terms')" style="font-size:10px;">📋 القوانين</button>
@@ -1465,6 +1468,7 @@ function enterChat(){
     document.getElementById('chpass-btn').style.display='flex';
   }
   showMobAdmin();
+  showMobUsersBtn();
   // Show text color button if permitted
   if(hasPerm('can_custom_text_color')){
     document.getElementById('txt-color-btn').style.display='flex';
@@ -3381,8 +3385,16 @@ function syncMobLists() {
 
 // Show admin button on mobile for admins
 function showMobAdmin() {
-  if (isMobile() && ['owner','admin'].includes(cu?.rank)) {
+  if (isMobile()) {
     document.getElementById('mn-admin').style.display = 'flex';
+    document.getElementById('admin-btn').style.display = '';
+  }
+}
+
+// Show users button on mobile for everyone
+function showMobUsersBtn() {
+  if (isMobile()) {
+    document.getElementById('users-mob-btn').style.display = '';
   }
 }
 

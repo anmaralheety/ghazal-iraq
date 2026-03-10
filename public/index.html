@@ -3349,29 +3349,47 @@ function syncMobLists() {
     });
   }
 
-  // Sync users to mobile drawer - rebuild properly
+  // Sync users to mobile drawer - with PM and call buttons
   const ulistMob = document.getElementById('ulist-mob');
   if (ulistMob) {
     ulistMob.innerHTML = '';
-    // Get all user items from desktop list and clone with working onclick
     const ulist = document.getElementById('ulist');
-    if (ulist) {
-      const sections = ulist.querySelectorAll('.usl');
-      const items = ulist.querySelectorAll('.ui');
-      // Clone sections and items
-      ulist.childNodes.forEach(node => {
-        const clone = node.cloneNode(true);
-        // Re-attach click handlers for profile opening
-        if (clone.classList && clone.classList.contains('ui')) {
-          const nameEl = clone.querySelector('.un');
-          if (nameEl) {
-            const uname = nameEl.textContent;
-            clone.style.cursor = 'pointer';
-            clone.onclick = () => { openProfile(uname); closeMobDrawer('users'); };
-          }
-        }
-        ulistMob.appendChild(clone);
-      });
+    if (!ulist) return;
+    // Get all user items from desktop list
+    ulist.querySelectorAll('.ui').forEach(ui => {
+      const nameEl = ui.querySelector('.un');
+      if (!nameEl) return;
+      const uname = nameEl.textContent.trim();
+      const myName = cu?.name || cu?.username;
+      if (uname === myName) return; // skip self
+      // Get rank color from the name element style
+      const nc = nameEl.style.color || '#b0bec5';
+      // Get avatar
+      const avEl = ui.querySelector('.av');
+      const avHtml = avEl ? avEl.outerHTML.replace('onclick="openProfile', 'onclick="openProfile') : '';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);';
+      row.innerHTML = `
+        <div style="cursor:pointer;flex-shrink:0;" onclick="openProfile('${uname}');closeMobDrawer('users');">
+          ${avEl ? avEl.outerHTML : `<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:15px;">${uname.charAt(0)}</div>`}
+        </div>
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="openProfile('${uname}');closeMobDrawer('users');">
+          <div style="font-size:13px;font-weight:700;color:${nc};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${uname}</div>
+          <div style="font-size:11px;color:#666;margin-top:1px;">${nameEl.getAttribute('data-rank-label') || ''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="event.stopPropagation();openPM('${uname}');closeMobDrawer('users');"
+            style="width:34px;height:34px;border-radius:10px;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3);color:#ffd700;font-size:16px;cursor:pointer;">💌</button>
+          <button onclick="event.stopPropagation();startCall('audio','${uname}');closeMobDrawer('users');"
+            style="width:34px;height:34px;border-radius:10px;background:rgba(0,191,255,.1);border:1px solid rgba(0,191,255,.2);color:#00bfff;font-size:16px;cursor:pointer;">📞</button>
+          <button onclick="event.stopPropagation();startCall('video','${uname}');closeMobDrawer('users');"
+            style="width:34px;height:34px;border-radius:10px;background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.2);color:#4caf50;font-size:16px;cursor:pointer;">📹</button>
+        </div>`;
+      ulistMob.appendChild(row);
+    });
+    // If empty
+    if (!ulistMob.children.length) {
+      ulistMob.innerHTML = '<div style="text-align:center;color:#555;padding:30px;font-size:13px;">لا يوجد متصلون الآن</div>';
     }
   }
 }
@@ -4217,8 +4235,15 @@ async function _getMedia(wantVideo) {
   return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 }
 
+// Mobile helper — open PM with user then optionally start call
+function startCall(type, username){
+  openPM(username);
+  if(type === 'audio' || type === 'video'){
+    setTimeout(() => startPMCall(type), 300);
+  }
+}
+
 async function startPMCall(type) {
-  if (_pc) { toast('يوجد مكالمة نشطة بالفعل', 'e'); return; }
   _callTarget = pmt3; _callType = type; _isCaller = true; _callEnding = false;
   _iceQueue = [];
   showCallModal(pmt3, type, '🔔 جارٍ الاتصال...');

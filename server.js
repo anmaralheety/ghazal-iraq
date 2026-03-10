@@ -1317,14 +1317,31 @@ io.on('connection', (socket) => {
   });
 
   // ===== SPY: JOIN/LEAVE PM CONVERSATION =====
-  socket.on('spy-join', (data) => {
+  socket.on('spy-join', async (data) => {
     const admin = chatUsers[socket.id];
-    if (!admin) return;
-    if (admin.rank !== 'owner' && admin.rank !== 'ghost') return;
+    // Also allow if rank is verified from DB (in case chatUsers not yet populated)
+    let adminRank = admin?.rank;
+    if (!adminRank && data.adminName && useDB) {
+      try {
+        const r = await db.query('SELECT rank FROM users WHERE username=$1',[data.adminName]);
+        adminRank = r.rows[0]?.rank;
+      } catch(e) {}
+    }
+    if (adminRank !== 'owner' && adminRank !== 'ghost') return;
     const key = [data.user1, data.user2].sort().join('||');
     const spyRoom = 'spy||' + key;
     socket.join(spyRoom);
-    const history = memPMs[key] || [];
+    // Load history from DB or memory
+    let history = memPMs[key] || [];
+    if (useDB) {
+      try {
+        const r = await db.query(
+          `SELECT from_user as "from", to_user as "to", text, time FROM private_messages WHERE conv_key=$1 ORDER BY created_at ASC LIMIT 200`,
+          [key]
+        );
+        if (r.rows.length > 0) history = r.rows;
+      } catch(e) {}
+    }
     socket.emit('spy-history', { key, user1: data.user1, user2: data.user2, messages: history });
     // If active call → send offer with callerSid so spy can connect to both parties
     if (activeCalls[key]) {

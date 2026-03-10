@@ -2597,9 +2597,9 @@ socket.on('spy-direct-ice', async (d) => {
 });
 
 socket.on('spy-call-active',(d)=>{
-  // Already active call when we join spy room
+  // Fallback: active call but no offer saved (call started before this server version)
   document.getElementById('spy-call-section').style.display='block';
-  document.getElementById('spy-call-status').textContent='📞 مكالمة '+(d.type==='video'?'فيديو':'صوتية')+' نشطة — الدخول قد يكون متأخراً';
+  document.getElementById('spy-call-status').textContent='📞 مكالمة '+(d.type==='video'?'فيديو':'صوتية')+' نشطة — لا يمكن مراقبتها (بدأت قبل انضمامك)';
 });
 
 socket.on('spy-call-ended',()=>{

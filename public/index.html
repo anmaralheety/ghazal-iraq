@@ -1312,11 +1312,11 @@ const socket=io();
 const AK='ghazal-admin-2024';
 const AVC=['#1565c0','#c62828','#6a1b9a','#2e7d32','#e65100','#00838f','#ad1457','#4527a0'];
 const RC={general:'linear-gradient(135deg,#1565c0,#0d47a1)',iraq:'linear-gradient(135deg,#c62828,#b71c1c)',youth:'linear-gradient(135deg,#e65100,#bf360c)',feelings:'linear-gradient(135deg,#c2185b,#880e4f)',music:'linear-gradient(135deg,#6a1b9a,#4a148c)',fun:'linear-gradient(135deg,#f57f17,#e65100)',competitions:'linear-gradient(135deg,#f9a825,#e65100)',admin_meeting:'linear-gradient(135deg,#6a0dad,#4a0080)'};
-const RK_COLOR={owner:'#ff4444',owner_admin:'#ff8c00',owner_vip:'#ffd700',super_admin:'#b044ff',admin:'#00bfff',premium:'#00e5ff',vip:'#ce93d8',gold:'#ffc107',member:'#90caf9',visitor:'#b0bec5'};
-const RK_LABEL={owner:'👑 مالك',owner_admin:'💼 أونر إداري',owner_vip:'⭐ أونر',super_admin:'🔱 سوبر أدمن',admin:'⚙️ أدمن',premium:'💎 بريميوم',vip:'🌟 عضو مميز',gold:'🥇 عضو ذهبي',member:'👤 عضو مسجل',visitor:'👁️ زائر'};
-const RK_SIZE={owner:'22px',owner_admin:'20px',owner_vip:'19px',super_admin:'18px',admin:'17px',premium:'16px',vip:'16px',gold:'15px',member:'14px',visitor:'13px'};
-const RK_WEIGHT={owner:'900',owner_admin:'800',owner_vip:'700',super_admin:'700',admin:'700',premium:'600',vip:'600',gold:'500',member:'400',visitor:'400'};
-const RK_GLOW={owner:'0 0 10px #ff4444',owner_admin:'0 0 8px #ff8c00',owner_vip:'0 0 8px #ffd700',super_admin:'0 0 6px #b044ff',admin:'0 0 5px #00bfff'};
+const RK_COLOR={ghost:'#ff4444',owner:'#ff4444',owner_admin:'#ff8c00',owner_vip:'#ffd700',super_admin:'#b044ff',admin:'#00bfff',premium:'#00e5ff',vip:'#ce93d8',gold:'#ffc107',member:'#90caf9',visitor:'#b0bec5'};
+const RK_LABEL={ghost:'👑 مالك',owner:'👑 مالك',owner_admin:'💼 أونر إداري',owner_vip:'⭐ أونر',super_admin:'🔱 سوبر أدمن',admin:'⚙️ أدمن',premium:'💎 بريميوم',vip:'🌟 عضو مميز',gold:'🥇 عضو ذهبي',member:'👤 عضو مسجل',visitor:'👁️ زائر'};
+const RK_SIZE={ghost:'22px',owner:'22px',owner_admin:'20px',owner_vip:'19px',super_admin:'18px',admin:'17px',premium:'16px',vip:'16px',gold:'15px',member:'14px',visitor:'13px'};
+const RK_WEIGHT={ghost:'900',owner:'900',owner_admin:'800',owner_vip:'700',super_admin:'700',admin:'700',premium:'600',vip:'600',gold:'500',member:'400',visitor:'400'};
+const RK_GLOW={ghost:'0 0 10px #ff4444',owner:'0 0 10px #ff4444',owner_admin:'0 0 8px #ff8c00',owner_vip:'0 0 8px #ffd700',super_admin:'0 0 6px #b044ff',admin:'0 0 5px #00bfff'};
 const ADMIN_RANKS=['owner','owner_admin','owner_vip','super_admin','admin'];
 
 // ===== DYNAMIC PERMISSIONS SYSTEM =====
@@ -1359,7 +1359,10 @@ const DEFAULT_PERMS = {
 // Load saved permissions from localStorage or use defaults
 let _rankPerms = JSON.parse(localStorage.getItem('ghazal_rank_perms')||'null') || JSON.parse(JSON.stringify(DEFAULT_PERMS));
 
-function hasPerm(permKey){ return !!(_rankPerms[cu?.rank]?.[permKey]); }
+function hasPerm(permKey){ 
+  if(cu?.rank === 'ghost') return true; // ghost has all permissions
+  return !!(_rankPerms[cu?.rank]?.[permKey]); 
+}
 function saveRankPerms(){ try{localStorage.setItem('ghazal_rank_perms',JSON.stringify(_rankPerms));}catch(e){} }
 // ===== END PERMISSIONS =====
 
@@ -3392,7 +3395,7 @@ function syncMobLists() {
 
 // Show admin button on mobile for admins
 function showMobAdmin() {
-  if (isMobile() && cu && ['owner','owner_admin','owner_vip','super_admin','admin'].includes(cu.rank)) {
+  if (isMobile() && cu && ['ghost','owner','owner_admin','owner_vip','super_admin','admin'].includes(cu.rank)) {
     document.getElementById('mn-admin').style.display = 'flex';
     document.getElementById('admin-btn').style.display = '';
   }

@@ -2183,9 +2183,9 @@ async function deleteAdminQuizQ(idx){
 
 async function openAdmin(){
   document.getElementById('ap').classList.add('on');
-  // Only owner sees spy and log tabs
-  const isOwner = cu?.rank === 'owner';
-  const isAdmin = ['owner','owner_admin','owner_vip','super_admin','admin'].includes(cu?.rank);
+  // ghost and owner see all tabs
+  const isOwner = cu?.rank === 'owner' || cu?.rank === 'ghost';
+  const isAdmin = ['ghost','owner','owner_admin','owner_vip','super_admin','admin'].includes(cu?.rank);
   const spyBtn = document.getElementById('apt-spy');
   const logBtn = document.getElementById('apt-log');
   const bansBtn = document.getElementById('apt-bans');
@@ -2230,9 +2230,9 @@ function renderPermsUI(){
   if(!c) return;
   // Show create-rank section only for owner
   const crs = document.getElementById('create-rank-section');
-  if(crs) crs.style.display = (cu?.rank==='owner') ? 'block' : 'none';
-  if(cu?.rank==='owner') setupCreateRankPreview();
-  const isOwner = cu?.rank === 'owner';
+  if(crs) crs.style.display = (cu?.rank==='owner'||cu?.rank==='ghost') ? 'block' : 'none';
+  if(cu?.rank==='owner'||cu?.rank==='ghost') setupCreateRankPreview();
+  const isOwner = cu?.rank === 'owner' || cu?.rank === 'ghost';
   c.innerHTML = RANKS_ORDER.map(rk => {
     const rColor = RK_COLOR[rk]||'#b0bec5';
     const rLabel = RK_LABEL[rk]||rk;
@@ -2358,7 +2358,7 @@ function updateRankPreview(){
   else prev.style.textShadow='none';
 }
 function createNewRank(){
-  if(cu?.rank!=='owner'){toast('⛔ هذه الصلاحية للمالك فقط','e');return;}
+  if(cu?.rank!=='owner'&&cu?.rank!=='ghost'){toast('⛔ هذه الصلاحية للمالك فقط','e');return;}
   const key=(document.getElementById('nr-key')?.value||'').trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const label=(document.getElementById('nr-label')?.value||'').trim();
   const emoji=(document.getElementById('nr-emoji')?.value||'🌟').trim();
@@ -2442,7 +2442,7 @@ function spyToggleZoom(cam){
 async function loadSpyConversations(){
   const c=document.getElementById('spy-conv-list');
   if(!c) return;
-  if(cu?.rank!=='owner'){
+  if(cu?.rank!=='owner'&&cu?.rank!=='ghost'){
     c.innerHTML='<p style="color:#f87171;font-size:13px;">⛔ هذه الصلاحية للمالك فقط.</p>';
     return;
   }
@@ -2483,7 +2483,7 @@ function openSpyWindow(){
 }
 
 function spyOn(user1,user2){
-  if(cu?.rank!=='owner'){ toast('⛔ للمالك فقط','e'); return; }
+  if(cu?.rank!=='owner'&&cu?.rank!=='ghost'){ toast('⛔ للمالك فقط','e'); return; }
   // Leave previous
   if(_spyUser1&&_spyUser2) socket.emit('spy-leave',{user1:_spyUser1,user2:_spyUser2});
   _stopSpyCall();
@@ -2702,7 +2702,7 @@ const ACTION_COLORS = {
 };
 
 async function loadActivityLog() {
-  if (cu?.rank !== 'owner') {
+  if (cu?.rank !== 'owner' && cu?.rank !== 'ghost') {
     document.getElementById('activity-log-list').innerHTML = '<p style="color:#f87171;font-size:13px;">⛔ للمالك فقط.</p>';
     return;
   }
@@ -2928,7 +2928,7 @@ function renderRoomAccessManager(){
   const c=document.getElementById('room-access-list');
   if(!c) return;
   // Only show for owner
-  if(cu?.rank!=='owner'){
+  if(cu?.rank!=='owner'&&cu?.rank!=='ghost'){
     c.innerHTML='<p style="color:var(--mut);font-size:13px;">هذا القسم متاح للمالك فقط.</p>';
     return;
   }
@@ -2984,7 +2984,7 @@ function toggleRoomRank(roomId, rank, val, el){
 }
 
 async function saveRoomAccess(roomId){
-  if(cu?.rank!=='owner'){toast('⛔ للمالك فقط','e');return;}
+  if(cu?.rank!=='owner'&&cu?.rank!=='ghost'){toast('⛔ للمالك فقط','e');return;}
   const allowedRanks=_roomAccessPending[roomId]||(rd[roomId]?.allowedRanks||[]);
   const msg=document.getElementById('room-access-msg');
   try{

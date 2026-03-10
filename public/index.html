@@ -2009,75 +2009,6 @@ async function loadWelcomeSettings(){
   }catch(e){}
 }
 
-// PM Emoji Picker
-const PM_EMOJIS=['😊','😂','❤️','😍','🥰','😘','😭','😅','🤣','😆','🙈','😤','😡','💔','🌹','💫','✨','🔥','💎','👑','🎉','🎊','💪','🙏','👍','👏','🤝','💯','🎵','🎶','🌙','⭐','🌟','💐','🌸','🍀','🦋','🌊','❄️','☀️'];
-let _pmEmojiOpen=false;
-function buildPMEmojiPicker(){
-  const p=document.getElementById('pm-emoji-picker');
-  if(!p||p.children.length>0) return;
-  PM_EMOJIS.forEach(em=>{
-    const b=document.createElement('button');
-    b.textContent=em;
-    b.style.cssText='background:none;border:none;cursor:pointer;font-size:20px;padding:3px;border-radius:6px;transition:.15s;';
-    b.onmouseover=function(){this.style.background='rgba(255,255,255,.1)';};
-    b.onmouseout=function(){this.style.background='none';};
-    b.onclick=function(){const inp=document.getElementById('pmi');if(inp){inp.value+=em;inp.focus();}};
-    p.appendChild(b);
-  });
-}
-function togglePMEmoji(){
-  _pmEmojiOpen=!_pmEmojiOpen;
-  const p=document.getElementById('pm-emoji-picker');
-  if(!p) return;
-  if(_pmEmojiOpen){buildPMEmojiPicker(); p.style.display='flex';}
-  else p.style.display='none';
-  document.getElementById('pm-emoji-btn').style.color=_pmEmojiOpen?'#ffd700':'#b0bec5';
-}
-
-// Notification Sound
-function _playNotifSound(){
-  try{
-    if(!_notifAudioCtx) _notifAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    const ctx=_notifAudioCtx;
-    const o=ctx.createOscillator();
-    const g=ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.setValueAtTime(880,ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+0.1);
-    g.gain.setValueAtTime(0.3,ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
-    o.start(ctx.currentTime); o.stop(ctx.currentTime+0.4);
-  }catch(e){}
-}
-
-// Welcome Message Admin Settings
-async function saveWelcomeMessage(){
-  const enabled=document.getElementById('welcome-enabled')?.checked;
-  const senderName=document.getElementById('welcome-sender')?.value.trim();
-  const text=document.getElementById('welcome-text')?.value.trim();
-  const msg=document.getElementById('welcome-msg');
-  try{
-    const r=await fetch('/api/admin/welcome-message',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':AK},body:JSON.stringify({enabled,senderName,text})});
-    const d=await r.json();
-    if(msg){msg.style.color=d.ok?'#4ade80':'#f87171';msg.textContent=d.ok?'✅ تم الحفظ':'❌ خطأ';}
-  }catch(e){if(msg){msg.style.color='#f87171';msg.textContent='❌ خطأ';}}
-}
-function toggleWelcomeEnabled(){saveWelcomeMessage();}
-async function loadWelcomeSettings(){
-  try{
-    const r=await fetch('/api/admin/welcome-message',{headers:{'x-admin-token':AK}});
-    const d=await r.json();
-    if(!d.ok) return;
-    const w=d.welcome;
-    const cb=document.getElementById('welcome-enabled');
-    const sn=document.getElementById('welcome-sender');
-    const tx=document.getElementById('welcome-text');
-    if(cb) cb.checked=w.enabled;
-    if(sn) sn.value=w.senderName||'';
-    if(tx) tx.value=w.text||'';
-  }catch(e){}
-}
-
 // ===== THEME SYSTEM (removed theme2) =====
 let _currentTheme = 'gold';
 function applyTheme(t) { _currentTheme = 'gold'; }
@@ -3400,12 +3331,6 @@ document.getElementById('policy-overlay')?.addEventListener('click', e => {
   if (e.target === document.getElementById('policy-overlay')) closePolicy();
 });
 
-function upOC(n){
-  document.getElementById('oc').textContent=n;
-  document.getElementById('co').textContent=n;
-  const oc2=document.getElementById('oc2');
-  if(oc2) oc2.textContent=n;
-}
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ===== PROFILE SYSTEM =====

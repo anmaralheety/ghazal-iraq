@@ -643,9 +643,11 @@ body.theme-rose .btn-s{border-color:rgba(0,229,160,.2);}
   .site-hdr { padding: 10px 16px; }
 }
 
-/* Mobile nav hidden on desktop */
-.mob-nav { display: none; }
-.mob-drawer { display: none; }
+/* Mobile nav & drawers — hidden on desktop */
+@media (min-width: 769px) {
+  .mob-nav { display: none !important; }
+  .mob-drawer { display: none !important; }
+}
 </style>
 </head>
 <body>
